@@ -465,7 +465,7 @@ const seedTranslations = async () => {
           ar: "مدرسة كليفر الخاصة الثانوية",
           ku: "قوتابخانەی تایبەتی کلیفەر",
         },
-        category: "app",
+        category: "general",
         description: "School name displayed in header",
       },
     ];
