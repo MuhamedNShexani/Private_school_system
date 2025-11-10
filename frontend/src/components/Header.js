@@ -119,7 +119,11 @@ const Header = ({ children }) => {
       >
         <header className="student-top-bar">
           <Link to="/student/profile" className="student-logo">
-            <img src="/logo.jpg" alt="School Logo" className="student-logo-img" />
+            <img
+              src="/logo.jpg"
+              alt="School Logo"
+              className="student-logo-img"
+            />
             <span>CLEVER PRIVATE HIGH SCHOOL</span>
           </Link>
           <div className="student-top-actions">
@@ -226,7 +230,11 @@ const Header = ({ children }) => {
         {/* School Logo - Top */}
         <div className="sidebar-header">
           <Link to="/" className="logo">
-            <img src="/logo.jpg" alt="School Logo" className="sidebar-logo-img" />
+            <img
+              src="/logo.jpg"
+              alt="School Logo"
+              className="sidebar-logo-img"
+            />
             <span>CLEVER PRIVATE HIGH SCHOOL</span>
           </Link>
         </div>
@@ -363,6 +371,54 @@ const Header = ({ children }) => {
             </Link>
           )}
         </nav>
+
+        {/* User Profile Section - Bottom of Sidebar */}
+        <div className="sidebar-user-section">
+          <div className="user-profile-card">
+            {/* Top Section: User Info + Language */}
+            <div className="profile-top">
+              <div className="user-header">
+                <div className="user-avatar">
+                  <User size={24} />
+                </div>
+                <div className="user-details">
+                  <div className="user-name">
+                    {user?.firstName} {user?.lastName}
+                  </div>
+                  <div className="user-role">{user?.role}</div>
+                </div>
+              </div>
+
+              {/* Language Selector in Profile */}
+              <div className="profile-language">
+                <select
+                  value={currentLanguage}
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  className="language-select-dropdown"
+                  title="Change Language"
+                >
+                  {languages.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.flag} {lang.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="language-badge">
+                  {languages.find((l) => l.code === currentLanguage)?.flag}
+                </span>
+              </div>
+            </div>
+
+            {/* Bottom Section: Logout */}
+            <button
+              onClick={handleLogout}
+              className="profile-logout"
+            >
+              <LogOut size={16} />
+              <span>{t("btn.logout", "Logout")}</span>
+            </button>
+          </div>
+        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -370,76 +426,7 @@ const Header = ({ children }) => {
         {/* Top Bar */}
         <header className="top-bar">
           <div className="top-bar-content">
-            {/* Account Settings - Top Right */}
-            <div className="top-bar-actions">
-              <div className="account-settings" ref={profileRef}>
-                <button className="account-trigger" onClick={toggleProfile}>
-                  <div className="account-avatar">
-                    <User size={20} />
-                  </div>
-                  <ChevronDown
-                    size={16}
-                    className={`chevron ${isProfileOpen ? "open" : ""}`}
-                  />
-                </button>
-
-                {isProfileOpen && (
-                  <div className="account-dropdown">
-                    <div className="dropdown-header">
-                      <div className="user-details">
-                        <div className="user-avatar">
-                          <User size={24} />
-                        </div>
-                        <div className="user-info">
-                          <div className="user-name">
-                            {user?.firstName} {user?.lastName}
-                          </div>
-                          <div className="user-role">{user?.role}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="dropdown-divider"></div>
-
-                    <div className="dropdown-section">
-                      <div className="section-title">
-                        {t("nav.settings", "Settings")}
-                      </div>
-
-                      {/* Language Selector */}
-                      <div className="dropdown-item">
-                        <Globe size={16} />
-                        <span>{t("nav.language", "Language")}</span>
-                        <select
-                          value={currentLanguage}
-                          onChange={(e) => changeLanguage(e.target.value)}
-                          className="language-select-dropdown"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {languages.map((lang) => (
-                            <option key={lang.code} value={lang.code}>
-                              {lang.flag} {lang.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="dropdown-divider"></div>
-
-                    <div className="dropdown-section">
-                      <button
-                        onClick={handleLogout}
-                        className="dropdown-item logout-item"
-                      >
-                        <LogOut size={16} />
-                        <span>{t("btn.logout", "Logout")}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Top bar is now minimal - user settings moved to sidebar */}
           </div>
         </header>
 
