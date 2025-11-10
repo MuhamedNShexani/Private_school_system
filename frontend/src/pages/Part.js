@@ -4,7 +4,6 @@ import { partsAPI, exercisesAPI } from "../services/api";
 import {
   ArrowLeft,
   FileText,
-  Clock,
   Target,
   Plus,
   Edit,

@@ -356,13 +356,9 @@ const ChapterQuizzes = () => {
   const removeChoice = (questionId, choiceId) => {
     updateQuestion(questionId, (question) => {
       if (question.type !== "multiple_choice") return question;
-      const currentChoices = Array.isArray(question.choices)
-        ? question.choices
-        : [];
-      if (question.choices.length <= 2) return question;
-      const updatedChoices = question.choices.filter(
-        (choice) => choice.id !== choiceId
-      );
+      const choices = Array.isArray(question.choices) ? question.choices : [];
+      if (choices.length <= 2) return question;
+      const updatedChoices = choices.filter((choice) => choice.id !== choiceId);
       if (!updatedChoices.some((choice) => choice.isCorrect)) {
         updatedChoices[0] = { ...updatedChoices[0], isCorrect: true };
       }

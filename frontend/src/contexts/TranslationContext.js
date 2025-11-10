@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import { translationsAPI } from "../services/api";
 
 const TranslationContext = createContext();
@@ -20,70 +27,78 @@ export const TranslationProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   // Available languages
-  const languages = [
-    { code: "en", name: "English", flag: "🇺🇸", dir: "ltr" },
-    { code: "ar", name: "العربية", flag: "🇸🇦", dir: "rtl" },
-    { code: "ku", name: "کوردی", flag: "🇮🇶", dir: "rtl" },
-  ];
+  const languages = useMemo(
+    () => [
+      { code: "en", name: "English", flag: "🇺🇸", dir: "ltr" },
+      { code: "ar", name: "العربية", flag: "🇸🇦", dir: "rtl" },
+      { code: "ku", name: "کوردی", flag: "🇮🇶", dir: "rtl" },
+    ],
+    []
+  );
 
   // Load translations for current language
-  const loadTranslations = async (language = currentLanguage) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await translationsAPI.getAll({ language });
-      
-      if (response.data.success) {
-        setTranslations(response.data.data);
-      } else {
-        throw new Error("Failed to load translations");
+  const loadTranslations = useCallback(
+    async (language = currentLanguage) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await translationsAPI.getAll({ language });
+
+        if (response.data.success) {
+          setTranslations(response.data.data);
+        } else {
+          throw new Error("Failed to load translations");
+        }
+      } catch (err) {
+        console.error("Error loading translations:", err);
+        setError("Failed to load translations");
+        // Fallback to empty translations
+        setTranslations({});
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Error loading translations:", err);
-      setError("Failed to load translations");
-      // Fallback to empty translations
-      setTranslations({});
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [currentLanguage]
+  );
 
   // Change language
   const changeLanguage = async (languageCode) => {
     if (languageCode === currentLanguage) return;
-    
+
     setCurrentLanguage(languageCode);
     localStorage.setItem("language", languageCode);
-    
+
     // Update document direction
-    const language = languages.find(lang => lang.code === languageCode);
+    const language = languages.find((lang) => lang.code === languageCode);
     if (language) {
       document.documentElement.dir = language.dir;
       document.documentElement.lang = languageCode;
     }
-    
+
     await loadTranslations(languageCode);
   };
 
   // Get translation function
   const t = (key, fallback = key) => {
     if (loading) return fallback;
-    
+
     const translation = translations[key];
     if (translation) {
       return translation;
     }
-    
+
     // If translation not found, return fallback
     console.warn(`Translation missing for key: ${key}`);
     return fallback;
   };
 
   // Get current language info
-  const getCurrentLanguageInfo = () => {
-    return languages.find(lang => lang.code === currentLanguage) || languages[0];
-  };
+  const getCurrentLanguageInfo = useCallback(() => {
+    return (
+      languages.find((lang) => lang.code === currentLanguage) || languages[0]
+    );
+  }, [languages, currentLanguage]);
 
   // Initialize
   useEffect(() => {
@@ -92,12 +107,12 @@ export const TranslationProvider = ({ children }) => {
       const languageInfo = getCurrentLanguageInfo();
       document.documentElement.dir = languageInfo.dir;
       document.documentElement.lang = currentLanguage;
-      
+
       await loadTranslations();
     };
 
     initializeTranslations();
-  }, []);
+  }, [currentLanguage, getCurrentLanguageInfo, loadTranslations]);
 
   const value = {
     currentLanguage,

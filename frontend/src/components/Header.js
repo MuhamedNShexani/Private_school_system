@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   BookOpen,
-  Home,
   Users,
   GraduationCap,
   LogOut,
@@ -18,13 +17,7 @@ import "./Header.css";
 
 const Header = ({ children }) => {
   const { user, logout } = useAuth();
-  const {
-    t,
-    currentLanguage,
-    languages,
-    changeLanguage,
-    getCurrentLanguageInfo,
-  } = useTranslation();
+  const { t, currentLanguage, languages, changeLanguage } = useTranslation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef(null);
   const sidebarRef = useRef(null);
@@ -39,8 +32,6 @@ const Header = ({ children }) => {
     logout();
     setIsProfileOpen(false);
   };
-
-  const currentLang = getCurrentLanguageInfo();
 
   const toggleProfile = () => {
     setIsProfileOpen(!isProfileOpen);
@@ -100,18 +91,18 @@ const Header = ({ children }) => {
   console.log("RTL class will be:", isRTL ? "rtl" : "ltr");
 
   // RTL styles with !important
-  const rtlSidebarStyle = isRTL
-    ? {
-        left: "auto !important",
-        right: "0 !important",
-        borderRight: "none !important",
-        borderLeft: "1px solid #e2e8f0 !important",
-        position: "fixed !important",
-        top: "0 !important",
-        height: "100vh !important",
-        zIndex: "100 !important",
-      }
-    : {};
+  // const rtlSidebarStyle = isRTL
+  //   ? {
+  //       left: "auto !important",
+  //       right: "0 !important",
+  //       borderRight: "none !important",
+  //       borderLeft: "1px solid #e2e8f0 !important",
+  //       position: "fixed !important",
+  //       top: "0 !important",
+  //       height: "100vh !important",
+  //       zIndex: "100 !important",
+  //     }
+  //   : {};
 
   if (isStudent) {
     return (
