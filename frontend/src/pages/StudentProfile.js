@@ -1211,7 +1211,7 @@ const StudentProfile = () => {
                 </p>
               </div>
             ) : (
-              <div className="training-quizzes-list">
+              <div className="training-quizzes-list" style={{ width: "300px" }}>
                 {trainingQuizzes.map(({ quiz, chapter, subject, season }) => {
                   const quizTitle = getLocalizedText(
                     quiz.titleMultilingual || quiz.title,
@@ -1298,11 +1298,16 @@ const StudentProfile = () => {
                         <button
                           type="button"
                           className="training-play-btn"
-                          onClick={() =>
+                          onClick={(e) => {
+                            e.preventDefault();
+                            console.log(
+                              "Quiz play button clicked for quiz:",
+                              quiz._id
+                            );
                             navigate(`/quizzes/${quiz._id}/play`, {
                               state: { quiz, from: "/student/profile" },
-                            })
-                          }
+                            });
+                          }}
                         >
                           <PlayCircle size={16} />
                           {t("studentProfile.playTrainingQuiz", "Play Quiz")}
@@ -2482,7 +2487,12 @@ const StudentProfile = () => {
         }
 
         .profile-hero-banner {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+          background: linear-gradient(
+            135deg,
+            #667eea 0%,
+            #764ba2 50%,
+            #f093fb 100%
+          );
           border-radius: 32px;
           padding: 48px 40px;
           display: flex;
@@ -2499,15 +2509,15 @@ const StudentProfile = () => {
           position: absolute;
           inset: 0;
           background: radial-gradient(
-            circle at 80% 20%,
-            rgba(255, 255, 255, 0.3),
-            transparent 50%
-          ),
-          radial-gradient(
-            circle at 20% 80%,
-            rgba(255, 255, 255, 0.15),
-            transparent 50%
-          );
+              circle at 80% 20%,
+              rgba(255, 255, 255, 0.3),
+              transparent 50%
+            ),
+            radial-gradient(
+              circle at 20% 80%,
+              rgba(255, 255, 255, 0.15),
+              transparent 50%
+            );
           pointer-events: none;
         }
 
@@ -2546,8 +2556,13 @@ const StudentProfile = () => {
           inset: -2px;
           border-radius: 24px;
           padding: 2px;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          background: linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.4),
+            rgba(255, 255, 255, 0.1)
+          );
+          -webkit-mask: linear-gradient(#fff 0 0) content-box,
+            linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask-composite: exclude;
         }
@@ -2696,7 +2711,12 @@ const StudentProfile = () => {
           left: 0;
           right: 0;
           height: 4px;
-          background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+          background: linear-gradient(
+            90deg,
+            #667eea 0%,
+            #764ba2 50%,
+            #f093fb 100%
+          );
           transform: scaleX(0);
           transform-origin: left;
           transition: transform 0.3s ease;
@@ -2928,30 +2948,36 @@ const StudentProfile = () => {
 
         .training-quizzes-list {
           display: flex;
-          flex-direction: column;
-          gap: 14px;
-          max-height: 480px;
-          overflow-y: auto;
-          padding-right: 8px;
+          flex-direction: row;
+          gap: 16px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding-bottom: 12px;
+          scroll-behavior: smooth;
+          scroll-snap-type: x mandatory;
+          width: 100%;
+          scroll-padding: 0;
+          max-width: 100%;
         }
 
         .training-quizzes-list::-webkit-scrollbar {
-          width: 8px;
+          height: 8px;
         }
 
         .training-quizzes-list::-webkit-scrollbar-track {
           background: #f1f5f9;
           border-radius: 10px;
+          margin-bottom: 4px;
         }
 
         .training-quizzes-list::-webkit-scrollbar-thumb {
-          background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
           border-radius: 10px;
           transition: background 0.2s ease;
         }
 
         .training-quizzes-list::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(180deg, #5568d3 0%, #6a4090 100%);
+          background: linear-gradient(90deg, #5568d3 0%, #6a4090 100%);
         }
 
         .training-quiz-card {
@@ -2964,20 +2990,30 @@ const StudentProfile = () => {
           gap: 14px;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
-          overflow: hidden;
+          overflow: visible;
+          flex: 0 0 calc(100% - 28px);
+          min-width: calc(100% - 28px);
+          scroll-snap-align: center;
+          scroll-snap-stop: always;
         }
 
         .training-quiz-card::before {
           content: "";
           position: absolute;
-          top: 0;
+          bottom: 0;
           left: 0;
           right: 0;
           height: 3px;
-          background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+          background: linear-gradient(
+            90deg,
+            #667eea 0%,
+            #764ba2 50%,
+            #f093fb 100%
+          );
           transform: scaleX(0);
           transform-origin: left;
           transition: transform 0.3s ease;
+          z-index: -1;
         }
 
         .training-quiz-card:hover {
@@ -3084,6 +3120,9 @@ const StudentProfile = () => {
           transition: all 0.3s ease;
           font-size: 0.9rem;
           box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+          position: relative;
+          z-index: 10;
+          pointer-events: auto;
         }
 
         .training-play-btn:hover {
@@ -3093,6 +3132,12 @@ const StudentProfile = () => {
 
         .training-play-btn:active {
           transform: translateY(0);
+        }
+
+        .training-play-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          pointer-events: none;
         }
 
         .table-pagination {
@@ -3389,23 +3434,24 @@ const StudentProfile = () => {
 
         @media (max-width: 768px) {
           .training-quizzes-list {
-            flex-direction: column;
+            flex-direction: row;
             gap: 12px;
-            max-height: 420px;
-            overflow-x: visible;
-            overflow-y: auto;
-            padding: 8px 6px 8px 0;
-            scroll-snap-type: none;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 8px;
+            scroll-snap-type: x mandatory;
           }
 
           .training-quizzes-list::-webkit-scrollbar {
-            width: 6px;
-            height: auto;
+            height: 6px;
+            width: auto;
           }
 
           .training-quiz-card {
-            flex: 1 1 auto;
-            scroll-snap-align: none;
+            flex: 0 0 calc(100% - 24px);
+            min-width: calc(100% - 24px);
+            scroll-snap-align: center;
+            scroll-snap-stop: always;
           }
 
           .training-quizzes-filters {
@@ -3510,7 +3556,12 @@ const StudentProfile = () => {
             text-align: center;
             gap: 20px;
             min-height: auto;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background: linear-gradient(
+              135deg,
+              #667eea 0%,
+              #764ba2 50%,
+              #f093fb 100%
+            );
           }
 
           .profile-hero-info {
