@@ -58,7 +58,7 @@ Then adjust the values as needed—for hosting with MongoDB Atlas you can keep t
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb+srv://mshexani45_db_user:j0ilNwvKkYBzFyuN@cluster0.buvzn1y.mongodb.net/?appName=Cluster0
+MONGODB_URI=mongodb+srv://mshexani45_db_user:j0ilNwvKkYBzFyuN@cluster0.buvzn1y.mongodb.net/student_exercises?appName=Cluster0
 JWT_SECRET=your-super-secret-jwt-key-here
 NODE_ENV=production
 ```

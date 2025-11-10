@@ -11,7 +11,7 @@ dotenv.config();
 // MongoDB connection
 mongoose
   .connect(
-    process.env.MONGODB_URI || "mongodb://localhost:27017/student-exercises",
+    process.env.MONGODB_URI || "mongodb://localhost:27017/student_exercises",
     {
       useNewUrlParser: true,
       useUnifiedTopology: true,

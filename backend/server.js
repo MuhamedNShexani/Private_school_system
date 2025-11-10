@@ -13,14 +13,14 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
+const mongoUri =
+  process.env.MONGODB_URI || "mongodb://localhost:27017/student_exercises";
+
 mongoose
-  .connect(
-    process.env.MONGODB_URI || "mongodb://localhost:27017/student-exercises",
-    {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    }
-  )
+  .connect(mongoUri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("MongoDB connected successfully"))
   .catch((error) => console.error("MongoDB connection error:", error));
 

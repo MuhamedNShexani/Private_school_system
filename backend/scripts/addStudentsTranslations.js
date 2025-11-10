@@ -4,7 +4,7 @@ const Translation = require("../models/Translation");
 // Connect to MongoDB
 mongoose
   .connect(
-    process.env.MONGODB_URI || "mongodb://localhost:27017/student-exercises"
+    process.env.MONGODB_URI || "mongodb://localhost:27017/student_exercises"
   )
   .then(() => console.log("MongoDB connected successfully"))
   .catch((error) => console.error("MongoDB connection error:", error));
