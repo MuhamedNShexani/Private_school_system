@@ -9,6 +9,33 @@ const {
   requireTeacherOrAdmin,
   requireAdmin,
 } = require("../middleware/auth");
+const multer = require("multer");
+const path = require("path");
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed"), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 // GET all students (Teachers and Admins only)
 router.get(
@@ -83,9 +110,11 @@ router.post(
   verifyToken,
   getCurrentUser,
   requireTeacherOrAdmin,
+  upload.single("image"),
   async (req, res) => {
     try {
       console.log("Creating student with data:", req.body);
+      console.log("File:", req.file);
       console.log("Class field:", req.body.class);
       console.log("BranchID field:", req.body.branchID);
 
@@ -99,6 +128,11 @@ router.post(
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Add image path if file was uploaded
+      if (req.file) {
+        studentData.photo = `/uploads/${req.file.filename}`;
+      }
 
       // Create student with hashed password
       const student = new Student({
@@ -157,14 +191,24 @@ router.put(
   verifyToken,
   getCurrentUser,
   requireTeacherOrAdmin,
+  upload.single("image"),
   async (req, res) => {
     try {
       console.log("Updating student with ID:", req.params.id);
       console.log("Update data:", req.body);
+      console.log("File:", req.file);
       console.log("Class field:", req.body.class);
       console.log("BranchID field:", req.body.branchID);
 
-      const student = await Student.findByIdAndUpdate(req.params.id, req.body, {
+      // Prepare update data
+      const updateData = { ...req.body };
+
+      // If a new image was uploaded, save the image path
+      if (req.file) {
+        updateData.photo = `/uploads/${req.file.filename}`;
+      }
+
+      const student = await Student.findByIdAndUpdate(req.params.id, updateData, {
         new: true,
         runValidators: true,
       }).populate("class", "name branches");

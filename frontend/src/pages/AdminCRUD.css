@@ -474,6 +474,81 @@
   margin-left: 8px;
 }
 
+/* Image Upload Styles */
+.image-input {
+  display: none;
+}
+
+.image-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.image-upload-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px;
+  border: 2px dashed #3b82f6;
+  border-radius: 8px;
+  background-color: #f0f9ff;
+  color: #3b82f6;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.image-upload-label:hover {
+  background-color: #e0f2fe;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.image-preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f9fafb;
+}
+
+.image-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 200px;
+  object-fit: cover;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 0, 0, 0.8);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background-color 0.2s ease;
+}
+
+.remove-image-btn:hover {
+  background-color: rgba(220, 38, 38, 1);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .admin-crud-container {

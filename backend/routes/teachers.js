@@ -10,6 +10,33 @@ const {
   requireAdmin,
   optionalAuth,
 } = require("../middleware/auth");
+const multer = require("multer");
+const path = require("path");
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed"), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 // GET all teachers (Public - for initial loading)
 router.get("/", optionalAuth, async (req, res) => {
@@ -110,9 +137,11 @@ router.post(
   verifyToken,
   getCurrentUser,
   requireTeacherOrAdmin,
+  upload.single("image"),
   async (req, res) => {
     try {
       console.log("Creating teacher with data:", req.body);
+      console.log("File:", req.file);
 
       // Extract password and hash it
       const { password, ...teacherData } = req.body;
@@ -124,6 +153,11 @@ router.post(
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Add image path if file was uploaded
+      if (req.file) {
+        teacherData.photo = `/uploads/${req.file.filename}`;
+      }
 
       // Create teacher with hashed password
       const teacher = new Teacher({
@@ -207,6 +241,7 @@ router.put(
   verifyToken,
   getCurrentUser,
   requireTeacherOrAdmin,
+  upload.single("image"),
   async (req, res) => {
     try {
       const existingTeacher = await Teacher.findById(req.params.id);
@@ -231,6 +266,11 @@ router.put(
         plainPassword = password;
       }
       // If password is empty or not provided, don't include it in the update
+
+      // If a new image was uploaded, save the image path
+      if (req.file) {
+        updateData.photo = `/uploads/${req.file.filename}`;
+      }
 
       const teacher = await Teacher.findByIdAndUpdate(
         req.params.id,

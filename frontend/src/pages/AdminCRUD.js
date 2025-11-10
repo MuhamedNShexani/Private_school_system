@@ -14,6 +14,8 @@ import {
   Search,
   Save,
   X,
+  Upload,
+  Image,
 } from "lucide-react";
 import "./AdminCRUD.css";
 
@@ -43,7 +45,9 @@ const AdminCRUD = () => {
     classes: [],
     branches: [],
     experience: "",
+    image: null,
   });
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -75,6 +79,7 @@ const AdminCRUD = () => {
 
   const handleCreate = () => {
     setEditingItem(null);
+    setImagePreview(null);
     setFormData({
       fullName: "",
       name: "",
@@ -89,6 +94,7 @@ const AdminCRUD = () => {
       classes: [],
       branches: [],
       experience: "",
+      image: null,
     });
     setShowModal(true);
   };
@@ -96,6 +102,13 @@ const AdminCRUD = () => {
   const handleEdit = (item) => {
     setEditingItem(item);
     console.log("Editing item:", item);
+    
+    // Set image preview if it exists (backend returns 'photo' field)
+    if (item.photo) {
+      setImagePreview(item.photo);
+    } else {
+      setImagePreview(null);
+    }
 
     if (activeTab === "students") {
       // Handle student data
@@ -113,6 +126,7 @@ const AdminCRUD = () => {
         classes: item.class ? [item.class._id || item.class] : [],
         branches: item.branchID ? [item.branchID] : [],
         experience: "",
+        image: null,
       };
 
       console.log("Setting student form data:", formDataToSet);
@@ -157,6 +171,7 @@ const AdminCRUD = () => {
         classes: classes,
         branches: branches,
         experience: item.experience?.toString() || "",
+        image: null,
       };
 
       console.log("Setting teacher form data:", formDataToSet);
@@ -164,6 +179,32 @@ const AdminCRUD = () => {
     }
 
     setShowModal(true);
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        setError("Please select a valid image file");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image size must be less than 5MB");
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+        setFormData({ ...formData, image: file });
+        setError("");
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleDelete = async (id, type) => {
@@ -195,22 +236,40 @@ const AdminCRUD = () => {
         // Update existing item
         if (activeTab === "students") {
           // Prepare student data for API update
-          const studentData = {
-            fullName: formData.fullName,
-            email: formData.email,
-            phone: formData.phone || undefined,
-            username: formData.username,
-            parentsNumber: formData.parentsNumber || undefined,
-            class: formData.classes[0] || undefined,
-            branchID: formData.branches[0] || undefined,
-            gender: formData.gender || editingItem.gender || "Other",
-            studentNumber: editingItem.studentNumber, // Keep existing student number
-          };
+          let studentFormData;
+          
+          if (formData.image instanceof File) {
+            // Has new image - use FormData
+            studentFormData = new FormData();
+            studentFormData.append("fullName", formData.fullName);
+            studentFormData.append("email", formData.email);
+            if (formData.phone) studentFormData.append("phone", formData.phone);
+            studentFormData.append("username", formData.username);
+            if (formData.parentsNumber) studentFormData.append("parentsNumber", formData.parentsNumber);
+            if (formData.classes[0]) studentFormData.append("class", formData.classes[0]);
+            if (formData.branches[0]) studentFormData.append("branchID", formData.branches[0]);
+            studentFormData.append("gender", formData.gender || editingItem.gender || "Other");
+            studentFormData.append("studentNumber", editingItem.studentNumber);
+            studentFormData.append("image", formData.image);
+          } else {
+            // No new image - use regular object
+            studentFormData = {
+              fullName: formData.fullName,
+              email: formData.email,
+              phone: formData.phone || undefined,
+              username: formData.username,
+              parentsNumber: formData.parentsNumber || undefined,
+              class: formData.classes[0] || undefined,
+              branchID: formData.branches[0] || undefined,
+              gender: formData.gender || editingItem.gender || "Other",
+              studentNumber: editingItem.studentNumber,
+            };
+          }
 
-          console.log("Updating student with data:", studentData);
+          console.log("Updating student with data:", studentFormData);
           const response = await studentsAPI.update(
             editingItem._id,
-            studentData
+            studentFormData
           );
           setStudents(
             students.map((s) =>
@@ -219,28 +278,55 @@ const AdminCRUD = () => {
           );
         } else {
           // Prepare teacher data for API (all fields that Teacher model now supports)
-          const teacherData = {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone || undefined, // Don't send empty string
-            gender: formData.gender || undefined,
-            subjects: formData.subjects || [],
-            classes: formData.classes || [],
-            branches: formData.branches || [],
-            username: formData.username || undefined, // Don't send empty string
-            experience: parseInt(formData.experience) || 0,
-          };
+          let teacherFormData;
+          
+          if (formData.image instanceof File) {
+            // Has new image - use FormData
+            teacherFormData = new FormData();
+            teacherFormData.append("name", formData.name);
+            teacherFormData.append("email", formData.email);
+            if (formData.phone) teacherFormData.append("phone", formData.phone);
+            if (formData.gender) teacherFormData.append("gender", formData.gender);
+            if (formData.subjects?.length) {
+              formData.subjects.forEach(s => teacherFormData.append("subjects", s));
+            }
+            if (formData.classes?.length) {
+              formData.classes.forEach(c => teacherFormData.append("classes", c));
+            }
+            if (formData.branches?.length) {
+              formData.branches.forEach(b => teacherFormData.append("branches", b));
+            }
+            if (formData.username) teacherFormData.append("username", formData.username);
+            teacherFormData.append("experience", parseInt(formData.experience) || 0);
+            if (formData.password && formData.password.trim() !== "") {
+              teacherFormData.append("password", formData.password);
+            }
+            teacherFormData.append("image", formData.image);
+          } else {
+            // No new image - use regular object
+            teacherFormData = {
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone || undefined,
+              gender: formData.gender || undefined,
+              subjects: formData.subjects || [],
+              classes: formData.classes || [],
+              branches: formData.branches || [],
+              username: formData.username || undefined,
+              experience: parseInt(formData.experience) || 0,
+            };
 
-          // Only include password if it's provided (not empty)
-          if (formData.password && formData.password.trim() !== "") {
-            teacherData.password = formData.password;
+            // Only include password if it's provided (not empty)
+            if (formData.password && formData.password.trim() !== "") {
+              teacherFormData.password = formData.password;
+            }
           }
 
-          console.log("Updating teacher with data:", teacherData);
+          console.log("Updating teacher with data:", teacherFormData);
           console.log("Form data being used:", formData);
           const response = await teachersAPI.update(
             editingItem._id,
-            teacherData
+            teacherFormData
           );
           console.log("Teacher update response:", response);
 
@@ -273,21 +359,40 @@ const AdminCRUD = () => {
           }
 
           // Prepare student data for API
-          const studentData = {
-            fullName: formData.fullName,
-            email: formData.email,
-            phone: formData.phone || undefined,
-            username: formData.username,
-            parentsNumber: formData.parentsNumber || undefined,
-            class: formData.classes[0] || undefined, // Use first selected class
-            branchID: formData.branches[0] || undefined, // Use first selected branch
-            gender: formData.gender || "Other",
-            studentNumber: `STU${Date.now()}`, // Generate student number
-            password: formData.password,
-          };
+          let studentFormData;
+          
+          if (formData.image instanceof File) {
+            // Has image - use FormData
+            studentFormData = new FormData();
+            studentFormData.append("fullName", formData.fullName);
+            studentFormData.append("email", formData.email);
+            if (formData.phone) studentFormData.append("phone", formData.phone);
+            studentFormData.append("username", formData.username);
+            if (formData.parentsNumber) studentFormData.append("parentsNumber", formData.parentsNumber);
+            if (formData.classes[0]) studentFormData.append("class", formData.classes[0]);
+            if (formData.branches[0]) studentFormData.append("branchID", formData.branches[0]);
+            studentFormData.append("gender", formData.gender || "Other");
+            studentFormData.append("studentNumber", `STU${Date.now()}`);
+            studentFormData.append("password", formData.password);
+            studentFormData.append("image", formData.image);
+          } else {
+            // No image - use regular object
+            studentFormData = {
+              fullName: formData.fullName,
+              email: formData.email,
+              phone: formData.phone || undefined,
+              username: formData.username,
+              parentsNumber: formData.parentsNumber || undefined,
+              class: formData.classes[0] || undefined,
+              branchID: formData.branches[0] || undefined,
+              gender: formData.gender || "Other",
+              studentNumber: `STU${Date.now()}`,
+              password: formData.password,
+            };
+          }
 
-          console.log("Creating student with data:", studentData);
-          const response = await studentsAPI.create(studentData);
+          console.log("Creating student with data:", studentFormData);
+          const response = await studentsAPI.create(studentFormData);
           setStudents([...students, response.data]);
         } else {
           // Validate required fields for teacher creation
@@ -304,31 +409,46 @@ const AdminCRUD = () => {
           }
 
           // Prepare teacher data for API (all fields that Teacher model now supports)
-          const teacherData = {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone || undefined, // Don't send empty string
-            gender: formData.gender || undefined,
-            subjects: formData.subjects || [],
-            classes: formData.classes || [],
-            branches: formData.branches || [],
-            username: formData.username,
-            password: formData.password,
-            experience: parseInt(formData.experience) || 0,
-          };
+          let teacherFormData;
+          
+          if (formData.image instanceof File) {
+            // Has image - use FormData
+            teacherFormData = new FormData();
+            teacherFormData.append("name", formData.name);
+            teacherFormData.append("email", formData.email);
+            if (formData.phone) teacherFormData.append("phone", formData.phone);
+            if (formData.gender) teacherFormData.append("gender", formData.gender);
+            if (formData.subjects?.length) {
+              formData.subjects.forEach(s => teacherFormData.append("subjects", s));
+            }
+            if (formData.classes?.length) {
+              formData.classes.forEach(c => teacherFormData.append("classes", c));
+            }
+            if (formData.branches?.length) {
+              formData.branches.forEach(b => teacherFormData.append("branches", b));
+            }
+            teacherFormData.append("username", formData.username);
+            teacherFormData.append("password", formData.password);
+            teacherFormData.append("experience", parseInt(formData.experience) || 0);
+            teacherFormData.append("image", formData.image);
+          } else {
+            // No image - use regular object
+            teacherFormData = {
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone || undefined,
+              gender: formData.gender || undefined,
+              subjects: formData.subjects || [],
+              classes: formData.classes || [],
+              branches: formData.branches || [],
+              username: formData.username,
+              password: formData.password,
+              experience: parseInt(formData.experience) || 0,
+            };
+          }
 
-          console.log("Creating teacher with data:", teacherData);
-          console.log("Data types:", {
-            name: typeof teacherData.name,
-            email: typeof teacherData.email,
-            phone: typeof teacherData.phone,
-            subjects: Array.isArray(teacherData.subjects),
-            classes: Array.isArray(teacherData.classes),
-            branches: Array.isArray(teacherData.branches),
-            username: typeof teacherData.username,
-            experience: typeof teacherData.experience,
-          });
-          const response = await teachersAPI.create(teacherData);
+          console.log("Creating teacher with data:", teacherFormData);
+          const response = await teachersAPI.create(teacherFormData);
           console.log("Teacher create response:", response);
 
           // Add the new teacher to the list
@@ -336,6 +456,7 @@ const AdminCRUD = () => {
         }
       }
       setShowModal(false);
+      setImagePreview(null);
       setFormData({
         name: "",
         email: "",
@@ -349,6 +470,7 @@ const AdminCRUD = () => {
         classes: [],
         branches: [],
         experience: "",
+        image: null,
       });
 
       // Refresh data to ensure consistency
@@ -697,6 +819,38 @@ const AdminCRUD = () => {
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+
+              <div className="form-group">
+                <label>Profile Image</label>
+                <div className="image-upload-container">
+                  <input
+                    type="file"
+                    id="image-input"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="image-input"
+                  />
+                  <label htmlFor="image-input" className="image-upload-label">
+                    <Upload size={20} />
+                    <span>Click to upload image</span>
+                  </label>
+                  {imagePreview && (
+                    <div className="image-preview">
+                      <img src={imagePreview} alt="Preview" />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setFormData({ ...formData, image: null });
+                        }}
+                        className="remove-image-btn"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {activeTab === "teachers" && (
