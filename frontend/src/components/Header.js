@@ -119,8 +119,8 @@ const Header = ({ children }) => {
       >
         <header className="student-top-bar">
           <Link to="/student/profile" className="student-logo">
-            <GraduationCap size={26} />
-            <span>EduPlatform</span>
+            <img src="/logo.jpg" alt="School Logo" className="student-logo-img" />
+            <span>CLEVER PRIVATE HIGH SCHOOL</span>
           </Link>
           <div className="student-top-actions">
             <div className="student-language-switcher">
@@ -226,8 +226,8 @@ const Header = ({ children }) => {
         {/* School Logo - Top */}
         <div className="sidebar-header">
           <Link to="/" className="logo">
-            <GraduationCap size={32} />
-            <span>EduPlatform</span>
+            <img src="/logo.jpg" alt="School Logo" className="sidebar-logo-img" />
+            <span>CLEVER PRIVATE HIGH SCHOOL</span>
           </Link>
         </div>
 

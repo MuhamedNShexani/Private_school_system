@@ -141,6 +141,13 @@
   color: #3b82f6;
 }
 
+.sidebar-logo-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
 /* Sidebar Navigation */
 .sidebar-nav {
   flex: 1;
@@ -419,6 +426,13 @@
 
 .student-logo:hover {
   color: #2563eb;
+}
+
+.student-logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 6px;
 }
 
 .student-top-actions {
