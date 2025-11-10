@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { studentsAPI, gradesAPI, classesAPI } from "../services/api";
-import { Plus, Edit, Trash2, Eye, Users, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Search } from "lucide-react";
 import "./StudentManagement.css";
 
 const StudentManagement = () => {

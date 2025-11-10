@@ -447,7 +447,7 @@ const StudentProfile = () => {
     if (user) {
       fetchStudentData();
     }
-  }, [user, searchParams, currentLanguage, t]);
+  }, [user, searchParams, currentLanguage, t, subjectIsAllowed]);
 
   // Get status badge color
   const getStatusColor = (status) => {

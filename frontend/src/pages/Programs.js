@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "../contexts/TranslationContext";
@@ -8,7 +8,6 @@ import {
   chaptersAPI,
   classesAPI,
   partsAPI,
-  exercisesAPI,
   quizzesAPI,
 } from "../services/api";
 import {
@@ -24,7 +23,6 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  Target,
   ClipboardList,
 } from "lucide-react";
 
@@ -101,7 +99,6 @@ const Programs = () => {
   const canManageSeasons = isAdmin;
   const canManageChapters = isAdmin || isTeacher;
   const canManageParts = isAdmin || isTeacher;
-  const canManageExercises = isAdmin || isTeacher;
 
   // Modal states for CRUD operations
   const [showModal, setShowModal] = useState(false);
@@ -204,7 +201,7 @@ const Programs = () => {
     return Array.from(names);
   };
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
       const currentLang = localStorage.getItem("language") || "en";
@@ -284,11 +281,11 @@ const Programs = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+  }, [fetchAllData]);
 
   // Filter subjects based on teacher's assigned subjects
   useEffect(() => {

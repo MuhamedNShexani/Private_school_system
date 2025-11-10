@@ -66,20 +66,21 @@ const QuizPlayer = () => {
   );
 
   const getLocalizedText = useMemo(
-    () => (value, fallback = "") => {
-      if (!value) return fallback;
-      if (typeof value === "string") return value;
-      if (typeof value === "object") {
-        return (
-          value[currentLanguage] ||
-          value.en ||
-          value.ar ||
-          value.ku ||
-          fallback
-        );
-      }
-      return fallback;
-    },
+    () =>
+      (value, fallback = "") => {
+        if (!value) return fallback;
+        if (typeof value === "string") return value;
+        if (typeof value === "object") {
+          return (
+            value[currentLanguage] ||
+            value.en ||
+            value.ar ||
+            value.ku ||
+            fallback
+          );
+        }
+        return fallback;
+      },
     [currentLanguage]
   );
 
@@ -130,7 +131,7 @@ const QuizPlayer = () => {
     setSubmitted(false);
     setResult(null);
     setCurrentQuestionIndex(0);
-  }, [quiz?._id]);
+  }, [quiz]);
 
   const questions = Array.isArray(quiz?.questions) ? quiz.questions : [];
   const totalQuestions = questions.length;
@@ -178,9 +179,7 @@ const QuizPlayer = () => {
 
       if (question.type === "multiple_choice") {
         const selectedChoiceId = answers[questionIndex];
-        const choices = Array.isArray(question.choices)
-          ? question.choices
-          : [];
+        const choices = Array.isArray(question.choices) ? question.choices : [];
         const selectedChoice = choices.find(
           (choice) => choice.id === selectedChoiceId
         );
@@ -262,9 +261,7 @@ const QuizPlayer = () => {
   };
 
   const goToNext = () => {
-    setCurrentQuestionIndex((prev) =>
-      Math.min(prev + 1, totalQuestions - 1)
-    );
+    setCurrentQuestionIndex((prev) => Math.min(prev + 1, totalQuestions - 1));
   };
 
   const renderMultipleChoice = (question, questionIndex) => {
@@ -300,10 +297,18 @@ const QuizPlayer = () => {
                 name={`question-${questionIndex}`}
                 value={choice?.id || choiceKey}
                 checked={isSelected}
-                onChange={() => handleMultipleChoiceChange(questionIndex, choice?.id || choiceKey)}
+                onChange={() =>
+                  handleMultipleChoiceChange(
+                    questionIndex,
+                    choice?.id || choiceKey
+                  )
+                }
                 disabled={submitted}
               />
-              <span>{choice?.text || t("quizPlayer.choice.noText", "Untitled choice")}</span>
+              <span>
+                {choice?.text ||
+                  t("quizPlayer.choice.noText", "Untitled choice")}
+              </span>
             </label>
           );
         })}
@@ -333,7 +338,10 @@ const QuizPlayer = () => {
             : "";
 
           return (
-            <label key={String(value)} className={`true-false-item ${stateClass}`}>
+            <label
+              key={String(value)}
+              className={`true-false-item ${stateClass}`}
+            >
               <input
                 type="radio"
                 name={`question-${questionIndex}`}
@@ -381,7 +389,10 @@ const QuizPlayer = () => {
 
           return (
             <div key={pairKey} className={`matching-row ${stateClass}`}>
-              <span className="matching-left">{pair?.left || t("quizPlayer.matching.placeholderLeft", "Left side")}</span>
+              <span className="matching-left">
+                {pair?.left ||
+                  t("quizPlayer.matching.placeholderLeft", "Left side")}
+              </span>
               <span className="matching-arrow">⇔</span>
               <select
                 value={selectedValue}
@@ -406,7 +417,8 @@ const QuizPlayer = () => {
               {showState && !evaluation.correct && (
                 <span className="matching-feedback">
                   {t("quizPlayer.matching.correctAnswer", "Correct:")}{" "}
-                  {evaluation.pair?.right || t("quizPlayer.matching.noAnswer", "N/A")}
+                  {evaluation.pair?.right ||
+                    t("quizPlayer.matching.noAnswer", "N/A")}
                 </span>
               )}
             </div>
@@ -434,9 +446,12 @@ const QuizPlayer = () => {
           {question.prompt || t("quizPlayer.noPrompt", "No prompt provided.")}
         </div>
 
-        {question.type === "multiple_choice" && renderMultipleChoice(question, questionIndex)}
-        {question.type === "true_false" && renderTrueFalse(question, questionIndex)}
-        {question.type === "matching" && renderMatching(question, questionIndex)}
+        {question.type === "multiple_choice" &&
+          renderMultipleChoice(question, questionIndex)}
+        {question.type === "true_false" &&
+          renderTrueFalse(question, questionIndex)}
+        {question.type === "matching" &&
+          renderMatching(question, questionIndex)}
 
         {submitted && result?.breakdown?.[questionIndex] && (
           <div
@@ -447,7 +462,9 @@ const QuizPlayer = () => {
             {result.breakdown[questionIndex].correct ? (
               <div className="feedback-message">
                 <CheckCircle2 size={18} />
-                <span>{t("quizPlayer.feedback.correct", "Correct answer!")}</span>
+                <span>
+                  {t("quizPlayer.feedback.correct", "Correct answer!")}
+                </span>
               </div>
             ) : (
               <div className="feedback-message">
@@ -461,9 +478,7 @@ const QuizPlayer = () => {
               </div>
             )}
             {question.explanation?.trim() && (
-              <div className="explanation">
-                {question.explanation.trim()}
-              </div>
+              <div className="explanation">{question.explanation.trim()}</div>
             )}
           </div>
         )}
@@ -474,11 +489,7 @@ const QuizPlayer = () => {
   return (
     <div className="quiz-player-page">
       <div className="container">
-        <button
-          type="button"
-          className="back-btn"
-          onClick={() => navigate(-1)}
-        >
+        <button type="button" className="back-btn" onClick={() => navigate(-1)}>
           <ChevronLeft size={18} />
           {t("btn.back", "Back")}
         </button>
@@ -515,11 +526,9 @@ const QuizPlayer = () => {
                 </h1>
                 <div className="quiz-subtitle">
                   <span>
-                    {t(
-                      "quizPlayer.questionCount",
-                      "{{count}} questions",
-                      { count: totalQuestions }
-                    )}
+                    {t("quizPlayer.questionCount", "{{count}} questions", {
+                      count: totalQuestions,
+                    })}
                   </span>
                   {quiz.chapter && (
                     <span className="dot">
@@ -1025,5 +1034,3 @@ const QuizPlayer = () => {
 };
 
 export default QuizPlayer;
-
-
