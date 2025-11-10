@@ -1,0 +1,1 @@
+in class table attr (branches) add (ID) for each branches , then add (BranchID)attr for students table , link them

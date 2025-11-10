@@ -1,0 +1,85 @@
+const mongoose = require("mongoose");
+
+const studentSchema = new mongoose.Schema({
+  fullName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    lowercase: true,
+  },
+  phone: {
+    type: String,
+    trim: true,
+  },
+  class: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Class",
+    required: true,
+  },
+  parentsNumber: {
+    type: String,
+    trim: true,
+  },
+  username: {
+    type: String,
+    unique: true,
+    required: true,
+    trim: true,
+  },
+  branchID: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+  },
+  gender: {
+    type: String,
+    required: true,
+    enum: ["Male", "Female", "Other"],
+  },
+  photo: {
+    type: String,
+    default: null, // URL or path to photo
+  },
+  studentNumber: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  status: {
+    type: mongoose.Schema.Types.Mixed, // Object to store status for each subject
+    default: {},
+  },
+  paymentStatus: {
+    type: String,
+    enum: ["Paid", "Unpaid", "Partial"],
+    default: "Unpaid",
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+// Update the updatedAt field before saving
+studentSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Index for efficient queries
+studentSchema.index({ class: 1 });
+studentSchema.index({ branchID: 1 });
+studentSchema.index({ fullName: 1 });
+studentSchema.index({ email: 1 });
+studentSchema.index({ username: 1 });
+
+module.exports = mongoose.model("Student", studentSchema);
