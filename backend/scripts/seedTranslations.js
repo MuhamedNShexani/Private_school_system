@@ -456,6 +456,18 @@ const seedTranslations = async () => {
         category: "admin",
         description: "Kurdish language label",
       },
+
+      // App
+      {
+        key: "app.schoolName",
+        translations: {
+          en: "CLEVER PRIVATE HIGH SCHOOL",
+          ar: "مدرسة كليفر الخاصة الثانوية",
+          ku: "قوتابخانەی تایبەتی کلیفەر",
+        },
+        category: "app",
+        description: "School name displayed in header",
+      },
     ];
 
     await Translation.insertMany(translationsData);

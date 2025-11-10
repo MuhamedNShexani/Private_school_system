@@ -124,7 +124,7 @@ const Header = ({ children }) => {
               alt="School Logo"
               className="student-logo-img"
             />
-            <span>CLEVER PRIVATE HIGH SCHOOL</span>
+            <span>{t("app.schoolName", "CLEVER PRIVATE HIGH SCHOOL")}</span>
           </Link>
           <div className="student-top-actions">
             <div className="student-language-switcher">
@@ -235,7 +235,7 @@ const Header = ({ children }) => {
               alt="School Logo"
               className="sidebar-logo-img"
             />
-            <span>CLEVER PRIVATE HIGH SCHOOL</span>
+            <span>{t("app.schoolName", "CLEVER PRIVATE HIGH SCHOOL")}</span>
           </Link>
         </div>
 
@@ -410,10 +410,7 @@ const Header = ({ children }) => {
             </div>
 
             {/* Bottom Section: Logout */}
-            <button
-              onClick={handleLogout}
-              className="profile-logout"
-            >
+            <button onClick={handleLogout} className="profile-logout">
               <LogOut size={16} />
               <span>{t("btn.logout", "Logout")}</span>
             </button>
