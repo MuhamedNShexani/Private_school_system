@@ -1372,9 +1372,27 @@ const ChapterQuizzes = () => {
         }
 
         .quizzes-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+          max-height: clamp(360px, 60vh, 620px);
+          overflow-y: auto;
+          padding-right: 8px;
+          scroll-behavior: smooth;
+        }
+
+        .quizzes-grid::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .quizzes-grid::-webkit-scrollbar-thumb {
+          background: rgba(148, 163, 184, 0.45);
+          border-radius: 999px;
+        }
+
+        .quizzes-grid::-webkit-scrollbar-track {
+          background: rgba(226, 232, 240, 0.4);
+          border-radius: 999px;
         }
 
         .quiz-card {
@@ -1839,6 +1857,12 @@ const ChapterQuizzes = () => {
           .quizzes-header {
             flex-direction: column;
             align-items: flex-start;
+          }
+
+          .quizzes-grid {
+            max-height: none;
+            overflow-y: visible;
+            padding-right: 0;
           }
 
           .quiz-card {

@@ -2417,50 +2417,81 @@ const StudentProfile = () => {
       <style jsx>{`
         .profile-layout {
           display: grid;
-          gap: 32px;
+          gap: 28px;
           grid-template-columns: 1fr;
+          animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .profile-card {
           background: #ffffff;
-          border-radius: 20px;
-          padding: 28px;
-          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
-          border: 1px solid rgba(148, 163, 184, 0.25);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          border-radius: 24px;
+          padding: 32px;
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+          border: 1px solid rgba(226, 232, 240, 0.5);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          backdrop-filter: blur(10px);
         }
 
         .profile-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+          transform: translateY(-2px);
+          box-shadow: 0 16px 40px rgba(15, 23, 42, 0.1);
+          border-color: rgba(102, 126, 234, 0.2);
         }
 
         .profile-card h3 {
-          margin: 0 0 18px 0;
-          font-size: 1.25rem;
-          font-weight: 700;
+          margin: 0 0 24px 0;
+          font-size: 1.5rem;
+          font-weight: 800;
           color: #0f172a;
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .profile-hero-card {
-          border-radius: 28px;
+          border-radius: 32px;
           position: relative;
-          filter: drop-shadow(0 24px 48px rgba(8, 121, 79, 0.25));
+          overflow: hidden;
+          animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
         .profile-hero-banner {
-          background: linear-gradient(135deg, #0ca36a 0%, #08794f 100%);
-          border-radius: 28px;
-          padding: 36px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+          border-radius: 32px;
+          padding: 48px 40px;
           display: flex;
           align-items: center;
-          gap: 28px;
+          gap: 40px;
           position: relative;
           overflow: hidden;
-          min-height: 200px;
+          min-height: 240px;
+          box-shadow: 0 20px 60px rgba(102, 126, 234, 0.2);
         }
 
         .profile-hero-banner::before {
@@ -2468,10 +2499,24 @@ const StudentProfile = () => {
           position: absolute;
           inset: 0;
           background: radial-gradient(
-            circle at top right,
-            rgba(255, 255, 255, 0.18),
-            transparent 65%
+            circle at 80% 20%,
+            rgba(255, 255, 255, 0.3),
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 20% 80%,
+            rgba(255, 255, 255, 0.15),
+            transparent 50%
           );
+          pointer-events: none;
+        }
+
+        .profile-hero-banner::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
+          opacity: 0.5;
           pointer-events: none;
         }
 
@@ -2481,28 +2526,28 @@ const StudentProfile = () => {
         }
 
         .student-avatar {
-          width: 120px;
-          height: 120px;
-          border-radius: 50%;
+          width: 140px;
+          height: 140px;
+          border-radius: 28px;
           overflow: hidden;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-          border: 4px solid white;
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+          border: 6px solid rgba(255, 255, 255, 0.95);
           position: relative;
+          flex-shrink: 0;
         }
 
         .student-avatar::after {
           content: "";
           position: absolute;
           inset: -2px;
-          border-radius: 50%;
+          border-radius: 24px;
           padding: 2px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          -webkit-mask: linear-gradient(#fff 0 0) content-box,
-            linear-gradient(#fff 0 0);
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask-composite: exclude;
         }
@@ -2516,12 +2561,12 @@ const StudentProfile = () => {
         .avatar-placeholder {
           width: 100%;
           height: 100%;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
+          background: linear-gradient(135deg, #e0e7ff 0%, #fce7f3 100%);
+          color: #667eea;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 48px;
+          font-size: 56px;
           font-weight: 700;
           letter-spacing: 2px;
         }
@@ -2531,22 +2576,23 @@ const StudentProfile = () => {
           display: flex;
           flex-direction: column;
           align-items: flex-start;
-          gap: 12px;
+          gap: 16px;
         }
 
         .profile-hero-info h2 {
           margin: 0;
-          font-size: 2.25rem;
-          font-weight: 700;
+          font-size: 2.5rem;
+          font-weight: 800;
           color: #ffffff;
-          letter-spacing: -0.5px;
+          letter-spacing: -1px;
+          line-height: 1.1;
         }
 
         .profile-hero-meta {
           display: flex;
           flex-wrap: wrap;
-          gap: 12px;
-          color: rgba(255, 255, 255, 0.85);
+          gap: 10px;
+          color: rgba(255, 255, 255, 0.9);
           font-size: 0.95rem;
           font-weight: 500;
         }
@@ -2555,20 +2601,31 @@ const StudentProfile = () => {
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          background: rgba(255, 255, 255, 0.2);
+          padding: 6px 12px;
+          border-radius: 20px;
+          backdrop-filter: blur(10px);
         }
 
         .profile-hero-chip {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: rgba(15, 23, 42, 0.2);
+          background: rgba(255, 255, 255, 0.18);
           color: #ffffff;
-          padding: 6px 14px;
-          border-radius: 999px;
+          padding: 8px 16px;
+          border-radius: 20px;
           font-size: 0.85rem;
           font-weight: 600;
-          letter-spacing: 0.2px;
-          box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+          letter-spacing: 0.3px;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          transition: all 0.3s ease;
+        }
+
+        .profile-hero-chip:hover {
+          background: rgba(255, 255, 255, 0.25);
+          transform: translateY(-2px);
         }
 
         .profile-hero-chip svg {
@@ -2579,30 +2636,39 @@ const StudentProfile = () => {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background: rgba(255, 255, 255, 0.18);
+          background: rgba(255, 255, 255, 0.2);
           color: #ffffff;
-          padding: 8px 18px;
-          border-radius: 999px;
-          font-size: 0.875rem;
-          font-weight: 600;
-          letter-spacing: 0.4px;
+          padding: 10px 20px;
+          border-radius: 20px;
+          font-size: 0.9rem;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .profile-hero-status {
           display: flex;
-          align-items: flex-start;
-          justify-content: flex-end;
+          align-items: center;
+          justify-content: center;
         }
 
         .status-badge {
           color: #ffffff;
-          padding: 10px 22px;
-          border-radius: 999px;
+          padding: 12px 28px;
+          border-radius: 20px;
           font-size: 0.9rem;
           font-weight: 700;
-          text-transform: capitalize;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
-          letter-spacing: 0.4px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+          backdrop-filter: blur(10px);
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          transition: all 0.3s ease;
+        }
+
+        .status-badge:hover {
+          transform: scale(1.05);
         }
 
         .profile-info-grid {
@@ -2613,30 +2679,61 @@ const StudentProfile = () => {
         }
 
         .info-card {
-          background: #ffffff;
-          border-radius: 20px;
-          padding: 28px;
-          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
-          border: 1px solid rgba(148, 163, 184, 0.25);
-          transition: box-shadow 0.3s ease, transform 0.3s ease;
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border-radius: 24px;
+          padding: 32px;
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+          border: 1px solid rgba(226, 232, 240, 0.6);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .info-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform 0.3s ease;
         }
 
         .info-card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 22px 48px rgba(15, 23, 42, 0.12);
+          box-shadow: 0 16px 40px rgba(15, 23, 42, 0.1);
+          border-color: rgba(102, 126, 234, 0.2);
+        }
+
+        .info-card:hover::before {
+          transform: scaleX(1);
         }
 
         .info-card h3 {
           margin: 0;
-          font-size: 1.25rem;
+          font-size: 1.3rem;
           font-weight: 700;
           color: #0f172a;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .info-card h3::before {
+          content: "";
+          width: 4px;
+          height: 20px;
+          background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+          border-radius: 2px;
         }
 
         .info-list {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 12px;
           margin-top: 20px;
         }
 
@@ -2644,25 +2741,30 @@ const StudentProfile = () => {
           display: flex;
           align-items: center;
           gap: 14px;
-          color: #1e293b;
+          color: #475569;
           font-size: 0.95rem;
           padding: 14px 18px;
-          background: #f8fafc;
-          border-radius: 16px;
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          border-radius: 14px;
           border: 1px solid #e2e8f0;
-          transition: transform 0.2s ease, border 0.2s ease,
-            background 0.2s ease;
+          transition: all 0.2s ease;
         }
 
         .info-item:hover {
           transform: translateX(6px);
-          border-color: #cbd5e1;
-          background: #f1f5f9;
+          border-color: #667eea;
+          background: linear-gradient(135deg, #eef2ff 0%, #f3f4f6 100%);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
         }
 
         .info-item svg {
-          color: #6366f1;
+          color: #667eea;
           flex-shrink: 0;
+          transition: transform 0.2s ease;
+        }
+
+        .info-item:hover svg {
+          transform: scale(1.1);
         }
 
         .evaluations-list {
@@ -2761,116 +2863,174 @@ const StudentProfile = () => {
         .training-quizzes-header {
           display: flex;
           flex-direction: column;
-          gap: 16px;
-          margin-bottom: 16px;
+          gap: 20px;
+          margin-bottom: 24px;
         }
 
         .training-quizzes-header-text h3 {
           margin: 0;
-          font-size: 1.35rem;
-          font-weight: 700;
-          color: #0f172a;
+          font-size: 1.5rem;
+          font-weight: 800;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
         .training-quizzes-note {
           color: #64748b;
           font-size: 0.9rem;
-          line-height: 1.4;
+          line-height: 1.6;
+          font-weight: 500;
         }
 
         .training-quizzes-filters {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 12px;
+          gap: 14px;
         }
 
         .filter-control {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 8px;
         }
 
         .filter-control label {
           font-size: 0.8rem;
-          font-weight: 600;
-          color: #475569;
+          font-weight: 700;
+          color: #0f172a;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
 
         .filter-control select {
-          border-radius: 10px;
-          border: 1px solid #cbd5e1;
-          padding: 8px 10px;
+          border-radius: 12px;
+          border: 1.5px solid #e2e8f0;
+          padding: 10px 12px;
           font-size: 0.9rem;
           color: #0f172a;
           background: #ffffff;
+          transition: all 0.2s ease;
+          font-weight: 500;
+        }
+
+        .filter-control select:hover {
+          border-color: #667eea;
+          background: #f8fafc;
+        }
+
+        .filter-control select:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .training-quizzes-list {
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          max-height: 420px;
+          gap: 14px;
+          max-height: 480px;
           overflow-y: auto;
-          padding-right: 6px;
+          padding-right: 8px;
         }
 
         .training-quizzes-list::-webkit-scrollbar {
-          width: 6px;
+          width: 8px;
+        }
+
+        .training-quizzes-list::-webkit-scrollbar-track {
+          background: #f1f5f9;
+          border-radius: 10px;
         }
 
         .training-quizzes-list::-webkit-scrollbar-thumb {
-          background: rgba(148, 163, 184, 0.4);
-          border-radius: 999px;
+          background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+          border-radius: 10px;
+          transition: background 0.2s ease;
+        }
+
+        .training-quizzes-list::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(180deg, #5568d3 0%, #6a4090 100%);
         }
 
         .training-quiz-card {
-          background: #ffffff;
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 184, 0.24);
-          padding: 14px 16px;
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border-radius: 16px;
+          border: 1px solid rgba(226, 232, 240, 0.6);
+          padding: 18px 20px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          transition: border-color 0.2s ease, transform 0.2s ease;
+          gap: 14px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .training-quiz-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform 0.3s ease;
         }
 
         .training-quiz-card:hover {
-          border-color: #2563eb;
-          transform: translateY(-1px);
+          border-color: #667eea;
+          transform: translateY(-4px);
+          box-shadow: 0 12px 32px rgba(102, 126, 234, 0.15);
+        }
+
+        .training-quiz-card:hover::before {
+          transform: scaleX(1);
         }
 
         .training-quiz-header {
           display: flex;
           align-items: flex-start;
-          gap: 12px;
+          gap: 14px;
         }
 
         .training-quiz-header svg {
-          color: #f59e0b;
+          color: #667eea;
           flex-shrink: 0;
+          transition: transform 0.2s ease;
+        }
+
+        .training-quiz-card:hover .training-quiz-header svg {
+          transform: rotate(-5deg) scale(1.1);
         }
 
         .training-quiz-titles h4 {
           margin: 0;
-          font-size: 1rem;
+          font-size: 1.05rem;
           font-weight: 700;
           color: #0f172a;
+          line-height: 1.3;
         }
 
         .training-quiz-meta-line {
           color: #64748b;
           font-size: 0.8rem;
+          font-weight: 500;
         }
 
         .training-quiz-pill {
           margin-left: auto;
-          background: #fef3c7;
-          color: #b45309;
-          padding: 4px 8px;
-          border-radius: 999px;
+          background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+          color: #92400e;
+          padding: 6px 12px;
+          border-radius: 20px;
           font-size: 0.7rem;
-          font-weight: 700;
+          font-weight: 800;
           text-transform: uppercase;
+          letter-spacing: 0.5px;
+          box-shadow: 0 2px 8px rgba(146, 64, 14, 0.15);
         }
 
         .training-quiz-overview {
@@ -2880,23 +3040,29 @@ const StudentProfile = () => {
           flex-wrap: wrap;
           font-size: 0.82rem;
           color: #475569;
-          padding: 10px 0;
+          padding: 12px 0;
           border-top: 1px solid #e5e7eb;
           border-bottom: 1px solid #e5e7eb;
+          font-weight: 500;
         }
 
         .training-quiz-preview {
           font-style: italic;
           color: #64748b;
+          max-width: 200px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .training-quiz-footer {
           display: flex;
           justify-content: space-between;
           flex-wrap: wrap;
-          gap: 6px;
+          gap: 8px;
           font-size: 0.78rem;
           color: #64748b;
+          font-weight: 500;
         }
 
         .training-quiz-actions {
@@ -2907,20 +3073,26 @@ const StudentProfile = () => {
         .training-play-btn {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           border: none;
-          border-radius: 10px;
-          padding: 8px 14px;
-          background: #2563eb;
+          border-radius: 12px;
+          padding: 10px 18px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: #ffffff;
-          font-weight: 600;
+          font-weight: 700;
           cursor: pointer;
-          transition: background 0.2s ease, transform 0.2s ease;
+          transition: all 0.3s ease;
+          font-size: 0.9rem;
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         .training-play-btn:hover {
-          background: #1d4ed8;
-          transform: translateY(-1px);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+        }
+
+        .training-play-btn:active {
+          transform: translateY(0);
         }
 
         .table-pagination {
@@ -3217,23 +3389,27 @@ const StudentProfile = () => {
 
         @media (max-width: 768px) {
           .training-quizzes-list {
-            flex-direction: row;
+            flex-direction: column;
             gap: 12px;
-            max-height: none;
-            overflow-x: auto;
-            overflow-y: hidden;
+            max-height: 420px;
+            overflow-x: visible;
+            overflow-y: auto;
             padding: 8px 6px 8px 0;
-            scroll-snap-type: x proximity;
+            scroll-snap-type: none;
           }
 
           .training-quizzes-list::-webkit-scrollbar {
-            width: auto;
-            height: 6px;
+            width: 6px;
+            height: auto;
           }
 
           .training-quiz-card {
-            flex: 0 0 240px;
-            scroll-snap-align: start;
+            flex: 1 1 auto;
+            scroll-snap-align: none;
+          }
+
+          .training-quizzes-filters {
+            grid-template-columns: 1fr;
           }
 
           .table-pagination {
@@ -3310,36 +3486,86 @@ const StudentProfile = () => {
             gap: 20px;
           }
 
+          .profile-hero-card {
+            border-radius: 28px;
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.15);
+          }
+
           .profile-card,
           .info-card {
-            padding: 20px;
-            border-radius: 16px;
+            padding: 24px;
+            border-radius: 20px;
+          }
+
+          .profile-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 18px;
           }
 
           .profile-hero-banner {
-            padding: 24px;
+            border-radius: 28px;
+            padding: 32px 24px;
+            flex-direction: column;
             align-items: center;
+            text-align: center;
+            gap: 20px;
+            min-height: auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
           }
 
           .profile-hero-info {
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+            width: 100%;
           }
 
           .profile-hero-info h2 {
-            font-size: 1.6rem;
+            font-size: 1.75rem;
             text-align: center;
+            line-height: 1.2;
           }
 
           .profile-hero-meta {
             justify-content: center;
             width: 100%;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 8px;
+          }
+
+          .profile-hero-chip,
+          .profile-hero-gender {
+            font-size: 0.75rem;
+            padding: 6px 10px;
           }
 
           .profile-hero-id {
             width: 100%;
             display: flex;
             justify-content: center;
+          }
+
+          .profile-hero-id .id-badge {
+            font-size: 0.8rem;
+            padding: 8px 16px;
+          }
+
+          .profile-hero-status {
+            width: 100%;
+            justify-content: center;
+            margin-top: 0;
+          }
+
+          .profile-hero-status .status-badge {
+            font-size: 0.75rem;
+            padding: 10px 24px;
+            min-width: 120px;
+          }
+
+          .student-avatar {
+            width: 110px;
+            height: 110px;
+            border-radius: 24px;
           }
 
           .info-card h3 {
@@ -3385,12 +3611,18 @@ const StudentProfile = () => {
             margin-bottom: 16px;
             border: 1px solid #e2e8f0;
             border-radius: 16px;
-            padding: 16px;
-            background: #ffffff;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+            padding: 18px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px 16px;
+            gap: 14px 16px;
+            transition: all 0.2s ease;
+          }
+
+          .grades-table tr:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.12);
           }
 
           .grades-table td {
@@ -3399,10 +3631,10 @@ const StudentProfile = () => {
             font-size: 0.9rem;
             position: relative;
             padding-inline-start: 0;
-            min-height: 40px;
+            min-height: 42px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
             align-items: center;
             text-align: center;
           }
@@ -3413,13 +3645,13 @@ const StudentProfile = () => {
             top: auto;
             left: auto;
             transform: none;
-            font-weight: 600;
-            color: #64748b;
+            font-weight: 700;
+            color: #667eea;
             text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.4px;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
           }
 
           .grades-table td .grade-badge {
@@ -3474,18 +3706,26 @@ const StudentProfile = () => {
             margin-bottom: 16px;
             border: 1px solid #e2e8f0;
             border-radius: 16px;
-            padding: 16px;
-            background: #ffffff;
+            padding: 18px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
             box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+            transition: all 0.2s ease;
+          }
+
+          .activities-table tr:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.12);
           }
 
           .activities-table td {
-            padding: 10px 0;
+            padding: 12px 0;
             border: none;
             font-size: 0.9rem;
-            padding-inline-start: 120px;
+            padding-inline-start: 130px;
             position: relative;
-            min-height: 38px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
           }
 
           .activities-table td::before {
@@ -3494,11 +3734,12 @@ const StudentProfile = () => {
             left: 0;
             top: 50%;
             transform: translateY(-50%);
-            font-weight: 600;
-            color: #64748b;
+            font-weight: 700;
+            color: #667eea;
             text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.4px;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            width: 120px;
           }
 
           .activities-table td:last-child {

@@ -13,6 +13,7 @@
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 16px;
   color: white;
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.25);
 }
 
 .profile-info {
@@ -72,7 +73,7 @@
 
 .overall-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 20px;
 }
 
@@ -224,7 +225,7 @@
 
 .progress-charts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
 }
 
@@ -440,7 +441,7 @@
 
 .courses-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 20px;
 }
 
@@ -532,6 +533,7 @@
     grid-template-columns: 1fr;
     gap: 20px;
     text-align: center;
+    padding: 24px 20px;
   }
 
   .profile-info {
@@ -564,6 +566,10 @@
     align-items: stretch;
   }
 
+  .profile-card {
+    padding: 20px;
+  }
+
   .section-header {
     flex-direction: column;
     align-items: flex-start;
@@ -572,5 +578,66 @@
 
   .progress-charts {
     grid-template-columns: 1fr;
+  }
+
+  .profile-details h1 {
+    font-size: 1.6rem;
+  }
+
+  .profile-role {
+    font-size: 1rem;
+  }
+
+  .profile-avatar {
+    width: 88px;
+    height: 88px;
+  }
+
+  .evaluation-item {
+    padding: 16px;
+  }
+
+  .stat-card {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 12px;
+  }
+
+  .profile-header {
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  .profile-details h1 {
+    font-size: 1.4rem;
+  }
+
+  .overall-stats {
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .course-card,
+  .progress-analysis,
+  .evaluations-section,
+  .course-summary {
+    padding: 16px;
+  }
+
+  .evaluation-meta {
+    font-size: 0.8rem;
+  }
+
+  .grade-letter,
+  .percentage,
+  .score {
+    font-size: 0.85rem;
   }
 }
