@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { coursesAPI, evaluationsAPI } from "../services/api";
 import {
@@ -20,13 +20,7 @@ const TeacherProfile = () => {
 
   const hasPermission = isTeacher || isAdmin;
 
-  useEffect(() => {
-    if (hasPermission) {
-      fetchTeacherData();
-    }
-  }, [hasPermission]);
-
-  const fetchTeacherData = async () => {
+  const fetchTeacherData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -45,7 +39,13 @@ const TeacherProfile = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (hasPermission && user?._id) {
+      fetchTeacherData();
+    }
+  }, [hasPermission, fetchTeacherData, user]);
 
   const getTotalStudents = () => {
     // This would ideally come from a separate API endpoint

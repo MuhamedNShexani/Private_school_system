@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   studentsAPI,
@@ -16,8 +16,6 @@ import { useTranslation } from "../contexts/TranslationContext";
 import {
   Users,
   User,
-  GraduationCap,
-  Calendar,
   Eye,
   Phone,
   UserCheck,
@@ -53,13 +51,16 @@ const Students = () => {
     return value.toString ? value.toString() : `${value}`;
   };
 
-  const filterSubjectsForTeacher = (list = []) => {
-    if (!isTeacher) return list;
-    if (!teacherSubjectSet.size) return [];
-    return list.filter((subject) =>
-      teacherSubjectSet.has(normalizeId(subject?._id || subject))
-    );
-  };
+  const filterSubjectsForTeacher = useCallback(
+    (list = []) => {
+      if (!isTeacher) return list;
+      if (!teacherSubjectSet.size) return [];
+      return list.filter((subject) =>
+        teacherSubjectSet.has(normalizeId(subject?._id || subject))
+      );
+    },
+    [isTeacher, teacherSubjectSet]
+  );
 
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -147,7 +148,7 @@ const Students = () => {
     };
 
     fetchData();
-  }, []);
+  }, [t]);
 
   // Update available branches when class changes
   useEffect(() => {
@@ -299,7 +300,7 @@ const Students = () => {
     return () => {
       isMounted = false;
     };
-  }, [selectedClass, subjectsCache]);
+  }, [selectedClass, subjectsCache, filterSubjectsForTeacher]);
 
   // Reset grades data when class or branch changes
   useEffect(() => {
@@ -322,56 +323,65 @@ const Students = () => {
     (student) => student?._id === selectedCardStudent
   );
 
-  const getLocalizedText = (value, fallback = "") => {
-    if (!value) return fallback;
-    if (typeof value === "string") return value;
+  const getLocalizedText = useCallback(
+    (value, fallback = "") => {
+      if (!value) return fallback;
+      if (typeof value === "string") return value;
 
-    if (typeof value === "object") {
-      const directMatch =
-        value[currentLanguage] || value.en || value.ar || value.ku;
-      if (directMatch) return directMatch;
+      if (typeof value === "object") {
+        const directMatch =
+          value[currentLanguage] || value.en || value.ar || value.ku;
+        if (directMatch) return directMatch;
 
-      if (value.name) {
-        return getLocalizedText(value.name, fallback);
+        if (value.name) {
+          return getLocalizedText(value.name, fallback);
+        }
+        if (value.title) {
+          return getLocalizedText(value.title, fallback);
+        }
+        if (value.label) {
+          return getLocalizedText(value.label, fallback);
+        }
       }
-      if (value.title) {
-        return getLocalizedText(value.title, fallback);
-      }
-      if (value.label) {
-        return getLocalizedText(value.label, fallback);
-      }
-    }
 
-    return fallback;
-  };
+      return fallback;
+    },
+    [currentLanguage, t]
+  );
 
-  const getEntityName = (entity, fallback = "") => {
-    if (!entity) return fallback;
-    if (typeof entity === "string") return entity;
+  const getEntityName = useCallback(
+    (entity, fallback = "") => {
+      if (!entity) return fallback;
+      if (typeof entity === "string") return entity;
 
-    const bestMatch =
-      entity.nameMultilingual ||
-      entity.titleMultilingual ||
-      entity.title ||
-      entity.name ||
-      entity.label;
+      const bestMatch =
+        entity.nameMultilingual ||
+        entity.titleMultilingual ||
+        entity.title ||
+        entity.name ||
+        entity.label;
 
-    return getLocalizedText(bestMatch, fallback);
-  };
+      return getLocalizedText(bestMatch, fallback);
+    },
+    [getLocalizedText]
+  );
 
-  const getSeasonDisplayName = (season, fallback) => {
-    if (!season) return fallback;
-    return (
-      getLocalizedText(
-        season.nameMultilingual ||
-          season.name ||
-          season.title ||
-          season.code ||
-          season.label,
-        fallback
-      ) || fallback
-    );
-  };
+  const getSeasonDisplayName = useCallback(
+    (season, fallback) => {
+      if (!season) return fallback;
+      return (
+        getLocalizedText(
+          season.nameMultilingual ||
+            season.name ||
+            season.title ||
+            season.code ||
+            season.label,
+          fallback
+        ) || fallback
+      );
+    },
+    [getLocalizedText]
+  );
 
   const getGenderLabel = (gender) => {
     if (!gender) {
@@ -384,74 +394,80 @@ const Students = () => {
     return t("students.gender.other", gender);
   };
 
-  const getSeasonNameVariants = (season) => {
-    const names = new Set();
+  const getSeasonNameVariants = useCallback(
+    (season) => {
+      const names = new Set();
 
-    if (season?.nameMultilingual) {
-      Object.values(season.nameMultilingual).forEach((value) => {
-        if (value) names.add(value);
-      });
-    }
-
-    if (season?.name) {
-      if (typeof season.name === "string") {
-        names.add(season.name);
-      } else if (typeof season.name === "object") {
-        Object.values(season.name).forEach((value) => {
+      if (season?.nameMultilingual) {
+        Object.values(season.nameMultilingual).forEach((value) => {
           if (value) names.add(value);
         });
       }
-    }
 
-    if (season?.title) {
-      if (typeof season.title === "string") {
-        names.add(season.title);
-      } else if (typeof season.title === "object") {
-        Object.values(season.title).forEach((value) => {
-          if (value) names.add(value);
-        });
+      if (season?.name) {
+        if (typeof season.name === "string") {
+          names.add(season.name);
+        } else if (typeof season.name === "object") {
+          Object.values(season.name).forEach((value) => {
+            if (value) names.add(value);
+          });
+        }
       }
-    }
 
-    if (season?.code) {
-      names.add(season.code);
-    }
+      if (season?.title) {
+        if (typeof season.title === "string") {
+          names.add(season.title);
+        } else if (typeof season.title === "object") {
+          Object.values(season.title).forEach((value) => {
+            if (value) names.add(value);
+          });
+        }
+      }
 
-    const localizedName = getSeasonDisplayName(
-      season,
-      t("students.season.fallback", "Season")
-    );
-    if (localizedName) {
-      names.add(localizedName);
-    }
+      if (season?.code) {
+        names.add(season.code);
+      }
 
-    return Array.from(names).filter(Boolean);
-  };
+      const localizedName = getSeasonDisplayName(
+        season,
+        t("students.season.fallback", "Season")
+      );
+      if (localizedName) {
+        names.add(localizedName);
+      }
 
-  const getSeasonOrder = (season) => {
-    if (season?.order) {
-      return season.order;
-    }
+      return Array.from(names).filter(Boolean);
+    },
+    [getSeasonDisplayName, t]
+  );
 
-    const variants = getSeasonNameVariants(season);
-    if (
-      variants.some((name) =>
-        typeof name === "string" ? name.includes("1") : false
-      )
-    ) {
-      return 1;
-    }
+  const getSeasonOrder = useCallback(
+    (season) => {
+      if (season?.order) {
+        return season.order;
+      }
 
-    if (
-      variants.some((name) =>
-        typeof name === "string" ? name.includes("2") : false
-      )
-    ) {
-      return 2;
-    }
+      const variants = getSeasonNameVariants(season);
+      if (
+        variants.some((name) =>
+          typeof name === "string" ? name.includes("1") : false
+        )
+      ) {
+        return 1;
+      }
 
-    return null;
-  };
+      if (
+        variants.some((name) =>
+          typeof name === "string" ? name.includes("2") : false
+        )
+      ) {
+        return 2;
+      }
+
+      return null;
+    },
+    [getSeasonNameVariants]
+  );
 
   const seasonsToDisplay = useMemo(() => {
     if (!Array.isArray(seasons)) {
@@ -490,7 +506,7 @@ const Students = () => {
           names: variants,
         };
       });
-  }, [seasons, currentLanguage, t]);
+  }, [seasons, t, getSeasonDisplayName, getSeasonNameVariants, getSeasonOrder]);
 
   // Get gender icon
   const getGenderIcon = (gender) => {

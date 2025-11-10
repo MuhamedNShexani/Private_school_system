@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "../contexts/TranslationContext";
 import { translationsAPI } from "../services/api";
 import {
@@ -38,12 +38,7 @@ const TranslationManagement = () => {
     isActive: true,
   });
 
-  useEffect(() => {
-    fetchTranslations();
-    fetchCategories();
-  }, [searchTerm, selectedCategory, currentPage]);
-
-  const fetchTranslations = async () => {
+  const fetchTranslations = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
@@ -68,9 +63,9 @@ const TranslationManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, selectedCategory]);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const response = await translationsAPI.getCategories();
       if (response.data.success) {
@@ -79,7 +74,15 @@ const TranslationManagement = () => {
     } catch (err) {
       console.error("Error fetching categories:", err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchTranslations();
+  }, [fetchTranslations]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);

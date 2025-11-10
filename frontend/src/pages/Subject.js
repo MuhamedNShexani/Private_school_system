@@ -28,19 +28,24 @@ const Subject = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [subjectRes, chapterRes] = await Promise.all([
-          subjectsAPI.getById(subjectId),
-          chaptersAPI.getById(subjectRes.data.chapter._id),
-        ]);
-
+        const subjectRes = await subjectsAPI.getById(subjectId);
         setSubject(subjectRes.data);
-        setChapter(chapterRes.data);
+
+        let chapterRes = null;
+        const chapterId = subjectRes.data?.chapter?._id;
+        if (chapterId) {
+          chapterRes = await chaptersAPI.getById(chapterId);
+          setChapter(chapterRes.data);
+        } else {
+          setChapter(subjectRes.data?.chapter || null);
+        }
 
         // Fetch season data
-        if (chapterRes.data.season) {
-          const seasonRes = await seasonsAPI.getById(
-            chapterRes.data.season._id
-          );
+        const seasonId =
+          chapterRes?.data?.season?._id ||
+          subjectRes.data?.chapter?.season?._id;
+        if (seasonId) {
+          const seasonRes = await seasonsAPI.getById(seasonId);
           setSeason(seasonRes.data);
         }
       } catch (err) {
