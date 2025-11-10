@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   studentsAPI,
-  evaluationsAPI,
-  coursesAPI,
   studentGradesAPI,
   subjectsAPI,
   seasonsAPI,
@@ -20,8 +18,6 @@ import {
   Calendar,
   GraduationCap,
   BookOpen,
-  Award,
-  Clock,
   MapPin,
   Edit,
   Save,
@@ -36,8 +32,6 @@ const StudentProfile = () => {
   const { t, currentLanguage } = useTranslation();
   const [searchParams] = useSearchParams();
   const [student, setStudent] = useState(null);
-  const [evaluations, setEvaluations] = useState([]);
-  const [courses, setCourses] = useState([]);
   const [grades, setGrades] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [seasons, setSeasons] = useState([]);
@@ -92,12 +86,15 @@ const StudentProfile = () => {
     return value.toString ? value.toString() : `${value}`;
   };
 
-  const subjectIsAllowed = (subjectId) => {
-    if (!isTeacher) return true;
-    if (!teacherSubjectSet.size) return false;
-    const normalized = normalizeId(subjectId);
-    return normalized && teacherSubjectSet.has(normalized);
-  };
+  const subjectIsAllowed = useCallback(
+    (subjectId) => {
+      if (!isTeacher) return true;
+      if (!teacherSubjectSet.size) return false;
+      const normalized = normalizeId(subjectId);
+      return normalized && teacherSubjectSet.has(normalized);
+    },
+    [isTeacher, teacherSubjectSet]
+  );
 
   const chapterMap = useMemo(() => {
     const map = new Map();
@@ -243,36 +240,6 @@ const StudentProfile = () => {
 
         if (studentData) {
           setStudent(studentData);
-
-          // Fetch evaluations for this student
-          try {
-            const evaluationsResponse = await evaluationsAPI.getByStudent(
-              studentData._id
-            );
-            console.log("Evaluations response:", evaluationsResponse);
-            const evaluationsData = evaluationsResponse.data;
-            // Handle both direct array and object with evaluations property
-            const evaluationsArray = Array.isArray(evaluationsData)
-              ? evaluationsData
-              : evaluationsData?.evaluations || [];
-            setEvaluations(
-              Array.isArray(evaluationsArray) ? evaluationsArray : []
-            );
-          } catch (err) {
-            console.log("No evaluations found for student:", err);
-            setEvaluations([]);
-          }
-
-          // Fetch courses
-          try {
-            const coursesResponse = await coursesAPI.getAll();
-            console.log("Courses response:", coursesResponse);
-            const coursesData = coursesResponse.data;
-            setCourses(Array.isArray(coursesData) ? coursesData : []);
-          } catch (err) {
-            console.log("No courses found:", err);
-            setCourses([]);
-          }
 
           // Fetch student grades
           try {
@@ -519,28 +486,31 @@ const StudentProfile = () => {
     }
   };
 
-  const getLocalizedText = (value, fallback = "") => {
-    if (!value) return fallback;
-    if (typeof value === "string") return value;
+  const getLocalizedText = useCallback(
+    (value, fallback = "") => {
+      if (!value) return fallback;
+      if (typeof value === "string") return value;
 
-    if (typeof value === "object") {
-      const directMatch =
-        value[currentLanguage] || value.en || value.ar || value.ku;
-      if (directMatch) return directMatch;
+      if (typeof value === "object") {
+        const directMatch =
+          value[currentLanguage] || value.en || value.ar || value.ku;
+        if (directMatch) return directMatch;
 
-      if (value.name) {
-        return getLocalizedText(value.name, fallback);
+        if (value.name) {
+          return getLocalizedText(value.name, fallback);
+        }
+        if (value.title) {
+          return getLocalizedText(value.title, fallback);
+        }
+        if (value.label) {
+          return getLocalizedText(value.label, fallback);
+        }
       }
-      if (value.title) {
-        return getLocalizedText(value.title, fallback);
-      }
-      if (value.label) {
-        return getLocalizedText(value.label, fallback);
-      }
-    }
 
-    return fallback;
-  };
+      return fallback;
+    },
+    [currentLanguage]
+  );
 
   const getStatusLabel = (status) => {
     if (!status) {
@@ -559,14 +529,6 @@ const StudentProfile = () => {
       return t(`studentProfile.gender.${normalized}`, gender);
     }
     return t("studentProfile.gender.other", gender);
-  };
-
-  const getEvaluationTypeLabel = (type) => {
-    if (!type) {
-      return t("studentProfile.evaluationType.unknown", "Unknown");
-    }
-    const normalized = type.toString().toLowerCase().replace(/\s+/g, "_");
-    return t(`studentProfile.evaluationType.${normalized}`, type);
   };
 
   const getActivityTypeLabel = (type) => {
@@ -602,19 +564,6 @@ const StudentProfile = () => {
       return t("common.na", "N/A");
     }
     return new Date(date).toLocaleDateString("en-GB");
-  };
-
-  const getQuizTypeLabel = (type) => {
-    switch (type) {
-      case "multiple_choice":
-        return t("quiz.type.multiple_choice", "Multiple Choice");
-      case "true_false":
-        return t("quiz.type.true_false", "True or False");
-      case "matching":
-        return t("quiz.type.matching", "Matching");
-      default:
-        return t("quiz.type.unknown", "Unknown Type");
-    }
   };
 
   const availableTrainingQuizzes = useMemo(() => {
@@ -685,7 +634,7 @@ const StudentProfile = () => {
         };
       })
       .filter(Boolean);
-  }, [student, quizzes, chapterMap, subjectMap, seasonMap, teacherSubjectSet]);
+  }, [student, quizzes, chapterMap, subjectMap, seasonMap, subjectIsAllowed]);
 
   const trainingFilterOptions = useMemo(() => {
     const seasonOptions = new Map();
@@ -896,15 +845,6 @@ const StudentProfile = () => {
           t("studentProfile.error.createGrade", "Failed to create grade")
       );
     }
-  };
-
-  // Get grade for a subject and season
-  const getGrade = (subjectId, season) => {
-    return grades.find(
-      (g) =>
-        (g.subject?._id === subjectId || g.subject === subjectId) &&
-        g.season === season
-    );
   };
 
   // Check if user can edit (Teacher or Admin)
@@ -1138,7 +1078,7 @@ const StudentProfile = () => {
               </div>
             )}
           </div> */}
- 
+
           {/* Available Courses */}
           {/* <div className="profile-card">
             <h3>{t("studentProfile.availableCourses", "Available Courses")}</h3>

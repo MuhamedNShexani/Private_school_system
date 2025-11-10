@@ -346,7 +346,7 @@ const Students = () => {
 
       return fallback;
     },
-    [currentLanguage, t]
+    [currentLanguage]
   );
 
   const getEntityName = useCallback(
