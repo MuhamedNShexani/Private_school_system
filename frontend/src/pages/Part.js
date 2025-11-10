@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { partsAPI, exercisesAPI, chaptersAPI } from "../services/api";
+import { partsAPI, exercisesAPI } from "../services/api";
 import {
   ArrowLeft,
   FileText,
@@ -17,10 +17,9 @@ import { useTranslation } from "../contexts/TranslationContext";
 
 const Part = () => {
   const { partId } = useParams();
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const { t } = useTranslation();
   const [part, setPart] = useState(null);
-  const [chapter, setChapter] = useState(null);
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,12 +42,7 @@ const Part = () => {
         setPart(partRes.data.data || partRes.data);
         setExercises(exercisesRes.data.data || exercisesRes.data);
 
-        // Fetch chapter data
-        const partData = partRes.data.data || partRes.data;
-        if (partData.chapter) {
-          const chapterRes = await chaptersAPI.getById(partData.chapter._id);
-          setChapter(chapterRes.data);
-        }
+        // No additional chapter fetch needed here
       } catch (err) {
         setError("Failed to load part data. Please try again.");
         console.error("Error fetching data:", err);
@@ -132,19 +126,6 @@ const Part = () => {
     } catch (error) {
       console.error("Error updating exercise status:", error);
       setError("Failed to update exercise status");
-    }
-  };
-
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case "Beginner":
-        return "#16a34a";
-      case "Intermediate":
-        return "#d97706";
-      case "Advanced":
-        return "#dc2626";
-      default:
-        return "#64748b";
     }
   };
 

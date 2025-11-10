@@ -4,7 +4,6 @@ import { useTranslation } from "../contexts/TranslationContext";
 import {
   studentsAPI,
   teachersAPI,
-  usersAPI,
   subjectsAPI,
   classesAPI,
 } from "../services/api";
@@ -15,19 +14,12 @@ import {
   Edit,
   Trash2,
   Search,
-  Filter,
   Save,
   X,
-  Eye,
-  EyeOff,
-  BookOpen,
-  Building,
 } from "lucide-react";
 import "./AdminCRUD.css";
 
 const AdminCRUD = () => {
-  const { user } = useAuth();
-  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("students");
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);

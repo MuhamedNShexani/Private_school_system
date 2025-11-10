@@ -18,9 +18,6 @@ const PaymentsManagement = () => {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("all");
-  const [editingStudent, setEditingStudent] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-
   const hasPermission = isAdmin || isTeacher;
 
   useEffect(() => {

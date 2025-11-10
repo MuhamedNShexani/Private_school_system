@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   ClipboardList,
@@ -9,7 +9,6 @@ import {
   Eye,
   EyeOff,
   BookOpen,
-  Layers,
   X,
   CheckCircle2,
   PlayCircle,
@@ -127,7 +126,7 @@ const ChapterQuizzes = () => {
     return new Date(date).toLocaleDateString("en-GB");
   };
 
-  const fetchChapter = async () => {
+  const fetchChapter = useCallback(async () => {
     try {
       const response = await chaptersAPI.getById(chapterId);
       const chapterData = response.data?.data || response.data || null;
@@ -141,9 +140,9 @@ const ChapterQuizzes = () => {
         )
       );
     }
-  };
+  }, [chapterId, t]);
 
-  const fetchQuizzes = async () => {
+  const fetchQuizzes = useCallback(async () => {
     try {
       const params = {
         chapter: chapterId,
@@ -162,7 +161,7 @@ const ChapterQuizzes = () => {
       );
       setQuizzes([]);
     }
-  };
+  }, [canManageQuizzes, chapterId, t]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -173,7 +172,13 @@ const ChapterQuizzes = () => {
     };
 
     loadData();
-  }, [chapterId, canManageQuizzes, currentLanguage]);
+  }, [
+    chapterId,
+    canManageQuizzes,
+    currentLanguage,
+    fetchChapter,
+    fetchQuizzes,
+  ]);
 
   const resetForm = () => {
     setFormData({
