@@ -48,13 +48,19 @@ cd backend
 npm install
 ```
 
-3. Create a `.env` file in the backend directory with the following variables:
+3. Copy the provided example environment file and update it with your own secrets:
+
+```bash
+cp .env.example .env   # on Windows use: copy .env.example .env
+```
+
+Then adjust the values as needed—for hosting with MongoDB Atlas you can keep the provided connection string:
 
 ```env
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/student-exercises
+MONGODB_URI=mongodb+srv://mshexani45_db_user:j0ilNwvKkYBzFyuN@cluster0.buvzn1y.mongodb.net/?appName=Cluster0
 JWT_SECRET=your-super-secret-jwt-key-here
-NODE_ENV=development
+NODE_ENV=production
 ```
 
 4. Start MongoDB service (make sure MongoDB is running on your system)

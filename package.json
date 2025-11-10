@@ -1,0 +1,9 @@
+{
+  "name": "student-exercise-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend run build"
+  }
+}
+

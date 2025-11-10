@@ -3,6 +3,8 @@ dist/
 build/
 .env
 .env.local
+backend/.env
+backend/.env.local
 *.log
 *.tmp
 coverage/
