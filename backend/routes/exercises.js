@@ -11,33 +11,36 @@ const {
   optionalAuth,
 } = require("../middleware/auth");
 
-// Helper function to get total points for a season
-const getSeasonTotalPoints = async (seasonName) => {
+// Helper function to get total points for a subject+season combination
+const getSeasonTotalPoints = async (seasonName, subjectId) => {
   try {
-    // Find all chapters in this season
-    const chapters = await Chapter.find({ season: seasonName });
-    const chapterIds = chapters.map(ch => ch._id);
-    
+    // Find all chapters in this season AND subject
+    const chapters = await Chapter.find({
+      season: seasonName,
+      subject: subjectId,
+    });
+    const chapterIds = chapters.map((ch) => ch._id);
+
     // Find all parts in these chapters
     const parts = await Part.find({ chapter: { $in: chapterIds } });
-    const partIds = parts.map(p => p._id);
-    
+    const partIds = parts.map((p) => p._id);
+
     // Calculate total points from all exercises in these parts
     const result = await Exercise.aggregate([
       {
         $match: {
           part: { $in: partIds },
-          isActive: true
-        }
+          isActive: true,
+        },
       },
       {
         $group: {
           _id: null,
-          totalPoints: { $sum: "$degree" }
-        }
-      }
+          totalPoints: { $sum: "$degree" },
+        },
+      },
     ]);
-    
+
     return result.length > 0 ? result[0].totalPoints : 0;
   } catch (error) {
     console.error("Error calculating season total points:", error);
@@ -133,7 +136,7 @@ router.post(
   async (req, res) => {
     try {
       console.log("Creating exercise with data:", req.body);
-      
+
       // Get the part and find its chapter to get the season
       const part = await Part.findById(req.body.part);
       if (!part) {
@@ -142,7 +145,7 @@ router.post(
           message: "Part not found",
         });
       }
-      
+
       // Get the season from the chapter
       const chapter = await Chapter.findById(part.chapter);
       if (!chapter) {
@@ -151,11 +154,14 @@ router.post(
           message: "Chapter not found",
         });
       }
-      
-      // Calculate current total points for this season
-      const currentTotal = await getSeasonTotalPoints(chapter.season);
+
+      // Calculate current total points for this subject+season combination
+      const currentTotal = await getSeasonTotalPoints(
+        chapter.season,
+        chapter.subject
+      );
       const newPoints = req.body.degree || 10;
-      
+
       // Check if adding this exercise would exceed the limit
       if (currentTotal + newPoints > 10) {
         return res.status(400).json({
@@ -163,7 +169,7 @@ router.post(
           message: `Cannot create exercise. Total points for season would exceed 10. Current total: ${currentTotal}, Adding: ${newPoints}`,
         });
       }
-      
+
       const exercise = new Exercise(req.body);
       const savedExercise = await exercise.save();
       await savedExercise.populate("part", "title description");
@@ -192,7 +198,7 @@ router.put(
     try {
       console.log("Updating exercise with ID:", req.params.id);
       console.log("Update data:", req.body);
-      
+
       // Get the existing exercise to check its current degree and part
       const existingExercise = await Exercise.findById(req.params.id);
       if (!existingExercise) {
@@ -201,7 +207,7 @@ router.put(
           message: "Exercise not found",
         });
       }
-      
+
       // Get the part and find its chapter to get the season
       const part = await Part.findById(existingExercise.part);
       if (!part) {
@@ -210,7 +216,7 @@ router.put(
           message: "Part not found",
         });
       }
-      
+
       // Get the season from the chapter
       const chapter = await Chapter.findById(part.chapter);
       if (!chapter) {
@@ -219,14 +225,17 @@ router.put(
           message: "Chapter not found",
         });
       }
-      
+
       // If degree is being updated, validate the total
       if (req.body.degree !== undefined) {
-        // Calculate current total points for this season
-        const currentTotal = await getSeasonTotalPoints(chapter.season);
+        // Calculate current total points for this subject+season combination
+        const currentTotal = await getSeasonTotalPoints(
+          chapter.season,
+          chapter.subject
+        );
         const oldPoints = existingExercise.degree || 0;
         const newPoints = req.body.degree || 0;
-        
+
         // Check if updating this exercise would exceed the limit
         const updatedTotal = currentTotal - oldPoints + newPoints;
         if (updatedTotal > 10) {
@@ -236,11 +245,15 @@ router.put(
           });
         }
       }
-      
-      const exercise = await Exercise.findByIdAndUpdate(req.params.id, req.body, {
-        new: true,
-        runValidators: true,
-      }).populate("part", "title description");
+
+      const exercise = await Exercise.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        {
+          new: true,
+          runValidators: true,
+        }
+      ).populate("part", "title description");
 
       res.json({
         success: true,
@@ -280,7 +293,9 @@ router.patch(
 
       res.json({
         success: true,
-        message: `Exercise ${isActive ? "activated" : "deactivated"} successfully`,
+        message: `Exercise ${
+          isActive ? "activated" : "deactivated"
+        } successfully`,
         data: exercise,
       });
     } catch (error) {
@@ -321,27 +336,40 @@ router.delete(
   }
 );
 
-// GET total points for a season (Public)
-router.get("/season/:seasonName/total-points", optionalAuth, async (req, res) => {
-  try {
-    const { seasonName } = req.params;
-    const totalPoints = await getSeasonTotalPoints(seasonName);
-    
-    res.json({
-      success: true,
-      data: {
-        season: seasonName,
-        totalPoints,
-        remainingPoints: 10 - totalPoints,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+// GET total points for a subject+season combination (Public)
+router.get(
+  "/season/:seasonName/total-points",
+  optionalAuth,
+  async (req, res) => {
+    try {
+      const { seasonName } = req.params;
+      const { subject } = req.query;
+
+      if (!subject) {
+        return res.status(400).json({
+          success: false,
+          message: "Subject ID is required",
+        });
+      }
+
+      const totalPoints = await getSeasonTotalPoints(seasonName, subject);
+
+      res.json({
+        success: true,
+        data: {
+          season: seasonName,
+          subject,
+          totalPoints,
+          remainingPoints: 10 - totalPoints,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
   }
-});
+);
 
 module.exports = router;
-

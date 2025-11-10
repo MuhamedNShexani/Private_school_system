@@ -18,6 +18,7 @@ import Subject from "./pages/Subject";
 import Part from "./pages/Part";
 import ChapterQuizzes from "./pages/ChapterQuizzes";
 import QuizPlayer from "./pages/QuizPlayer";
+import StudentQuizzes from "./pages/StudentQuizzes";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminCRUD from "./pages/AdminCRUD";
 import StudentManagement from "./pages/StudentManagement";
@@ -108,6 +109,14 @@ function AppContent() {
             element={
               <ProtectedRoute requiredRole={["Student", "Teacher", "Admin"]}>
                 <StudentProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/quizzes"
+            element={
+              <ProtectedRoute requiredRole={["Student", "Teacher", "Admin"]}>
+                <StudentQuizzes />
               </ProtectedRoute>
             }
           />

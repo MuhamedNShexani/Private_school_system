@@ -38,6 +38,9 @@ const translationSchema = new mongoose.Schema({
       "programs",
       "admin",
       "modal",
+      "common",
+      "studentProfile",
+      "status",
     ],
   },
   description: {

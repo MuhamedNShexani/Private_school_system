@@ -53,11 +53,11 @@ const Students = () => {
 
   const filterSubjectsForTeacher = useCallback(
     (list = []) => {
-      if (!isTeacher) return list;
-      if (!teacherSubjectSet.size) return [];
-      return list.filter((subject) =>
-        teacherSubjectSet.has(normalizeId(subject?._id || subject))
-      );
+    if (!isTeacher) return list;
+    if (!teacherSubjectSet.size) return [];
+    return list.filter((subject) =>
+      teacherSubjectSet.has(normalizeId(subject?._id || subject))
+    );
     },
     [isTeacher, teacherSubjectSet]
   );
@@ -115,11 +115,21 @@ const Students = () => {
           classesAPI.getAll(),
         ]);
 
-        setStudents(studentsRes.data);
-        setClasses(classesRes.data);
+        // Extract data - handle both new { data: [...] } and old [...] formats
+        const extractData = (response) => {
+          if (response.data?.data) return response.data.data;
+          if (Array.isArray(response.data)) return response.data;
+          return [];
+        };
+
+        const studentsData = extractData(studentsRes);
+        const classesData = extractData(classesRes);
+
+        setStudents(studentsData);
+        setClasses(classesData);
 
         // Set default to Class 10 Branch A
-        const defaultClass = classesRes.data.find(
+        const defaultClass = classesData.find(
           (cls) =>
             cls.name?.en?.includes("10") || cls.name?.en?.includes("Class 10")
         );
@@ -148,7 +158,7 @@ const Students = () => {
     };
 
     fetchData();
-  }, [t]);
+  }, []);
 
   // Update available branches when class changes
   useEffect(() => {
@@ -311,6 +321,12 @@ const Students = () => {
     setSelectedCardStudent("");
   }, [selectedClass, selectedBranch]);
 
+  // Reset grades data when subject selection changes to avoid showing old data
+  useEffect(() => {
+    setStudentsGradesData([]);
+    setGradesError(null);
+  }, [selectedGradesSubject]);
+
   // Get selected class and branch names for display
   const selectedClassData = classes.find((cls) => cls._id === selectedClass);
   const selectedBranchData = availableBranches.find(
@@ -325,60 +341,60 @@ const Students = () => {
 
   const getLocalizedText = useCallback(
     (value, fallback = "") => {
-      if (!value) return fallback;
-      if (typeof value === "string") return value;
+    if (!value) return fallback;
+    if (typeof value === "string") return value;
 
-      if (typeof value === "object") {
-        const directMatch =
-          value[currentLanguage] || value.en || value.ar || value.ku;
-        if (directMatch) return directMatch;
+    if (typeof value === "object") {
+      const directMatch =
+        value[currentLanguage] || value.en || value.ar || value.ku;
+      if (directMatch) return directMatch;
 
-        if (value.name) {
-          return getLocalizedText(value.name, fallback);
-        }
-        if (value.title) {
-          return getLocalizedText(value.title, fallback);
-        }
-        if (value.label) {
-          return getLocalizedText(value.label, fallback);
-        }
+      if (value.name) {
+        return getLocalizedText(value.name, fallback);
       }
+      if (value.title) {
+        return getLocalizedText(value.title, fallback);
+      }
+      if (value.label) {
+        return getLocalizedText(value.label, fallback);
+      }
+    }
 
-      return fallback;
+    return fallback;
     },
     [currentLanguage]
   );
 
   const getEntityName = useCallback(
     (entity, fallback = "") => {
-      if (!entity) return fallback;
-      if (typeof entity === "string") return entity;
+    if (!entity) return fallback;
+    if (typeof entity === "string") return entity;
 
-      const bestMatch =
-        entity.nameMultilingual ||
-        entity.titleMultilingual ||
-        entity.title ||
-        entity.name ||
-        entity.label;
+    const bestMatch =
+      entity.nameMultilingual ||
+      entity.titleMultilingual ||
+      entity.title ||
+      entity.name ||
+      entity.label;
 
-      return getLocalizedText(bestMatch, fallback);
+    return getLocalizedText(bestMatch, fallback);
     },
     [getLocalizedText]
   );
 
   const getSeasonDisplayName = useCallback(
     (season, fallback) => {
-      if (!season) return fallback;
-      return (
-        getLocalizedText(
-          season.nameMultilingual ||
-            season.name ||
-            season.title ||
-            season.code ||
-            season.label,
-          fallback
-        ) || fallback
-      );
+    if (!season) return fallback;
+    return (
+      getLocalizedText(
+        season.nameMultilingual ||
+          season.name ||
+          season.title ||
+          season.code ||
+          season.label,
+        fallback
+      ) || fallback
+    );
     },
     [getLocalizedText]
   );
@@ -396,75 +412,75 @@ const Students = () => {
 
   const getSeasonNameVariants = useCallback(
     (season) => {
-      const names = new Set();
+    const names = new Set();
 
-      if (season?.nameMultilingual) {
-        Object.values(season.nameMultilingual).forEach((value) => {
+    if (season?.nameMultilingual) {
+      Object.values(season.nameMultilingual).forEach((value) => {
+        if (value) names.add(value);
+      });
+    }
+
+    if (season?.name) {
+      if (typeof season.name === "string") {
+        names.add(season.name);
+      } else if (typeof season.name === "object") {
+        Object.values(season.name).forEach((value) => {
           if (value) names.add(value);
         });
       }
+    }
 
-      if (season?.name) {
-        if (typeof season.name === "string") {
-          names.add(season.name);
-        } else if (typeof season.name === "object") {
-          Object.values(season.name).forEach((value) => {
-            if (value) names.add(value);
-          });
-        }
+    if (season?.title) {
+      if (typeof season.title === "string") {
+        names.add(season.title);
+      } else if (typeof season.title === "object") {
+        Object.values(season.title).forEach((value) => {
+          if (value) names.add(value);
+        });
       }
+    }
 
-      if (season?.title) {
-        if (typeof season.title === "string") {
-          names.add(season.title);
-        } else if (typeof season.title === "object") {
-          Object.values(season.title).forEach((value) => {
-            if (value) names.add(value);
-          });
-        }
-      }
+    if (season?.code) {
+      names.add(season.code);
+    }
 
-      if (season?.code) {
-        names.add(season.code);
-      }
+    const localizedName = getSeasonDisplayName(
+      season,
+      t("students.season.fallback", "Season")
+    );
+    if (localizedName) {
+      names.add(localizedName);
+    }
 
-      const localizedName = getSeasonDisplayName(
-        season,
-        t("students.season.fallback", "Season")
-      );
-      if (localizedName) {
-        names.add(localizedName);
-      }
-
-      return Array.from(names).filter(Boolean);
+    return Array.from(names).filter(Boolean);
     },
     [getSeasonDisplayName, t]
   );
 
   const getSeasonOrder = useCallback(
     (season) => {
-      if (season?.order) {
-        return season.order;
-      }
+    if (season?.order) {
+      return season.order;
+    }
 
-      const variants = getSeasonNameVariants(season);
-      if (
-        variants.some((name) =>
-          typeof name === "string" ? name.includes("1") : false
-        )
-      ) {
-        return 1;
-      }
+    const variants = getSeasonNameVariants(season);
+    if (
+      variants.some((name) =>
+        typeof name === "string" ? name.includes("1") : false
+      )
+    ) {
+      return 1;
+    }
 
-      if (
-        variants.some((name) =>
-          typeof name === "string" ? name.includes("2") : false
-        )
-      ) {
-        return 2;
-      }
+    if (
+      variants.some((name) =>
+        typeof name === "string" ? name.includes("2") : false
+      )
+    ) {
+      return 2;
+    }
 
-      return null;
+    return null;
     },
     [getSeasonNameVariants]
   );
@@ -2118,30 +2134,22 @@ const Students = () => {
 
       {/* Bulk Grading Modal */}
       {showBulkGradingModal && (
-        <div className="modal-overlay">
-          <div
-            className="modal"
-            style={{ maxWidth: "900px", maxHeight: "90vh", overflow: "auto" }}
-          >
-            <div className="modal-header">
+        <div className="bulk-grading-overlay">
+          <div className="bulk-grading-modal">
+            <div className="bulk-grading-header">
+              <div className="bulk-grading-title-section">
               <h2>{t("students.bulkGrade", "Bulk Grade Students")}</h2>
-              <button onClick={closeBulkGradingModal} className="close-btn">
+                <p className="bulk-grading-subtitle">
+                  {t("students.bulkGrading.subtitle", `Grade ${selectedStudents.length} students at once`)}
+                </p>
+              </div>
+              <button onClick={closeBulkGradingModal} className="bulk-grading-close-btn">
                 ×
               </button>
             </div>
 
             {error && (
-              <div
-                className="error"
-                style={{
-                  margin: "16px",
-                  padding: "12px",
-                  backgroundColor: "#fee",
-                  border: "1px solid #fcc",
-                  borderRadius: "4px",
-                  color: "#c33",
-                }}
-              >
+              <div className="bulk-grading-error-banner">
                 {error}
               </div>
             )}
@@ -2149,22 +2157,18 @@ const Students = () => {
             <form onSubmit={handleBulkGradingSubmit}>
               <div className="modal-body">
                 {/* Single Form - All Selections at Top */}
-                <div style={{ marginBottom: "24px" }}>
-                  <h3 style={{ marginBottom: "16px" }}>
+                <div className="bulk-grading-section">
+                  <div className="bulk-grading-section-header">
+                    <h3>
                     {t(
                       "students.bulkGrading.section.details",
                       "Select Exercise Details"
                     )}
                   </h3>
+                    <span className="bulk-grading-step-indicator">Step 1 of 2</span>
+                  </div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(2, 1fr)",
-                      gap: "16px",
-                      marginBottom: "16px",
-                    }}
-                  >
+                  <div className="bulk-grading-form-grid">
                     <div className="form-group">
                       <label>
                         {t("students.bulkGrading.labels.subject", "Subject")} *
@@ -2501,34 +2505,24 @@ const Students = () => {
                   bulkGradingData.exerciseId) ||
                   (bulkGradingData.gradingType &&
                     bulkGradingData.gradingType !== "exercise")) && (
-                  <div style={{ marginTop: "24px" }}>
-                    <h3 style={{ marginBottom: "16px" }}>
+                  <div className="bulk-grading-section">
+                    <div className="bulk-grading-section-header">
+                      <h3>
                       {t(
                         "students.bulkGrading.section.grades",
                         "Enter Grades for Students"
                       )}
                     </h3>
-                    <p
-                      style={{
-                        color: "#64748b",
-                        marginBottom: "16px",
-                        fontSize: "0.875rem",
-                      }}
-                    >
+                      <span className="bulk-grading-step-indicator">Step 2 of 2</span>
+                    </div>
+                    <p className="bulk-grading-helper-text">
                       {t(
                         "students.bulkGrading.helper.instructions",
                         `Enter grades for ${selectedStudents.length} student(s). Leave grade empty to skip a student.`
                       )}
                     </p>
 
-                    <div
-                      style={{
-                        maxHeight: "400px",
-                        overflow: "auto",
-                        border: "1px solid #e5e7eb",
-                        borderRadius: "8px",
-                      }}
-                    >
+                    <div className="bulk-grading-table-container">
                       <table
                         style={{ width: "100%", borderCollapse: "collapse" }}
                       >
@@ -2741,26 +2735,17 @@ const Students = () => {
               </div>
 
               {/* Form Actions */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  marginTop: "24px",
-                  paddingTop: "16px",
-                  borderTop: "1px solid #e5e7eb",
-                  justifyContent: "space-between",
-                }}
-              >
+              <div className="bulk-grading-actions">
                 <button
                   type="button"
-                  className="btn btn-secondary"
+                  className="bulk-grading-cancel-btn"
                   onClick={closeBulkGradingModal}
                 >
                   {t("students.bulkGrading.actions.cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
-                  className="btn btn-primary"
+                  className="bulk-grading-submit-btn"
                   disabled={
                     !bulkGradingData.gradingType ||
                     !bulkGradingData.subjectId ||
@@ -3357,7 +3342,7 @@ const Students = () => {
         .students-table th {
           background: #f8fafc;
           padding: 16px;
-          text-align: left;
+          text-align: center;
           font-weight: 600;
           color: #374151;
           border-bottom: 2px solid #e5e7eb;
@@ -3370,6 +3355,7 @@ const Students = () => {
           padding: 16px;
           border-bottom: 1px solid #f3f4f6;
           vertical-align: middle;
+          text-align: center;
         }
 
         .students-table tr:hover {
@@ -3403,6 +3389,7 @@ const Students = () => {
         .gender-info {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 8px;
         }
 
@@ -3421,6 +3408,7 @@ const Students = () => {
         .parents-phone-info {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 8px;
           color: #6b7280;
           font-size: 0.875rem;
@@ -3558,6 +3546,357 @@ const Students = () => {
 
           .stats {
             grid-template-columns: 1fr;
+          }
+        }
+
+        /* Bulk Grading Modal Styles */
+        .bulk-grading-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+          backdrop-filter: blur(4px);
+        }
+
+        .bulk-grading-modal {
+          background: white;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 950px;
+          max-height: 92vh;
+          overflow-y: auto;
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .bulk-grading-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          padding: 32px;
+          border-bottom: 2px solid #f0f4f8;
+          flex-shrink: 0;
+          background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
+        }
+
+        .bulk-grading-title-section h2 {
+          margin: 0;
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+
+        .bulk-grading-subtitle {
+          margin: 8px 0 0 0;
+          font-size: 0.95rem;
+          color: #6b7280;
+          font-weight: 500;
+        }
+
+        .bulk-grading-close-btn {
+          background: none;
+          border: none;
+          font-size: 1.75rem;
+          color: #9ca3af;
+          cursor: pointer;
+          padding: 0;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+          transition: all 0.2s ease;
+          flex-shrink: 0;
+        }
+
+        .bulk-grading-close-btn:hover {
+          background: #e5e7eb;
+          color: #374151;
+        }
+
+        .bulk-grading-error-banner {
+          margin: 24px 32px 0 32px;
+          padding: 14px 18px;
+          background: #fef2f2;
+          color: #991b1b;
+          border: 2px solid #fca5a5;
+          border-radius: 12px;
+          font-size: 0.9rem;
+          line-height: 1.5;
+          font-weight: 500;
+        }
+
+        .bulk-grading-section {
+          padding: 32px;
+          border-bottom: 2px solid #f0f4f8;
+          flex: 1;
+        }
+
+        .bulk-grading-section-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 2px solid #e5e7eb;
+        }
+
+        .bulk-grading-section-header h3 {
+          margin: 0;
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: #1f2937;
+          letter-spacing: 0.3px;
+        }
+
+        .bulk-grading-step-indicator {
+          background: #e0f2fe;
+          color: #0369a1;
+          padding: 6px 14px;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .bulk-grading-helper-text {
+          margin: 0 0 20px 0;
+          color: #4b5563;
+          font-size: 0.9rem;
+          line-height: 1.5;
+        }
+
+        .bulk-grading-form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px;
+          margin-bottom: 0;
+        }
+
+        .bulk-grading-form-grid .form-group {
+          margin-bottom: 0;
+        }
+
+        .bulk-grading-form-grid label {
+          display: block;
+          color: #374151;
+          font-weight: 600;
+          margin-bottom: 10px;
+          font-size: 0.95rem;
+          letter-spacing: 0.3px;
+        }
+
+        .bulk-grading-form-grid input,
+        .bulk-grading-form-grid select {
+          width: 100%;
+          padding: 14px 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          font-size: 1rem;
+          color: #1f2937;
+          background: white;
+          transition: all 0.3s ease;
+          font-family: inherit;
+        }
+
+        .bulk-grading-form-grid input:hover,
+        .bulk-grading-form-grid select:hover {
+          border-color: #d1d5db;
+          background: #fafbfc;
+        }
+
+        .bulk-grading-form-grid input:focus,
+        .bulk-grading-form-grid select:focus {
+          outline: none;
+          border-color: #2563eb;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+        }
+
+        .bulk-grading-form-grid input:disabled,
+        .bulk-grading-form-grid select:disabled {
+          background: #f3f4f6;
+          color: #9ca3af;
+          cursor: not-allowed;
+        }
+
+        .bulk-grading-table-container {
+          max-height: 400px;
+          overflow-y: auto;
+          border: 2px solid #e5e7eb;
+          border-radius: 14px;
+          background: white;
+        }
+
+        .bulk-grading-table-container table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .bulk-grading-table-container thead tr {
+          background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
+          border-bottom: 2px solid #e5e7eb;
+        }
+
+        .bulk-grading-table-container th {
+          padding: 16px;
+          text-align: left;
+          font-weight: 700;
+          font-size: 0.9rem;
+          color: #374151;
+          letter-spacing: 0.3px;
+          text-transform: uppercase;
+        }
+
+        .bulk-grading-table-container tbody tr {
+          border-bottom: 1px solid #e5e7eb;
+          transition: background 0.2s ease;
+        }
+
+        .bulk-grading-table-container tbody tr:hover {
+          background: #f8fafc;
+        }
+
+        .bulk-grading-table-container td {
+          padding: 14px 16px;
+          font-size: 0.95rem;
+          color: #1f2937;
+        }
+
+        .bulk-grading-table-container input[type="number"],
+        .bulk-grading-table-container input[type="text"] {
+          width: 100%;
+          padding: 10px 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          background: white;
+          transition: all 0.2s ease;
+        }
+
+        .bulk-grading-table-container input[type="number"]:focus,
+        .bulk-grading-table-container input[type="text"]:focus {
+          outline: none;
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+
+        .bulk-grading-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          padding: 28px 32px;
+          border-top: 2px solid #f0f4f8;
+          flex-shrink: 0;
+          background: #f8fafc;
+        }
+
+        .bulk-grading-cancel-btn,
+        .bulk-grading-submit-btn {
+          padding: 12px 28px;
+          border: none;
+          border-radius: 10px;
+          font-weight: 700;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          letter-spacing: 0.3px;
+        }
+
+        .bulk-grading-cancel-btn {
+          background: #f3f4f6;
+          color: #4b5563;
+          border: 2px solid #d1d5db;
+        }
+
+        .bulk-grading-cancel-btn:hover {
+          background: #e5e7eb;
+          transform: translateY(-1px);
+        }
+
+        .bulk-grading-cancel-btn:active {
+          transform: translateY(0);
+        }
+
+        .bulk-grading-submit-btn {
+          background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+          color: white;
+          box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+        }
+
+        .bulk-grading-submit-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 30px rgba(34, 197, 94, 0.45);
+        }
+
+        .bulk-grading-submit-btn:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .bulk-grading-submit-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        @media (max-width: 768px) {
+          .bulk-grading-modal {
+            max-width: 95vw;
+            max-height: 95vh;
+          }
+
+          .bulk-grading-header {
+            padding: 24px;
+          }
+
+          .bulk-grading-section {
+            padding: 24px;
+          }
+
+          .bulk-grading-form-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .bulk-grading-header {
+            padding: 20px;
+          }
+
+          .bulk-grading-title-section h2 {
+            font-size: 1.5rem;
+          }
+
+          .bulk-grading-section {
+            padding: 20px;
+          }
+
+          .bulk-grading-section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+          }
+
+          .bulk-grading-actions {
+            flex-direction: column;
+            gap: 10px;
+            padding: 20px;
+          }
+
+          .bulk-grading-cancel-btn,
+          .bulk-grading-submit-btn {
+            width: 100%;
+          }
+
+          .bulk-grading-table-container {
+            max-height: 300px;
           }
         }
       `}</style>

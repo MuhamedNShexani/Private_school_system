@@ -8,7 +8,6 @@
 /* RTL Support - only for text direction, not layout */
 .sidebar-layout.rtl {
   direction: rtl;
-  background-color: #fef3c7 !important; /* Debug: yellow background for RTL */
 }
 
 /* Ensure RTL text flows properly in nav links */
@@ -16,10 +15,18 @@
   direction: rtl !important;
   text-align: right !important;
   flex-direction: row-reverse !important;
+  gap: 12px !important;
+}
+
+.sidebar-layout.rtl .nav-link svg {
+  order: 2 !important;
+  flex-shrink: 0 !important;
 }
 
 .sidebar-layout.rtl .nav-link span {
   text-align: right !important;
+  order: 1 !important;
+  flex: 1 !important;
 }
 
 .sidebar-layout.rtl .nav-link.active {
@@ -30,6 +37,25 @@
 .sidebar-layout.rtl .nav-link.active::before {
   left: auto !important;
   right: 0 !important;
+}
+
+.sidebar-layout.rtl .dropdown-item {
+  text-align: right !important;
+  flex-direction: row-reverse !important;
+  gap: 12px !important;
+}
+
+.sidebar-layout.rtl .dropdown-item svg {
+  order: 2 !important;
+  flex-shrink: 0 !important;
+}
+
+.sidebar-layout.rtl .user-details {
+  flex-direction: row-reverse !important;
+}
+
+.sidebar-layout.rtl .user-info {
+  align-items: flex-end !important;
 }
 
 .sidebar-layout.rtl .account-dropdown {
@@ -87,6 +113,25 @@
   left: 0 !important;
 }
 
+[dir="rtl"] .sidebar-layout .dropdown-item {
+  text-align: right !important;
+  flex-direction: row-reverse !important;
+  gap: 12px !important;
+}
+
+[dir="rtl"] .sidebar-layout .dropdown-item svg {
+  order: 2 !important;
+  flex-shrink: 0 !important;
+}
+
+[dir="rtl"] .sidebar-layout .user-details {
+  flex-direction: row-reverse !important;
+}
+
+[dir="rtl"] .sidebar-layout .user-info {
+  align-items: flex-end !important;
+}
+
 [dir="rtl"] .sidebar-layout .sidebar-header {
   direction: ltr !important;
 }
@@ -99,10 +144,18 @@
   direction: rtl !important;
   text-align: right !important;
   flex-direction: row-reverse !important;
+  gap: 12px !important;
+}
+
+[dir="rtl"] .sidebar-layout .nav-link svg {
+  order: 2 !important;
+  flex-shrink: 0 !important;
 }
 
 [dir="rtl"] .sidebar-layout .nav-link span {
   text-align: right !important;
+  order: 1 !important;
+  flex: 1 !important;
 }
 
 /* Vertical Sidebar */
@@ -660,14 +713,14 @@
   }
 
   .student-top-bar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
     gap: 12px;
   }
 
   .student-top-actions {
-    width: 100%;
-    justify-content: space-between;
+    width: auto;
+    justify-content: flex-end;
   }
 
   .student-language-switcher {
@@ -739,14 +792,23 @@
     min-width: 280px;
   }
 
-  .student-top-actions {
-    flex-direction: column;
-    align-items: stretch;
+  .student-top-bar {
+    flex-direction: row;
+    align-items: center;
     gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .student-top-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    justify-content: flex-end;
   }
 
   .student-language-switcher {
-    width: 100%;
+    width: auto;
     justify-content: center;
   }
 
@@ -793,8 +855,24 @@
     display: none;
   }
 
+  .student-top-bar {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .student-top-actions {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    justify-content: flex-end;
+  }
+
   .student-language-switcher {
     padding: 6px 10px;
+    font-size: 0.85rem;
   }
 
   .student-language-select {

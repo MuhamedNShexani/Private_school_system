@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "../contexts/TranslationContext";
 import {
   studentsAPI,
   teachersAPI,
@@ -20,6 +21,7 @@ import {
 import "./AdminCRUD.css";
 
 const AdminCRUD = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("students");
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
@@ -64,14 +66,22 @@ const AdminCRUD = () => {
           classesAPI.getAll(),
         ]);
 
-      console.log("Fetched teachers data:", teachersRes.data);
-      setStudents(studentsRes.data);
-      setTeachers(teachersRes.data.data || []);
-      setSubjects(subjectsRes.data || []);
-      setClasses(classesRes.data || []);
+      console.log("Fetched data:", { studentsRes, teachersRes, subjectsRes, classesRes });
+      
+      // Handle different response formats
+      const extractData = (response) => {
+        if (response.data.data) return response.data.data;
+        if (Array.isArray(response.data)) return response.data;
+        return [];
+      };
+
+      setStudents(extractData(studentsRes));
+      setTeachers(extractData(teachersRes));
+      setSubjects(extractData(subjectsRes));
+      setClasses(extractData(classesRes));
     } catch (error) {
       console.error("Error fetching data:", error);
-      setError("Failed to load data");
+      setError(t("admin.msg.failedLoadData", "Failed to load data"));
     } finally {
       setLoading(false);
     }
@@ -208,7 +218,7 @@ const AdminCRUD = () => {
   };
 
   const handleDelete = async (id, type) => {
-    if (window.confirm("Are you sure you want to delete this item?")) {
+    if (window.confirm(t("admin.crud.deleteConfirm", "Are you sure you want to delete this item?"))) {
       try {
         if (type === "student") {
           await studentsAPI.delete(id);
@@ -224,7 +234,7 @@ const AdminCRUD = () => {
         setRefreshing(false);
       } catch (error) {
         console.error("Error deleting item:", error);
-        setError("Failed to delete item");
+        setError(t("admin.msg.failedDelete", "Failed to delete item"));
       }
     }
   };
@@ -254,16 +264,16 @@ const AdminCRUD = () => {
           } else {
             // No new image - use regular object
             studentFormData = {
-              fullName: formData.fullName,
-              email: formData.email,
-              phone: formData.phone || undefined,
-              username: formData.username,
-              parentsNumber: formData.parentsNumber || undefined,
-              class: formData.classes[0] || undefined,
-              branchID: formData.branches[0] || undefined,
-              gender: formData.gender || editingItem.gender || "Other",
+            fullName: formData.fullName,
+            email: formData.email,
+            phone: formData.phone || undefined,
+            username: formData.username,
+            parentsNumber: formData.parentsNumber || undefined,
+            class: formData.classes[0] || undefined,
+            branchID: formData.branches[0] || undefined,
+            gender: formData.gender || editingItem.gender || "Other",
               studentNumber: editingItem.studentNumber,
-            };
+          };
           }
 
           console.log("Updating student with data:", studentFormData);
@@ -305,19 +315,19 @@ const AdminCRUD = () => {
           } else {
             // No new image - use regular object
             teacherFormData = {
-              name: formData.name,
-              email: formData.email,
+            name: formData.name,
+            email: formData.email,
               phone: formData.phone || undefined,
-              gender: formData.gender || undefined,
-              subjects: formData.subjects || [],
-              classes: formData.classes || [],
-              branches: formData.branches || [],
+            gender: formData.gender || undefined,
+            subjects: formData.subjects || [],
+            classes: formData.classes || [],
+            branches: formData.branches || [],
               username: formData.username || undefined,
-              experience: parseInt(formData.experience) || 0,
-            };
+            experience: parseInt(formData.experience) || 0,
+          };
 
-            // Only include password if it's provided (not empty)
-            if (formData.password && formData.password.trim() !== "") {
+          // Only include password if it's provided (not empty)
+          if (formData.password && formData.password.trim() !== "") {
               teacherFormData.password = formData.password;
             }
           }
@@ -378,17 +388,17 @@ const AdminCRUD = () => {
           } else {
             // No image - use regular object
             studentFormData = {
-              fullName: formData.fullName,
-              email: formData.email,
-              phone: formData.phone || undefined,
-              username: formData.username,
-              parentsNumber: formData.parentsNumber || undefined,
+            fullName: formData.fullName,
+            email: formData.email,
+            phone: formData.phone || undefined,
+            username: formData.username,
+            parentsNumber: formData.parentsNumber || undefined,
               class: formData.classes[0] || undefined,
               branchID: formData.branches[0] || undefined,
-              gender: formData.gender || "Other",
+            gender: formData.gender || "Other",
               studentNumber: `STU${Date.now()}`,
-              password: formData.password,
-            };
+            password: formData.password,
+          };
           }
 
           console.log("Creating student with data:", studentFormData);
@@ -434,17 +444,17 @@ const AdminCRUD = () => {
           } else {
             // No image - use regular object
             teacherFormData = {
-              name: formData.name,
-              email: formData.email,
+            name: formData.name,
+            email: formData.email,
               phone: formData.phone || undefined,
-              gender: formData.gender || undefined,
-              subjects: formData.subjects || [],
-              classes: formData.classes || [],
-              branches: formData.branches || [],
-              username: formData.username,
-              password: formData.password,
-              experience: parseInt(formData.experience) || 0,
-            };
+            gender: formData.gender || undefined,
+            subjects: formData.subjects || [],
+            classes: formData.classes || [],
+            branches: formData.branches || [],
+            username: formData.username,
+            password: formData.password,
+            experience: parseInt(formData.experience) || 0,
+          };
           }
 
           console.log("Creating teacher with data:", teacherFormData);
@@ -578,7 +588,7 @@ const AdminCRUD = () => {
       <div className="admin-crud-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>Loading...</p>
+          <p>{t("admin.crud.loading", "Loading...")}</p>
         </div>
       </div>
     );
@@ -587,8 +597,8 @@ const AdminCRUD = () => {
   return (
     <div className="admin-crud-container">
       <div className="admin-crud-header">
-        <h1>Admin Management</h1>
-        <p>Manage students and teachers</p>
+        <h1>{t("admin.crud.title", "Admin Management")}</h1>
+        <p>{t("admin.crud.subtitle", "Manage students and teachers")}</p>
       </div>
 
       <div className="admin-crud-tabs">
@@ -597,14 +607,14 @@ const AdminCRUD = () => {
           onClick={() => setActiveTab("students")}
         >
           <Users size={20} />
-          <span>Students ({students.length})</span>
+          <span>{t("admin.crud.tabStudents", "Students")} ({students.length})</span>
         </button>
         <button
           className={`tab-button ${activeTab === "teachers" ? "active" : ""}`}
           onClick={() => setActiveTab("teachers")}
         >
           <GraduationCap size={20} />
-          <span>Teachers ({teachers.length})</span>
+          <span>{t("admin.crud.tabTeachers", "Teachers")} ({teachers.length})</span>
         </button>
       </div>
 
@@ -613,7 +623,7 @@ const AdminCRUD = () => {
           <Search size={20} />
           <input
             type="text"
-            placeholder={`Search ${activeTab}...`}
+            placeholder={t("admin.crud.searchPlaceholder", "Search")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -623,12 +633,12 @@ const AdminCRUD = () => {
           {refreshing && (
             <div className="refreshing-indicator">
               <div className="spinner-small"></div>
-              <span>Refreshing...</span>
+              <span>{t("admin.msg.savingData", "Saving data...")}</span>
             </div>
           )}
           <button className="create-button" onClick={handleCreate}>
             <Plus size={20} />
-            <span>Add {activeTab === "students" ? "Student" : "Teacher"}</span>
+            <span>{t("admin.crud.addNew", "Add New")}</span>
           </button>
         </div>
       </div>
@@ -637,23 +647,23 @@ const AdminCRUD = () => {
         {activeTab === "students" ? (
           <div className="data-table student-table">
             <div className="table-header">
-              <div className="table-cell">Name</div>
-              <div className="table-cell">Gender</div>
-              <div className="table-cell">Username</div>
-              <div className="table-cell">Email</div>
-              <div className="table-cell">Phone</div>
-              <div className="table-cell">Parents Number</div>
-              <div className="table-cell">Actions</div>
+              <div className="table-cell">{t("admin.form.name", "Name")}</div>
+              <div className="table-cell">{t("admin.form.gender", "Gender")}</div>
+              <div className="table-cell">{t("admin.form.username", "Username")}</div>
+              <div className="table-cell">{t("admin.form.email", "Email")}</div>
+              <div className="table-cell">{t("admin.form.phone", "Phone")}</div>
+              <div className="table-cell">{t("admin.form.parentsNumber", "Parents Number")}</div>
+              <div className="table-cell">{t("admin.crud.edit", "Edit")}</div>
             </div>
             {filteredStudents.map((student) => (
               <div key={student._id} className="table-row">
-                <div className="table-cell">{student.fullName || "N/A"}</div>
-                <div className="table-cell">{student.gender || "N/A"}</div>
-                <div className="table-cell">{student.username || "N/A"}</div>
+                <div className="table-cell">{student.fullName || t("common.na", "N/A")}</div>
+                <div className="table-cell">{student.gender || t("common.na", "N/A")}</div>
+                <div className="table-cell">{student.username || t("common.na", "N/A")}</div>
                 <div className="table-cell">{student.email}</div>
-                <div className="table-cell">{student.phone || "N/A"}</div>
+                <div className="table-cell">{student.phone || t("common.na", "N/A")}</div>
                 <div className="table-cell">
-                  {student.parentsNumber || "N/A"}
+                  {student.parentsNumber || t("common.na", "N/A")}
                 </div>
                 <div className="table-cell">
                   <button
@@ -675,15 +685,15 @@ const AdminCRUD = () => {
         ) : (
           <div className="data-table teacher-table">
             <div className="table-header">
-              <div className="table-cell">Name</div>
-              <div className="table-cell">Gender</div>
-              <div className="table-cell">Username</div>
-              <div className="table-cell">Email</div>
-              <div className="table-cell">Phone</div>
-              <div className="table-cell">Subjects</div>
-              <div className="table-cell">Classes</div>
-              <div className="table-cell">Experience</div>
-              <div className="table-cell">Actions</div>
+              <div className="table-cell">{t("admin.table.name", "Name")}</div>
+              <div className="table-cell">{t("admin.table.gender", "Gender")}</div>
+              <div className="table-cell">{t("admin.table.username", "Username")}</div>
+              <div className="table-cell">{t("admin.table.email", "Email")}</div>
+              <div className="table-cell">{t("admin.table.phone", "Phone")}</div>
+              <div className="table-cell">{t("admin.table.subjects", "Subjects")}</div>
+              <div className="table-cell">{t("admin.table.classes", "Classes")}</div>
+              <div className="table-cell">{t("admin.table.experience", "Experience")}</div>
+              <div className="table-cell">{t("admin.table.actions", "Actions")}</div>
             </div>
             {filteredTeachers.map((teacher) => (
               <div key={teacher._id} className="table-row">
@@ -743,8 +753,8 @@ const AdminCRUD = () => {
             <div className="modal-header">
               <h2>
                 {editingItem
-                  ? `Edit ${activeTab === "students" ? "Student" : "Teacher"}`
-                  : `Add ${activeTab === "students" ? "Student" : "Teacher"}`}
+                  ? t("admin.msg.edit", "Edit")
+                  : t("admin.msg.add", "Add")}
               </h2>
               <button
                 className="close-button"
@@ -757,7 +767,7 @@ const AdminCRUD = () => {
             <form onSubmit={handleSubmit} className="modal-form">
               {activeTab === "students" ? (
                 <div className="form-group">
-                  <label>Full Name *</label>
+                  <label>{t("admin.form.fullName", "Full Name")} {t("admin.form.required", "*")}</label>
                   <input
                     type="text"
                     value={formData.fullName}
@@ -769,7 +779,7 @@ const AdminCRUD = () => {
                 </div>
               ) : (
                 <div className="form-group">
-                  <label>Full Name</label>
+                  <label>{t("admin.form.name", "Name")}</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -783,7 +793,7 @@ const AdminCRUD = () => {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label>Email</label>
+                  <label>{t("admin.form.email", "Email")}</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -794,7 +804,7 @@ const AdminCRUD = () => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Phone</label>
+                  <label>{t("admin.form.phone", "Phone")}</label>
                   <input
                     type="tel"
                     value={formData.phone}
@@ -806,7 +816,7 @@ const AdminCRUD = () => {
               </div>
 
               <div className="form-group">
-                <label>Gender</label>
+                <label>{t("admin.form.gender", "Gender")}</label>
                 <select
                   value={formData.gender}
                   onChange={(e) =>
@@ -822,7 +832,7 @@ const AdminCRUD = () => {
               </div>
 
               <div className="form-group">
-                <label>Profile Image</label>
+                <label>{t("admin.form.profileImage", "Profile Image")}</label>
                 <div className="image-upload-container">
                   <input
                     type="file"
@@ -833,7 +843,7 @@ const AdminCRUD = () => {
                   />
                   <label htmlFor="image-input" className="image-upload-label">
                     <Upload size={20} />
-                    <span>Click to upload image</span>
+                    <span>{t("admin.msg.uploadImage", "Upload Image")}</span>
                   </label>
                   {imagePreview && (
                     <div className="image-preview">
@@ -902,7 +912,7 @@ const AdminCRUD = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Parents Number</label>
+                    <label>{t("admin.form.parentsNumber", "Parents Number")}</label>
                     <input
                       type="tel"
                       value={formData.parentsNumber}
@@ -929,7 +939,7 @@ const AdminCRUD = () => {
                     </div>
                   )}
                   <div className="form-group">
-                    <label>Class</label>
+                    <label>{t("admin.form.classLabel", "Class")}</label>
                     <select
                       value={formData.classes[0] || ""}
                       onChange={(e) =>
@@ -946,7 +956,7 @@ const AdminCRUD = () => {
                     </select>
                   </div>
                   <div className="form-group">
-                    <label>Branch</label>
+                    <label>{t("admin.form.branchLabel", "Branch")}</label>
                     <select
                       value={formData.branches[0] || ""}
                       onChange={(e) =>
@@ -966,7 +976,7 @@ const AdminCRUD = () => {
               ) : (
                 <>
                   <div className="form-group">
-                    <label>Classes</label>
+                    <label>{t("admin.form.classesLabel", "Classes")}</label>
                     <div className="multi-select-container">
                       {classes.map((cls) => (
                         <label key={cls._id} className="multi-select-item">
@@ -983,7 +993,7 @@ const AdminCRUD = () => {
 
                   {formData.classes.length > 0 && (
                     <div className="form-group">
-                      <label>Branches</label>
+                      <label>{t("admin.form.branchesLabel", "Branches")}</label>
                       <div className="multi-select-container">
                         {getAvailableBranches().map((branch) => (
                           <label key={branch._id} className="multi-select-item">
@@ -1050,7 +1060,7 @@ const AdminCRUD = () => {
 
               {!editingItem && activeTab === "students" && (
                 <div className="form-group">
-                  <label>Password</label>
+                  <label>{t("admin.form.passwordLabel", "Password")}</label>
                   <input
                     type="password"
                     value={formData.password}
@@ -1083,7 +1093,7 @@ const AdminCRUD = () => {
       {error && (
         <div className="error-message">
           <p>{error}</p>
-          <button onClick={() => setError("")}>Dismiss</button>
+          <button onClick={() => setError("")}>{t("admin.modal.dismiss", "Dismiss")}</button>
         </div>
       )}
     </div>

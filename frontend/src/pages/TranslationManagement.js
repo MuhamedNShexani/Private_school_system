@@ -532,7 +532,7 @@ const TranslationManagement = () => {
         .translations-table th {
           background: #f8fafc;
           padding: 16px;
-          text-align: left;
+          text-align: center;
           font-weight: 600;
           color: #374151;
           border-bottom: 2px solid #e2e8f0;
@@ -542,6 +542,7 @@ const TranslationManagement = () => {
           padding: 16px;
           border-bottom: 1px solid #e2e8f0;
           vertical-align: top;
+          text-align: center;
         }
 
         .translation-key strong {

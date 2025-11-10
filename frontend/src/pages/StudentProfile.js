@@ -211,6 +211,27 @@ const StudentProfile = () => {
       try {
         setLoading(true);
 
+        // Extract data helper function - handle both { data: [...] } and [...] formats
+        const extractData = (response, isArray = false) => {
+          if (isArray) {
+            if (response.data?.data)
+              return Array.isArray(response.data.data)
+                ? response.data.data
+                : [];
+            if (Array.isArray(response.data)) return response.data;
+            return [];
+          }
+          // For single object response
+          if (
+            response.data?.data &&
+            typeof response.data.data === "object" &&
+            !Array.isArray(response.data.data)
+          ) {
+            return response.data.data;
+          }
+          return response.data;
+        };
+
         // Get student profile based on user role and URL params
         let studentData;
         const usernameParam = searchParams.get("username");
@@ -222,7 +243,7 @@ const StudentProfile = () => {
           // Student can only see their own profile
           console.log("StudentProfile - Getting own profile for student");
           const response = await studentsAPI.getByUsername(user.username);
-          studentData = response.data;
+          studentData = extractData(response);
         } else if (usernameParam) {
           // If username is provided in URL, get that specific student
           console.log(
@@ -230,12 +251,13 @@ const StudentProfile = () => {
             usernameParam
           );
           const response = await studentsAPI.getByUsername(usernameParam);
-          studentData = response.data;
+          studentData = extractData(response);
         } else {
           // For teachers/admins without specific username, get the first student as example
           console.log("StudentProfile - Getting first student as example");
           const response = await studentsAPI.getAll();
-          studentData = response.data[0];
+          const allStudents = extractData(response, true);
+          studentData = allStudents?.[0] || null;
         }
 
         if (studentData) {
@@ -447,7 +469,7 @@ const StudentProfile = () => {
     if (user) {
       fetchStudentData();
     }
-  }, [user, searchParams, currentLanguage, t, subjectIsAllowed]);
+  }, [user, searchParams, currentLanguage]);
 
   // Get status badge color
   const getStatusColor = (status) => {
@@ -514,9 +536,11 @@ const StudentProfile = () => {
 
   const getStatusLabel = (status) => {
     if (!status) {
-      return t("studentProfile.status.active", "Active");
+      return t("status.active", "Active");
     }
     const normalized = status.toLowerCase();
+    if (normalized === "active") return t("status.active", "Active");
+    if (normalized === "inactive") return t("status.inactive", "Inactive");
     return t(`studentProfile.status.${normalized}`, status);
   };
 
@@ -698,26 +722,15 @@ const StudentProfile = () => {
   );
 
   const trainingQuizzes = useMemo(() => {
-    return availableTrainingQuizzes.filter(
-      ({ chapterId, subjectId, seasonId }) => {
-        if (trainingFilterSeason && seasonId !== trainingFilterSeason) {
-          return false;
-        }
-        if (trainingFilterSubject && subjectId !== trainingFilterSubject) {
-          return false;
-        }
-        if (trainingFilterChapter && chapterId !== trainingFilterChapter) {
-          return false;
-        }
-        return true;
-      }
-    );
-  }, [
-    availableTrainingQuizzes,
-    trainingFilterSeason,
-    trainingFilterSubject,
-    trainingFilterChapter,
-  ]);
+    // Show only the last 5 quizzes, sorted by most recent first
+    return availableTrainingQuizzes
+      .sort((a, b) => {
+        const dateA = new Date(a.quiz?.updatedAt || a.quiz?.createdAt || 0);
+        const dateB = new Date(b.quiz?.updatedAt || b.quiz?.createdAt || 0);
+        return dateB - dateA;
+      })
+      .slice(0, 5);
+  }, [availableTrainingQuizzes]);
 
   useEffect(() => {
     setGradesPage((prev) => {
@@ -909,7 +922,7 @@ const StudentProfile = () => {
 
   return (
     <div>
-      <div className="page-header">
+      {/* <div className="page-header">
         <div className="container">
           <h1>
             <User
@@ -923,7 +936,7 @@ const StudentProfile = () => {
             {student.fullName}
           </p>
         </div>
-      </div>
+      </div> */}
 
       <div className="container">
         <div className="profile-layout">
@@ -935,17 +948,38 @@ const StudentProfile = () => {
                   <img src={student.photo} alt={student.fullName} />
                 ) : (
                   <div className="avatar-placeholder">
-                    {student.fullName.charAt(0).toUpperCase()}
+                    {student.fullName && student.fullName.length > 0
+                      ? student.fullName.charAt(0).toUpperCase()
+                      : student.username?.charAt(0).toUpperCase() || "?"}
                   </div>
                 )}
               </div>
-              <div className="profile-hero-info">
-                <h2>{student.fullName}</h2>
-                <div className="profile-hero-meta">
-                  <span className="profile-hero-gender">
-                    {getGenderIcon(student.gender)}{" "}
-                    {getGenderLabel(student.gender)}
+              <div className="profile-hero-content">
+                <div className="profile-hero-info">
+                  <h2>
+                    {student.fullName ||
+                      student.username ||
+                      t("studentProfile.unknownStudent", "Unknown Student")}
+                  </h2>
+                  <div className="profile-hero-meta">
+                    <span className="profile-hero-gender">
+                      {getGenderIcon(student.gender)}{" "}
+                      {getGenderLabel(student.gender)}
+                    </span>
+
+                    {/* <span className="profile-hero-chip">
+                    <Calendar size={14} />
+                    {joinedDateLabel}
+                    </span> */}
+                  </div>
+                  {/* <div className="profile-hero-id">
+                  <span className="id-badge">
+                    {t("studentProfile.id", "ID")}:{" "}
+                    {student.studentNumber || t("common.na", "N/A")}
                   </span>
+                  </div> */}
+                </div>
+                <div className="profile-hero-status">
                   <span className="profile-hero-chip">
                     <GraduationCap size={14} />
                     {classDisplayName}
@@ -954,25 +988,13 @@ const StudentProfile = () => {
                     <MapPin size={14} />
                     {branchDisplayName}
                   </span>
-                  <span className="profile-hero-chip">
-                    <Calendar size={14} />
-                    {joinedDateLabel}
-                  </span>
-                </div>
-                <div className="profile-hero-id">
-                  <span className="id-badge">
-                    {t("studentProfile.id", "ID")}:{" "}
-                    {student.studentNumber || t("common.na", "N/A")}
-                  </span>
-                </div>
-              </div>
-              <div className="profile-hero-status">
-                <span
+                  {/* <span
                   className="status-badge"
                   style={{ backgroundColor: getStatusColor(student.status) }}
                 >
                   {getStatusLabel(student.status)}
-                </span>
+                  </span> */}
+                </div>
               </div>
             </div>
           </div>
@@ -992,13 +1014,13 @@ const StudentProfile = () => {
                       t("studentProfile.notProvided", "Not provided")}
                   </span>
                 </div>
-                <div className="info-item" style={itemDirectionStyle}>
+                {/* <div className="info-item" style={itemDirectionStyle}>
                   <User size={16} />
                   <span>
                     {t("studentProfile.username", "Username")}:{" "}
                     {student.username}
                   </span>
-                </div>
+                </div> */}
                 {student.parentsNumber && (
                   <div className="info-item" style={itemDirectionStyle}>
                     <Phone size={16} />
@@ -1140,65 +1162,13 @@ const StudentProfile = () => {
                   )}
                 </span>
               </div>
-              <div className="training-quizzes-filters">
-                <div className="filter-control">
-                  <label htmlFor="training-filter-season">
-                    {t("studentProfile.filterSeason", "Filter by Season")}
-                  </label>
-                  <select
-                    id="training-filter-season"
-                    value={trainingFilterSeason}
-                    onChange={(e) => setTrainingFilterSeason(e.target.value)}
-                  >
-                    <option value="">
-                      {t("studentProfile.allSeasons", "All Seasons")}
-                    </option>
-                    {trainingFilterOptions.seasons.map((season) => (
-                      <option key={season.id} value={season.id}>
-                        {season.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="filter-control">
-                  <label htmlFor="training-filter-subject">
-                    {t("studentProfile.filterSubject", "Filter by Subject")}
-                  </label>
-                  <select
-                    id="training-filter-subject"
-                    value={trainingFilterSubject}
-                    onChange={(e) => setTrainingFilterSubject(e.target.value)}
-                  >
-                    <option value="">
-                      {t("studentProfile.allSubjects", "All Subjects")}
-                    </option>
-                    {trainingFilterOptions.subjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="filter-control">
-                  <label htmlFor="training-filter-chapter">
-                    {t("studentProfile.filterChapter", "Filter by Chapter")}
-                  </label>
-                  <select
-                    id="training-filter-chapter"
-                    value={trainingFilterChapter}
-                    onChange={(e) => setTrainingFilterChapter(e.target.value)}
-                  >
-                    <option value="">
-                      {t("studentProfile.allChapters", "All Chapters")}
-                    </option>
-                    {filteredChapterOptions.map((chapter) => (
-                      <option key={chapter.id} value={chapter.id}>
-                        {chapter.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <button
+                type="button"
+                className="all-quizzes-btn"
+                onClick={() => navigate("/student/quizzes")}
+              >
+                {t("studentProfile.allQuizzes", "All Quizzes")}
+              </button>
             </div>
             {trainingQuizzes.length === 0 ? (
               <div className="empty-section">
@@ -1470,19 +1440,23 @@ const StudentProfile = () => {
 
                             // Try to find grade by matching any of the season names
                             const grade = grades.find((g) => {
-                              const subjectId = normalizeId(
+                              const gradeSubjectId = normalizeId(
                                 g.subject?._id || g.subject || g.subjectId
                               );
-                              if (!subjectId || !subjectIsAllowed(subjectId)) {
+                              if (
+                                !gradeSubjectId ||
+                                !subjectIsAllowed(gradeSubjectId)
+                              ) {
                                 return false;
                               }
-                              const subjectMatch = true;
+                              // Check if the grade's subject matches the current subject
+                              const subjectMatch = gradeSubjectId === subjectId;
                               const seasonMatch = seasonNames.includes(
                                 g.season
                               );
-                              if (!seasonMatch) {
+                              if (!seasonMatch || !subjectMatch) {
                                 console.log(
-                                  `Grade not matched - Subject: ${subjectMatch}, Season: ${
+                                  `Grade not matched - Subject: ${subjectMatch} (grade: ${gradeSubjectId}, current: ${subjectId}), Season: ${
                                     g.season
                                   }, Looking for: ${JSON.stringify(
                                     seasonNames
@@ -2494,14 +2468,22 @@ const StudentProfile = () => {
             #f093fb 100%
           );
           border-radius: 32px;
-          padding: 48px 40px;
+          padding: 32px 40px;
           display: flex;
-          align-items: center;
-          gap: 40px;
+          align-items: flex-start;
+          gap: 32px;
           position: relative;
           overflow: hidden;
           min-height: 240px;
           box-shadow: 0 20px 60px rgba(102, 126, 234, 0.2);
+        }
+
+        .profile-hero-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          justify-content: space-between;
         }
 
         .profile-hero-banner::before {
@@ -2536,8 +2518,8 @@ const StudentProfile = () => {
         }
 
         .student-avatar {
-          width: 140px;
-          height: 140px;
+          width: 160px;
+          height: 160px;
           border-radius: 28px;
           overflow: hidden;
           background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
@@ -2548,6 +2530,7 @@ const StudentProfile = () => {
           border: 6px solid rgba(255, 255, 255, 0.95);
           position: relative;
           flex-shrink: 0;
+          align-self: center;
         }
 
         .student-avatar::after {
@@ -2587,11 +2570,10 @@ const StudentProfile = () => {
         }
 
         .profile-hero-info {
-          flex: 1;
           display: flex;
           flex-direction: column;
           align-items: flex-start;
-          gap: 16px;
+          gap: 12px;
         }
 
         .profile-hero-info h2 {
@@ -2665,7 +2647,7 @@ const StudentProfile = () => {
         .profile-hero-status {
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: flex-start;
         }
 
         .status-badge {
@@ -2760,6 +2742,7 @@ const StudentProfile = () => {
         .info-item {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 14px;
           color: #475569;
           font-size: 0.95rem;
@@ -2768,13 +2751,19 @@ const StudentProfile = () => {
           border-radius: 14px;
           border: 1px solid #e2e8f0;
           transition: all 0.2s ease;
+          flex-direction: row;
+          text-align: center;
         }
 
         .info-item:hover {
-          transform: translateX(6px);
           border-color: #667eea;
           background: linear-gradient(135deg, #eef2ff 0%, #f3f4f6 100%);
           box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+        }
+
+        /* RTL Support for info-item */
+        [dir="rtl"] .info-item {
+          text-align: center;
         }
 
         .info-item svg {
@@ -2882,7 +2871,8 @@ const StudentProfile = () => {
 
         .training-quizzes-header {
           display: flex;
-          flex-direction: column;
+          justify-content: space-between;
+          align-items: flex-start;
           gap: 20px;
           margin-bottom: 24px;
         }
@@ -2902,6 +2892,29 @@ const StudentProfile = () => {
           font-size: 0.9rem;
           line-height: 1.6;
           font-weight: 500;
+        }
+
+        .all-quizzes-btn {
+          padding: 10px 20px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: #ffffff;
+          border: none;
+          border-radius: 12px;
+          font-weight: 600;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+          white-space: nowrap;
+        }
+
+        .all-quizzes-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .all-quizzes-btn:active {
+          transform: translateY(0);
         }
 
         .training-quizzes-filters {
@@ -3262,7 +3275,7 @@ const StudentProfile = () => {
         .grades-table th {
           background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
           padding: 16px;
-          text-align: left;
+          text-align: center;
           font-weight: 700;
           color: #1e293b;
           border-bottom: 2px solid #e2e8f0;
@@ -3280,6 +3293,7 @@ const StudentProfile = () => {
           border-bottom: 1px solid #f1f5f9;
           color: #475569;
           font-weight: 500;
+          text-align: center;
         }
 
         .grades-table tr {
@@ -3341,7 +3355,7 @@ const StudentProfile = () => {
         .activities-table th {
           background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
           padding: 16px;
-          text-align: left;
+          text-align: center;
           font-weight: 700;
           color: #1e293b;
           border-bottom: 2px solid #e2e8f0;
@@ -3359,6 +3373,7 @@ const StudentProfile = () => {
           border-bottom: 1px solid #f1f5f9;
           color: #475569;
           font-weight: 500;
+          text-align: center;
         }
 
         .activities-table tr {
@@ -3433,6 +3448,16 @@ const StudentProfile = () => {
         }
 
         @media (max-width: 768px) {
+          .training-quizzes-header {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .all-quizzes-btn {
+            width: 100%;
+            text-align: center;
+          }
+
           .training-quizzes-list {
             flex-direction: row;
             gap: 12px;
@@ -3463,24 +3488,38 @@ const StudentProfile = () => {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            flex-wrap: wrap;
+            gap: 8px;
+            flex-wrap: nowrap;
           }
 
           .table-pagination span {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: #475569;
+            white-space: nowrap;
+            flex-shrink: 0;
+            order: 2;
           }
 
           .table-pagination button {
             border: none;
             border-radius: 8px;
-            padding: 8px 14px;
+            padding: 8px 12px;
             background: #2563eb;
             color: #ffffff;
             font-weight: 600;
             cursor: pointer;
             transition: background 0.2s ease, transform 0.2s ease;
+            font-size: 0.75rem;
+            flex: 1;
+            white-space: nowrap;
+          }
+
+          .table-pagination button:first-child {
+            order: 1;
+          }
+
+          .table-pagination button:last-child {
+            order: 3;
           }
 
           .table-pagination button:disabled {
@@ -3498,23 +3537,34 @@ const StudentProfile = () => {
           }
 
           .profile-hero-banner {
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            padding: 28px;
+            flex-direction: row;
+            align-items: flex-start;
+            text-align: left;
+            padding: 24px;
+            gap: 20px;
+          }
+
+          .profile-hero-content {
+            flex: 1;
+            align-items: flex-start;
           }
 
           .profile-hero-info {
-            align-items: center;
+            align-items: flex-start;
           }
 
           .profile-hero-info h2 {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
+            text-align: left;
+          }
+
+          .profile-hero-meta {
+            justify-content: flex-start;
+            gap: 6px;
           }
 
           .profile-hero-status {
-            width: 100%;
-            justify-content: center;
+            justify-content: flex-start;
           }
 
           .profile-info-grid {
@@ -3522,8 +3572,9 @@ const StudentProfile = () => {
           }
 
           .student-avatar {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
+            flex-shrink: 0;
           }
         }
 
@@ -3550,11 +3601,11 @@ const StudentProfile = () => {
 
           .profile-hero-banner {
             border-radius: 28px;
-            padding: 32px 24px;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            gap: 20px;
+            padding: 20px 16px;
+            flex-direction: row;
+            align-items: flex-start;
+            text-align: left;
+            gap: 16px;
             min-height: auto;
             background: linear-gradient(
               135deg,
@@ -3564,59 +3615,65 @@ const StudentProfile = () => {
             );
           }
 
+          .profile-hero-content {
+            flex: 1;
+            align-items: flex-start;
+          }
+
           .profile-hero-info {
-            align-items: center;
-            gap: 12px;
+            align-items: flex-start;
+            gap: 8px;
             width: 100%;
           }
 
           .profile-hero-info h2 {
-            font-size: 1.75rem;
-            text-align: center;
+            font-size: 1.4rem;
+            text-align: left;
             line-height: 1.2;
+            margin: 0;
           }
 
           .profile-hero-meta {
-            justify-content: center;
+            justify-content: flex-start;
             width: 100%;
             flex-direction: row;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
           }
 
           .profile-hero-chip,
           .profile-hero-gender {
-            font-size: 0.75rem;
-            padding: 6px 10px;
+            font-size: 0.7rem;
+            padding: 4px 8px;
           }
 
           .profile-hero-id {
             width: 100%;
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
           }
 
           .profile-hero-id .id-badge {
-            font-size: 0.8rem;
-            padding: 8px 16px;
+            font-size: 0.75rem;
+            padding: 6px 12px;
           }
 
           .profile-hero-status {
-            width: 100%;
-            justify-content: center;
+            justify-content: flex-start;
             margin-top: 0;
           }
 
           .profile-hero-status .status-badge {
-            font-size: 0.75rem;
-            padding: 10px 24px;
-            min-width: 120px;
+            font-size: 0.7rem;
+            padding: 8px 16px;
+            min-width: 100px;
           }
 
           .student-avatar {
-            width: 110px;
-            height: 110px;
-            border-radius: 24px;
+            width: 100px;
+            height: 100px;
+            border-radius: 20px;
+            flex-shrink: 0;
           }
 
           .info-card h3 {
@@ -3687,6 +3744,7 @@ const StudentProfile = () => {
             flex-direction: column;
             gap: 8px;
             align-items: center;
+            justify-content: center;
             text-align: center;
           }
 
@@ -3777,6 +3835,8 @@ const StudentProfile = () => {
             min-height: 40px;
             display: flex;
             align-items: center;
+            justify-content: center;
+            text-align: center;
           }
 
           .activities-table td::before {

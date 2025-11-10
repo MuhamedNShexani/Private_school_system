@@ -1555,176 +1555,292 @@ const ChapterQuizzes = () => {
         .modal-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(0, 0, 0, 0.6);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 1000;
           padding: 20px;
+          backdrop-filter: blur(4px);
         }
 
         .modal {
           background: white;
-          border-radius: 16px;
+          border-radius: 20px;
           width: 100%;
-          max-width: 720px;
+          max-width: 800px;
           max-height: 92vh;
           overflow-y: auto;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+          display: flex;
+          flex-direction: column;
         }
 
         .modal-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 24px;
-          border-bottom: 1px solid #e2e8f0;
+          padding: 28px 32px;
+          border-bottom: 2px solid #f0f4f8;
+          flex-shrink: 0;
+          background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
+        }
+
+        .modal-header h2 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+
+        .close-btn {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          color: #9ca3af;
+          cursor: pointer;
+          padding: 0;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+          background: #e5e7eb;
+          color: #374151;
         }
 
         .modal-form {
-          padding: 24px;
+          padding: 32px;
+          flex: 1;
+          overflow-y: auto;
         }
 
         .form-group {
-          margin-bottom: 18px;
+          margin-bottom: 22px;
         }
 
         .form-group label {
           display: block;
-          color: #2d3748;
+          color: #374151;
           font-weight: 600;
-          margin-bottom: 8px;
-          font-size: 0.9rem;
+          margin-bottom: 10px;
+          font-size: 0.95rem;
+          letter-spacing: 0.3px;
         }
 
         .form-group input,
         .form-group select,
         .form-group textarea {
           width: 100%;
-          padding: 12px 16px;
-          border: 2px solid #e2e8f0;
-          border-radius: 8px;
+          padding: 14px 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
           font-size: 1rem;
-          color: #2d3748;
+          color: #1f2937;
           background: white;
           transition: all 0.3s ease;
+          font-family: inherit;
         }
 
         .form-group textarea {
-          min-height: 80px;
+          min-height: 100px;
           resize: vertical;
+          font-size: 0.95rem;
+        }
+
+        .form-group input:hover,
+        .form-group select:hover,
+        .form-group textarea:hover {
+          border-color: #d1d5db;
+          background: #fafbfc;
         }
 
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
           outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          border-color: #2563eb;
+          background: white;
+          box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
         }
 
         .form-row.compact {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px;
         }
 
         .form-error-banner {
-          margin-bottom: 16px;
-          padding: 12px 16px;
-          background: #fee2e2;
-          color: #b91c1c;
-          border: 1px solid #fecaca;
-          border-radius: 10px;
+          margin-bottom: 20px;
+          padding: 14px 18px;
+          background: #fef2f2;
+          color: #991b1b;
+          border: 2px solid #fca5a5;
+          border-radius: 12px;
           font-size: 0.9rem;
-          line-height: 1.4;
+          line-height: 1.5;
+          font-weight: 500;
+        }
+
+        .checkbox-group {
+          margin-bottom: 22px;
         }
 
         .checkbox-group .checkbox-wrapper {
           display: flex;
           align-items: flex-start;
-          gap: 8px;
-          color: #475569;
-          font-size: 0.85rem;
+          gap: 10px;
+          color: #4b5563;
+          font-size: 0.9rem;
+          line-height: 1.4;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+          margin-top: 4px;
+          width: 18px;
+          height: 18px;
+          cursor: pointer;
         }
 
         .questions-header {
           display: flex;
           align-items: center;
-          margin: 24px 0 16px;
+          margin: 32px 0 20px;
+          padding-bottom: 16px;
+          border-bottom: 2px solid #e5e7eb;
         }
 
         .questions-header h3 {
           margin: 0;
-          font-size: 1.2rem;
-          font-weight: 600;
+          font-size: 1.3rem;
+          font-weight: 700;
           color: #1f2937;
+          letter-spacing: 0.3px;
         }
 
         .questions-list {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 20px;
         }
 
         .add-question-footer {
-          margin: 16px 0 24px;
+          margin: 20px 0 28px;
           display: flex;
           justify-content: center;
         }
 
         .question-card {
-          border: 1px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 20px;
-          background: #f8fafc;
+          border: 2px solid #e5e7eb;
+          border-radius: 14px;
+          padding: 24px;
+          background: linear-gradient(135deg, #f8fafc 0%, #f3f7fb 100%);
+          transition: all 0.3s ease;
+        }
+
+        .question-card:hover {
+          border-color: #bfdbfe;
+          box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
         }
 
         .question-card-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 16px;
+          align-items: flex-start;
+          margin-bottom: 20px;
+          gap: 12px;
         }
 
         .question-title {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .question-title span:last-child {
+          font-weight: 600;
+          color: #1f2937;
+          font-size: 0.95rem;
         }
 
         .badge {
-          width: 28px;
-          height: 28px;
-          border-radius: 999px;
-          background: #2563eb;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
           color: white;
-          font-weight: 600;
+          font-weight: 700;
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          font-size: 0.85rem;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+          flex-shrink: 0;
         }
 
         .question-controls {
           display: inline-flex;
           align-items: center;
           gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .question-controls select {
+          padding: 10px 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 10px;
+          font-size: 0.9rem;
+          background: white;
+          color: #1f2937;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .question-controls select:hover {
+          border-color: #bfdbfe;
+        }
+
+        .question-controls select:focus {
+          outline: none;
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
         }
 
         .choices-section,
         .matching-section {
-          margin: 16px 0;
-          background: #fff;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          padding: 16px;
+          margin: 20px 0;
+          background: #ffffff;
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 18px;
+          transition: all 0.2s ease;
+        }
+
+        .choices-section:hover,
+        .matching-section:hover {
+          border-color: #bfdbfe;
+          background: #f8fafc;
         }
 
         .choices-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 12px;
+          margin-bottom: 16px;
+          gap: 12px;
+        }
+
+        .choices-header h4 {
+          margin: 0;
+          font-size: 0.95rem;
+          font-weight: 700;
+          color: #1f2937;
         }
 
         .choice-row,
@@ -1732,8 +1848,19 @@ const ChapterQuizzes = () => {
           display: grid;
           grid-template-columns: auto 1fr auto;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 12px;
+          gap: 14px;
+          margin-bottom: 14px;
+          padding: 12px;
+          background: #f9fafc;
+          border-radius: 10px;
+          border: 1px solid #e5e7eb;
+          transition: all 0.2s ease;
+        }
+
+        .choice-row:hover,
+        .pair-row:hover {
+          background: #ffffff;
+          border-color: #bfdbfe;
         }
 
         .choice-row:last-child,
@@ -1741,105 +1868,198 @@ const ChapterQuizzes = () => {
           margin-bottom: 0;
         }
 
+        .choice-row input[type="text"],
+        .pair-row input[type="text"] {
+          padding: 10px 12px;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          background: white;
+          transition: all 0.2s ease;
+        }
+
+        .choice-row input[type="text"]:focus,
+        .pair-row input[type="text"]:focus {
+          outline: none;
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+
         .choice-radio {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           font-size: 0.85rem;
-          color: #475569;
+          color: #4b5563;
+          white-space: nowrap;
+        }
+
+        .choice-radio input[type="radio"] {
+          cursor: pointer;
+          width: 16px;
+          height: 16px;
         }
 
         .pair-divider {
-          font-weight: 600;
-          color: #1d4ed8;
+          font-weight: 700;
+          color: #2563eb;
+          font-size: 1.2rem;
         }
 
         .radio-group {
-          display: inline-flex;
-          gap: 16px;
+          display: flex;
+          gap: 20px;
           align-items: center;
+          padding: 12px;
+          background: #f9fafc;
+          border-radius: 10px;
+          border: 1px solid #e5e7eb;
         }
 
         .radio-group label {
           display: inline-flex;
-          gap: 6px;
+          gap: 8px;
           align-items: center;
+          color: #4b5563;
+          font-size: 0.9rem;
+          cursor: pointer;
+        }
+
+        .radio-group input[type="radio"] {
+          cursor: pointer;
+          width: 16px;
+          height: 16px;
         }
 
         .icon-button {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: #fee2e2;
-          color: #b91c1c;
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          background: #fef2f2;
+          color: #dc2626;
           border: none;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: background 0.2s ease;
+          transition: all 0.2s ease;
+          flex-shrink: 0;
         }
 
         .icon-button:hover {
+          background: #fee2e2;
+          transform: scale(1.05);
+        }
+
+        .icon-button:active {
           background: #fca5a5;
+          transform: scale(0.98);
         }
 
         .modal-actions {
           display: flex;
           justify-content: flex-end;
           gap: 12px;
-          padding-top: 24px;
-          border-top: 1px solid #e2e8f0;
+          padding-top: 28px;
+          padding-bottom: 16px;
+          border-top: 2px solid #f0f4f8;
         }
 
         .cancel-btn,
         .save-btn {
-          padding: 12px 24px;
+          padding: 12px 28px;
           border: none;
-          border-radius: 8px;
-          font-weight: 600;
+          border-radius: 10px;
+          font-weight: 700;
+          font-size: 0.95rem;
           cursor: pointer;
           transition: all 0.3s ease;
+          letter-spacing: 0.3px;
         }
 
         .cancel-btn {
-          background: #f7fafc;
-          color: #4a5568;
-          border: 2px solid #e2e8f0;
+          background: #f3f4f6;
+          color: #4b5563;
+          border: 2px solid #d1d5db;
         }
 
         .cancel-btn:hover {
-          background: #edf2f7;
+          background: #e5e7eb;
+          transform: translateY(-1px);
+        }
+
+        .cancel-btn:active {
+          transform: translateY(0);
         }
 
         .save-btn {
-          background: #3b82f6;
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
           color: white;
-          box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+          box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
         }
 
         .save-btn:hover {
-          background: #2563eb;
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+          box-shadow: 0 10px 30px rgba(37, 99, 235, 0.45);
+        }
+
+        .save-btn:active {
+          transform: translateY(0);
         }
 
         .btn-tertiary {
           display: inline-flex;
-          gap: 6px;
+          gap: 8px;
           align-items: center;
           background: #e0f2fe;
           color: #0369a1;
-          padding: 6px 12px;
-          border-radius: 8px;
+          padding: 8px 14px;
+          border-radius: 10px;
           border: none;
           font-size: 0.85rem;
+          font-weight: 600;
           cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .btn-tertiary:hover {
+          background: #bae6fd;
+          transform: translateY(-1px);
         }
 
         .btn-tertiary:disabled {
-          opacity: 0.6;
+          opacity: 0.5;
           cursor: not-allowed;
+          transform: none;
+        }
+
+        @media (max-width: 768px) {
+          .modal {
+            max-width: 95vw;
+            max-height: 95vh;
+          }
+
+          .modal-header {
+            padding: 24px;
+          }
+
+          .modal-form {
+            padding: 24px;
+          }
+
+          .form-row.compact {
+            grid-template-columns: 1fr;
+          }
+
+          .modal-actions {
+            flex-wrap: wrap;
+          }
+
+          .cancel-btn,
+          .save-btn {
+            flex: 1;
+            min-width: 120px;
+          }
         }
 
         @media (max-width: 720px) {
@@ -1848,8 +2068,38 @@ const ChapterQuizzes = () => {
             grid-template-columns: 1fr;
           }
 
+          .choice-radio,
+          .pair-divider {
+            display: block;
+            width: 100%;
+            margin-bottom: 8px;
+          }
+
           .pair-divider {
             display: none;
+          }
+
+          .radio-group {
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-start;
+          }
+
+          .radio-group label {
+            width: 100%;
+          }
+
+          .question-card-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .question-controls {
+            width: 100%;
+          }
+
+          .question-controls select {
+            width: 100%;
           }
         }
 
@@ -1867,6 +2117,54 @@ const ChapterQuizzes = () => {
 
           .quiz-card {
             padding: 16px;
+          }
+
+          .modal-header {
+            padding: 20px;
+          }
+
+          .modal-header h2 {
+            font-size: 1.25rem;
+          }
+
+          .modal-form {
+            padding: 20px;
+          }
+
+          .form-group {
+            margin-bottom: 18px;
+          }
+
+          .form-group label {
+            font-size: 0.9rem;
+          }
+
+          .form-group input,
+          .form-group select,
+          .form-group textarea {
+            padding: 12px 14px;
+            font-size: 16px;
+          }
+
+          .question-card {
+            padding: 18px;
+          }
+
+          .badge {
+            width: 28px;
+            height: 28px;
+            font-size: 0.8rem;
+          }
+
+          .cancel-btn,
+          .save-btn {
+            padding: 10px 20px;
+            font-size: 0.9rem;
+          }
+
+          .btn-tertiary {
+            padding: 6px 10px;
+            font-size: 0.8rem;
           }
         }
       `}</style>

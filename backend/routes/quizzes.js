@@ -8,19 +8,28 @@ const {
   optionalAuth,
 } = require("../middleware/auth");
 
+const sendResponse = (res, statusCode, success, messageKey, data = null) => {
+  res.status(statusCode).json({
+    success,
+    message: messageKey,
+    messageKey: messageKey.includes('.') ? messageKey : null,
+    ...(data && { data }),
+  });
+};
+
 const normalizeQuizPayload = (body, { isUpdate = false } = {}) => {
   const errors = [];
 
   if (!body?.title || !body.title.trim()) {
-    errors.push("Quiz title is required");
+    errors.push("api.quiz.titleRequired");
   }
 
   if (!isUpdate && !body?.chapter) {
-    errors.push("Quiz chapter is required");
+    errors.push("api.quiz.chapterRequired");
   }
 
   if (!Array.isArray(body?.questions) || body.questions.length === 0) {
-    errors.push("Quiz must include at least one question");
+    errors.push("api.quiz.questionsMinimum");
   }
 
   if (errors.length) {
@@ -80,7 +89,7 @@ const normalizeQuizPayload = (body, { isUpdate = false } = {}) => {
       (!Array.isArray(normalized.choices) || normalized.choices.length < 2)
     ) {
       errors.push(
-        `Multiple choice question ${index + 1} must have at least two choices`
+        `api.quiz.multipleChoiceMinimum.${index + 1}`
       );
     }
 
@@ -166,15 +175,10 @@ router.get("/", optionalAuth, async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    res.json({
-      success: true,
-      data: quizzes,
-    });
+    sendResponse(res, 200, true, "api.quiz.retrievedSuccessfully", quizzes);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("Error fetching quizzes:", error);
+    sendResponse(res, 500, false, "api.quiz.failedRetrieve");
   }
 });
 
@@ -191,15 +195,10 @@ router.get("/chapter/:chapterId", optionalAuth, async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    res.json({
-      success: true,
-      data: quizzes,
-    });
+    sendResponse(res, 200, true, "api.quiz.retrievedSuccessfully", quizzes);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("Error fetching quizzes by chapter:", error);
+    sendResponse(res, 500, false, "api.quiz.failedRetrieve");
   }
 });
 
@@ -212,21 +211,13 @@ router.get("/:id", optionalAuth, async (req, res) => {
     });
 
     if (!quiz) {
-      return res.status(404).json({
-        success: false,
-        message: "Quiz not found",
-      });
+      return sendResponse(res, 404, false, "api.quiz.notFound");
     }
 
-    res.json({
-      success: true,
-      data: quiz,
-    });
+    sendResponse(res, 200, true, "api.quiz.retrievedSuccessfully", quiz);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("Error fetching quiz:", error);
+    sendResponse(res, 500, false, "api.quiz.failedRetrieve");
   }
 });
 
@@ -246,16 +237,10 @@ router.post(
         select: "title titleMultilingual subject season",
       });
 
-      res.status(201).json({
-        success: true,
-        message: "Quiz created successfully",
-        data: savedQuiz,
-      });
+      sendResponse(res, 201, true, "api.quiz.created", savedQuiz);
     } catch (error) {
-      res.status(error.statusCode || 400).json({
-        success: false,
-        message: error.message,
-      });
+      console.error("Error creating quiz:", error);
+      sendResponse(res, error.statusCode || 400, false, error.message);
     }
   }
 );
@@ -271,10 +256,7 @@ router.put(
       const quiz = await Quiz.findById(req.params.id);
 
       if (!quiz) {
-        return res.status(404).json({
-          success: false,
-          message: "Quiz not found",
-        });
+        return sendResponse(res, 404, false, "api.quiz.notFound");
       }
 
       const payload = normalizeQuizPayload(req.body, { isUpdate: true });
@@ -293,16 +275,10 @@ router.put(
         select: "title titleMultilingual subject season",
       });
 
-      res.json({
-        success: true,
-        message: "Quiz updated successfully",
-        data: updatedQuiz,
-      });
+      sendResponse(res, 200, true, "api.quiz.updated", updatedQuiz);
     } catch (error) {
-      res.status(error.statusCode || 400).json({
-        success: false,
-        message: error.message,
-      });
+      console.error("Error updating quiz:", error);
+      sendResponse(res, error.statusCode || 400, false, error.message);
     }
   }
 );
@@ -327,24 +303,14 @@ router.patch(
       });
 
       if (!quiz) {
-        return res.status(404).json({
-          success: false,
-          message: "Quiz not found",
-        });
+        return sendResponse(res, 404, false, "api.quiz.notFound");
       }
 
-      res.json({
-        success: true,
-        message: `Quiz ${
-          quiz.isActive ? "activated" : "deactivated"
-        } successfully`,
-        data: quiz,
-      });
+      const action = quiz.isActive ? "activated" : "deactivated";
+      sendResponse(res, 200, true, `api.quiz.statusUpdated`, quiz);
     } catch (error) {
-      res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      console.error("Error updating quiz status:", error);
+      sendResponse(res, 400, false, error.message);
     }
   }
 );
@@ -360,21 +326,13 @@ router.delete(
       const quiz = await Quiz.findByIdAndDelete(req.params.id);
 
       if (!quiz) {
-        return res.status(404).json({
-          success: false,
-          message: "Quiz not found",
-        });
+        return sendResponse(res, 404, false, "api.quiz.notFound");
       }
 
-      res.json({
-        success: true,
-        message: "Quiz deleted successfully",
-      });
+      sendResponse(res, 200, true, "api.quiz.deleted");
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      console.error("Error deleting quiz:", error);
+      sendResponse(res, 500, false, error.message);
     }
   }
 );

@@ -36,32 +36,6 @@ export const TranslationProvider = ({ children }) => {
     []
   );
 
-  // Load translations for current language
-  const loadTranslations = useCallback(
-    async (language = currentLanguage) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await translationsAPI.getAll({ language });
-
-        if (response.data.success) {
-          setTranslations(response.data.data);
-        } else {
-          throw new Error("Failed to load translations");
-        }
-      } catch (err) {
-        console.error("Error loading translations:", err);
-        setError("Failed to load translations");
-        // Fallback to empty translations
-        setTranslations({});
-      } finally {
-        setLoading(false);
-      }
-    },
-    [currentLanguage]
-  );
-
   // Change language
   const changeLanguage = async (languageCode) => {
     if (languageCode === currentLanguage) return;
@@ -75,8 +49,6 @@ export const TranslationProvider = ({ children }) => {
       document.documentElement.dir = language.dir;
       document.documentElement.lang = languageCode;
     }
-
-    await loadTranslations(languageCode);
   };
 
   // Get translation function
@@ -104,15 +76,52 @@ export const TranslationProvider = ({ children }) => {
   useEffect(() => {
     const initializeTranslations = async () => {
       // Set initial document direction and language
-      const languageInfo = getCurrentLanguageInfo();
+      const languageInfo = languages.find(
+        (lang) => lang.code === currentLanguage
+      ) || languages[0];
       document.documentElement.dir = languageInfo.dir;
       document.documentElement.lang = currentLanguage;
 
-      await loadTranslations();
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await translationsAPI.getAll({ language: currentLanguage });
+
+        let translationsData = {};
+        
+        // Handle the response format - API returns { success: true, data: { key: value, ... } }
+        if (response.data && response.data.data) {
+          if (typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+            // Data is already a key-value object (when language is specified in API)
+            translationsData = response.data.data;
+          } else if (Array.isArray(response.data.data)) {
+            // Data is an array of translation objects
+            response.data.data.forEach((item) => {
+              if (item.key && item.translations) {
+                translationsData[item.key] = 
+                  item.translations[currentLanguage] || 
+                  item.translations.en || 
+                  item.key;
+              }
+            });
+          }
+        }
+
+        setTranslations(translationsData);
+        console.log(`Loaded ${Object.keys(translationsData).length} translations for ${currentLanguage}`);
+      } catch (err) {
+        console.error("Error loading translations:", err);
+        setError("Failed to load translations");
+        // Fallback to empty translations
+        setTranslations({});
+      } finally {
+        setLoading(false);
+      }
     };
 
     initializeTranslations();
-  }, [currentLanguage, getCurrentLanguageInfo, loadTranslations]);
+  }, [currentLanguage, languages]);
 
   const value = {
     currentLanguage,
@@ -122,7 +131,6 @@ export const TranslationProvider = ({ children }) => {
     error,
     t,
     changeLanguage,
-    loadTranslations,
     getCurrentLanguageInfo,
   };
 

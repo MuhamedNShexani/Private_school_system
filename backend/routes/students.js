@@ -12,6 +12,20 @@ const {
 const multer = require("multer");
 const path = require("path");
 
+// Standardized response format with translation support
+const sendResponse = (res, statusCode, success, messageKey, data = null) => {
+  // messageKey can be either a translation key or a direct message
+  // If it contains a dot, it's a translation key; otherwise, it's a direct message
+  const message = messageKey.includes('.') ? messageKey : messageKey;
+  
+  res.status(statusCode).json({
+    success,
+    message,
+    messageKey: messageKey.includes('.') ? messageKey : null,
+    ...(data && { data }),
+  });
+};
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -27,7 +41,7 @@ const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith("image/")) {
     cb(null, true);
   } else {
-    cb(new Error("Only image files are allowed"), false);
+    cb(new Error("INVALID_FILE_TYPE"), false);
   }
 };
 
@@ -48,9 +62,10 @@ router.get(
       const students = await Student.find()
         .populate("class", "name branches")
         .sort({ createdAt: -1 });
-      res.json(students);
+      sendResponse(res, 200, true, "api.student.retrievedSuccessfully", students);
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      console.error("Error fetching students:", error);
+      sendResponse(res, 500, false, "api.student.failedRetrieve");
     }
   }
 );
@@ -66,9 +81,10 @@ router.get(
       const students = await Student.find({ class: req.params.classId })
         .populate("class", "name branches")
         .sort({ name: 1 });
-      res.json(students);
+      sendResponse(res, 200, true, "api.student.retrievedSuccessfully", students);
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      console.error("Error fetching students by class:", error);
+      sendResponse(res, 500, false, "api.student.failedRetrieve");
     }
   }
 );
@@ -80,11 +96,12 @@ router.get("/username/:username", async (req, res) => {
       username: req.params.username,
     }).populate("class", "name branches");
     if (!student) {
-      return res.status(404).json({ message: "Student not found" });
+      return sendResponse(res, 404, false, "api.student.notFound");
     }
-    res.json(student);
+    sendResponse(res, 200, true, "api.student.retrievedSuccessfully", student);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error fetching student by username:", error);
+    sendResponse(res, 500, false, "api.student.failedRetrieve");
   }
 });
 
@@ -96,11 +113,12 @@ router.get("/:id", async (req, res) => {
       "name branches"
     );
     if (!student) {
-      return res.status(404).json({ message: "Student not found" });
+      return sendResponse(res, 404, false, "api.student.notFound");
     }
-    res.json(student);
+    sendResponse(res, 200, true, "api.student.retrievedSuccessfully", student);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error fetching student by ID:", error);
+    sendResponse(res, 500, false, "api.student.failedRetrieve");
   }
 });
 
@@ -121,10 +139,7 @@ router.post(
       // Extract password and hash it
       const { password, ...studentData } = req.body;
       if (!password) {
-        return res.status(400).json({
-          success: false,
-          message: "Password is required for student creation",
-        });
+        return sendResponse(res, 400, false, "api.student.passwordRequired");
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
@@ -170,17 +185,10 @@ router.post(
       // Populate student data
       await savedStudent.populate("class", "name branches");
 
-      res.status(201).json({
-        success: true,
-        message: "Student and User account created successfully",
-        data: savedStudent,
-      });
+      sendResponse(res, 201, true, "api.student.createdSuccessfully", savedStudent);
     } catch (error) {
       console.error("Error creating student:", error);
-      res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      sendResponse(res, 400, false, error.message);
     }
   }
 );
@@ -214,14 +222,14 @@ router.put(
       }).populate("class", "name branches");
 
       if (!student) {
-        return res.status(404).json({ message: "Student not found" });
+        return sendResponse(res, 404, false, "api.student.notFound");
       }
 
       console.log("Updated student:", student);
-      res.json(student);
+      sendResponse(res, 200, true, "api.student.updatedSuccessfully", student);
     } catch (error) {
       console.error("Error updating student:", error);
-      res.status(400).json({ message: error.message });
+      sendResponse(res, 400, false, error.message);
     }
   }
 );
@@ -239,7 +247,7 @@ router.patch(
 
       const student = await Student.findById(req.params.id);
       if (!student) {
-        return res.status(404).json({ message: "Student not found" });
+        return sendResponse(res, 404, false, "api.student.notFound");
       }
 
       // Update the status for the specific subject
@@ -247,9 +255,10 @@ router.patch(
       await student.save();
       await student.populate("class", "name branches");
 
-      res.json(student);
+      sendResponse(res, 200, true, "api.student.statusUpdatedSuccessfully", student);
     } catch (error) {
-      res.status(400).json({ message: error.message });
+      console.error("Error updating student status:", error);
+      sendResponse(res, 400, false, error.message);
     }
   }
 );
@@ -264,11 +273,12 @@ router.delete(
     try {
       const student = await Student.findByIdAndDelete(req.params.id);
       if (!student) {
-        return res.status(404).json({ message: "Student not found" });
+        return sendResponse(res, 404, false, "api.student.notFound");
       }
-      res.json({ message: "Student deleted successfully" });
+      sendResponse(res, 200, true, "api.student.deletedSuccessfully");
     } catch (error) {
-      res.status(500).json({ message: error.message });
+      console.error("Error deleting student:", error);
+      sendResponse(res, 500, false, "api.student.failedDelete");
     }
   }
 );

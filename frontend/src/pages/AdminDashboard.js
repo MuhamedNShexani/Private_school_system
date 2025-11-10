@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTranslation } from "../contexts/TranslationContext";
 import {
   studentsAPI,
   teachersAPI,
@@ -34,6 +35,7 @@ import "./AdminDashboard.css";
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
+  const { t } = useTranslation();
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalTeachers: 0,
@@ -105,8 +107,8 @@ const AdminDashboard = () => {
     return (
       <div className="dashboard-container">
         <div className="error-message">
-          <h2>Access Denied</h2>
-          <p>You don't have permission to access the admin dashboard.</p>
+          <h2>{t("admin.dashboard.accessDenied", "Access Denied")}</h2>
+          <p>{t("common.accessDeniedMsg", "You don't have permission to access the admin dashboard.")}</p>
         </div>
       </div>
     );
@@ -127,10 +129,10 @@ const AdminDashboard = () => {
     return (
       <div className="dashboard-container">
         <div className="error-message">
-          <h2>Error</h2>
+          <h2>{t("admin.dashboard.error", "Error")}</h2>
           <p>{error}</p>
           <button onClick={fetchDashboardData} className="retry-btn">
-            Try Again
+            {t("btn.tryAgain", "Try Again")}
           </button>
         </div>
       </div>
@@ -171,7 +173,7 @@ const AdminDashboard = () => {
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
-        <h1>Admin Dashboard</h1>
+        <h1>{t("admin.dashboard.title", "Admin Dashboard")}</h1>
         <p>
           Welcome back, {user?.firstName}! Here's an overview of your platform.
         </p>
@@ -196,7 +198,7 @@ const AdminDashboard = () => {
         <div className="analytics-grid">
           {/* Gender Breakdown */}
           <div className="chart-card">
-            <h3>Student Gender Distribution</h3>
+            <h3>{t("admin.dashboard.genderDistribution", "Student Gender Distribution")}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -233,7 +235,7 @@ const AdminDashboard = () => {
 
           {/* Student Progress Over Time */}
           <div className="chart-card">
-            <h3>Student Progress (Last 6 Months)</h3>
+            <h3>{t("admin.dashboard.studentProgress", "Student Progress (Last 6 Months)")}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={analytics.progressByMonth}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -254,7 +256,7 @@ const AdminDashboard = () => {
 
           {/* Graduation Rate by Grade */}
           <div className="chart-card">
-            <h3>Pass Rate by Grade</h3>
+            <h3>{t("admin.dashboard.passRate", "Pass Rate by Grade")}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={analytics.graduationByGrade}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -269,7 +271,7 @@ const AdminDashboard = () => {
 
           {/* Top Performing Courses */}
           <div className="chart-card">
-            <h3>Top Performing Courses</h3>
+            <h3>{t("admin.dashboard.topCourses", "Top Performing Courses")}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={analytics.topCourses}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -285,15 +287,15 @@ const AdminDashboard = () => {
       </div>
 
       <div className="recent-activity">
-        <h2>Recent Activity</h2>
+        <h2>{t("admin.dashboard.recentActivity", "Recent Activity")}</h2>
         <div className="activity-list">
           <div className="activity-item">
             <div className="activity-icon">
               <Activity size={16} />
             </div>
             <div className="activity-content">
-              <p>Analytics dashboard updated</p>
-              <span className="activity-time">Just now</span>
+              <p>{t("admin.dashboard.activityUpdated", "Analytics dashboard updated")}</p>
+              <span className="activity-time">{t("admin.dashboard.activityTime.now", "Just now")}</span>
             </div>
           </div>
           <div className="activity-item">
@@ -301,8 +303,8 @@ const AdminDashboard = () => {
               <Users size={16} />
             </div>
             <div className="activity-content">
-              <p>{stats.totalStudents} students registered</p>
-              <span className="activity-time">Today</span>
+              <p>{stats.totalStudents} {t("admin.dashboard.studentsRegistered", "students registered")}</p>
+              <span className="activity-time">{t("admin.dashboard.activityTime.today", "Today")}</span>
             </div>
           </div>
           <div className="activity-item">
