@@ -5,6 +5,7 @@ import {
   teachersAPI,
   subjectsAPI,
   classesAPI,
+  seasonsAPI,
 } from "../services/api";
 import {
   Users,
@@ -17,6 +18,7 @@ import {
   X,
   Upload,
   Image,
+  Star,
 } from "lucide-react";
 import "./AdminCRUD.css";
 
@@ -27,6 +29,8 @@ const AdminCRUD = () => {
   const [teachers, setTeachers] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [classes, setClasses] = useState([]);
+  const [seasons, setSeasons] = useState([]);
+  const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -50,10 +54,23 @@ const AdminCRUD = () => {
     image: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [editingRating, setEditingRating] = useState(null);
+  const [ratingFormData, setRatingFormData] = useState({
+    date: "",
+    season: "",
+    subjectId: "",
+    rating: "",
+  });
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "ratings") {
+      fetchRatings();
+    }
+  }, [activeTab]);
 
   const fetchData = async () => {
     try {
@@ -84,6 +101,121 @@ const AdminCRUD = () => {
       setError(t("admin.msg.failedLoadData", "Failed to load data"));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRatings = async () => {
+    try {
+      setLoading(true);
+      const [ratingsRes, subjectsRes, seasonsRes] = await Promise.all([
+        studentsAPI.getAllRatings(),
+        subjectsAPI.getAll(),
+        seasonsAPI.getAll(),
+      ]);
+
+      if (ratingsRes.data?.data?.ratings) {
+        const ratingsData = ratingsRes.data.data.ratings;
+        const subjectsData = subjectsRes.data?.data || subjectsRes.data || [];
+        const seasonsData = seasonsRes.data?.data || seasonsRes.data || seasonsRes.data || [];
+        
+        // Store seasons for later use
+        setSeasons(seasonsData);
+        
+        // Map subject and season IDs to names
+        const enrichedRatings = ratingsData.map((rating) => {
+          const subject = subjectsData.find(
+            (s) => s._id === rating.subjectId || s._id?.toString() === rating.subjectId?.toString()
+          );
+          const subjectName = subject?.title?.en || subject?.title || subject?.name || rating.subjectId;
+          
+          // Find season name by ID or use the stored value
+          const season = seasonsData.find(
+            (s) => s._id === rating.season || s._id?.toString() === rating.season?.toString()
+          );
+          const seasonName = season?.name || rating.season;
+          
+          return {
+            ...rating,
+            subjectName: subjectName,
+            seasonName: seasonName,
+          };
+        });
+        
+        setRatings(enrichedRatings);
+      }
+    } catch (error) {
+      console.error("Error fetching ratings:", error);
+      setError("Failed to load ratings");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteRating = async (ratingId) => {
+    if (window.confirm("Are you sure you want to delete this rating?")) {
+      try {
+        setRefreshing(true);
+        await studentsAPI.deleteRating(ratingId);
+        // Remove from local state
+        setRatings(ratings.filter((r) => r._id !== ratingId));
+        alert("Rating deleted successfully!");
+      } catch (error) {
+        console.error("Error deleting rating:", error);
+        alert("Failed to delete rating");
+      } finally {
+        setRefreshing(false);
+      }
+    }
+  };
+
+  const handleEditRating = (rating) => {
+    setEditingRating(rating);
+    setRatingFormData({
+      date: rating.date ? rating.date.split("T")[0] : "",
+      season: rating.season,
+      subjectId: rating.subjectId,
+      rating: rating.rating,
+    });
+    setShowModal(true);
+  };
+
+  const handleSaveRating = async () => {
+    if (
+      !ratingFormData.date ||
+      !ratingFormData.season ||
+      !ratingFormData.subjectId ||
+      !ratingFormData.rating
+    ) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    try {
+      setRefreshing(true);
+      await studentsAPI.updateRating(editingRating._id, {
+        date: ratingFormData.date,
+        season: ratingFormData.season,
+        subjectId: ratingFormData.subjectId,
+        rating: ratingFormData.rating,
+      });
+      
+      // Update local state
+      setRatings(
+        ratings.map((r) =>
+          r._id === editingRating._id
+            ? { ...r, ...ratingFormData }
+            : r
+        )
+      );
+      
+      alert("Rating updated successfully!");
+      setShowModal(false);
+      setEditingRating(null);
+    } catch (error) {
+      console.error("Error updating rating:", error);
+      alert("Failed to update rating");
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -616,6 +748,13 @@ const AdminCRUD = () => {
           <GraduationCap size={20} />
           <span>{t("admin.crud.tabTeachers", "Teachers")} ({teachers.length})</span>
         </button>
+        <button
+          className={`tab-button ${activeTab === "ratings" ? "active" : ""}`}
+          onClick={() => setActiveTab("ratings")}
+        >
+          <Star size={20} />
+          <span>{t("admin.crud.tabRatings", "Ratings")} ({ratings.length})</span>
+        </button>
       </div>
 
       <div className="admin-crud-toolbar">
@@ -644,7 +783,79 @@ const AdminCRUD = () => {
       </div>
 
       <div className="admin-crud-content">
-        {activeTab === "students" ? (
+        {activeTab === "ratings" ? (
+          <div className="data-table ratings-table">
+            <div className="table-header">
+              <div className="table-cell">{t("form.studentName", "Student Name")}</div>
+              <div className="table-cell">{t("form.subject", "Subject")}</div>
+              <div className="table-cell">{t("form.season", "Season")}</div>
+              <div className="table-cell">{t("form.date", "Date")}</div>
+              <div className="table-cell">{t("students.bulkRate", "Rating")}</div>
+              <div className="table-cell">{t("admin.table.actions", "Actions")}</div>
+            </div>
+            {ratings.length === 0 ? (
+              <div style={{ padding: "20px", textAlign: "center", gridColumn: "1/-1" }}>
+                <p>{t("admin.msg.noData", "No ratings found")}</p>
+              </div>
+            ) : (
+              ratings.map((rating) => (
+                <div key={rating._id} className="table-row">
+                  <div className="table-cell">{rating.studentName || "Unknown"}</div>
+                  <div className="table-cell">{rating.subjectName || rating.subjectId || "N/A"}</div>
+                  <div className="table-cell">{rating.seasonName || rating.season || "N/A"}</div>
+                  <div className="table-cell">
+                    {rating.date
+                      ? new Date(rating.date).toLocaleDateString()
+                      : "N/A"}
+                  </div>
+                  <div className="table-cell">
+                    <span
+                      style={{
+                        padding: "4px 12px",
+                        borderRadius: "12px",
+                        backgroundColor: Number(rating.rating) === 5
+                          ? "#10b981"
+                          : Number(rating.rating) === 4
+                          ? "#3b82f6"
+                          : Number(rating.rating) === 3
+                          ? "#f59e0b"
+                          : Number(rating.rating) === 2
+                          ? "#ef4444"
+                          : "#6b7280",
+                        color: "white",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {Number(rating.rating) === 5
+                        ? "Excellent"
+                        : Number(rating.rating) === 4
+                        ? "Good"
+                        : Number(rating.rating) === 3
+                        ? "Fair"
+                        : Number(rating.rating) === 2
+                        ? "Poor"
+                        : `Rating: ${rating.rating}`}
+                    </span>
+                  </div>
+                  <div className="table-cell">
+                    <button
+                      className="action-button edit"
+                      onClick={() => handleEditRating(rating)}
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      className="action-button delete"
+                      onClick={() => handleDeleteRating(rating._id)}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : activeTab === "students" ? (
           <div className="data-table student-table">
             <div className="table-header">
               <div className="table-cell">{t("admin.form.name", "Name")}</div>
@@ -1086,6 +1297,179 @@ const AdminCRUD = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {editingRating && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "500px" }}>
+            <div className="modal-header">
+              <div>
+                <h2>📝 Edit Rating</h2>
+                <p style={{ margin: "5px 0 0 0", fontSize: "14px", color: "#666" }}>
+                  Student: <strong>{editingRating.studentName}</strong>
+                </p>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => {
+                  setEditingRating(null);
+                  setShowModal(false);
+                }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: "24px" }}>
+              {/* Date Field */}
+              <div className="form-group">
+                <label style={{ fontWeight: "600", display: "block", marginBottom: "8px" }}>
+                  📅 Date *
+                </label>
+                <input
+                  type="date"
+                  value={ratingFormData.date}
+                  onChange={(e) =>
+                    setRatingFormData({ ...ratingFormData, date: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                  required
+                />
+              </div>
+
+              {/* Season Dropdown */}
+              <div className="form-group" style={{ marginTop: "16px" }}>
+                <label style={{ fontWeight: "600", display: "block", marginBottom: "8px" }}>
+                  🎓 Season *
+                </label>
+                <select
+                  value={ratingFormData.season}
+                  onChange={(e) =>
+                    setRatingFormData({ ...ratingFormData, season: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                  required
+                >
+                  <option value="">-- Select Season --</option>
+                  {seasons.map((season) => (
+                    <option key={season._id} value={season._id}>
+                      {season.name || season.name?.en || season._id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subject Dropdown */}
+              <div className="form-group" style={{ marginTop: "16px" }}>
+                <label style={{ fontWeight: "600", display: "block", marginBottom: "8px" }}>
+                  📚 Subject *
+                </label>
+                <select
+                  value={ratingFormData.subjectId}
+                  onChange={(e) =>
+                    setRatingFormData({ ...ratingFormData, subjectId: e.target.value })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                  required
+                >
+                  <option value="">-- Select Subject --</option>
+                  {subjects.map((subject) => (
+                    <option key={subject._id} value={subject._id}>
+                      {subject.title?.en || subject.title || subject.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Rating Dropdown */}
+              <div className="form-group" style={{ marginTop: "16px" }}>
+                <label style={{ fontWeight: "600", display: "block", marginBottom: "8px" }}>
+                  ⭐ Rating *
+                </label>
+                <select
+                  value={ratingFormData.rating}
+                  onChange={(e) =>
+                    setRatingFormData({ ...ratingFormData, rating: parseInt(e.target.value) })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    border: "2px solid #e5e7eb",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
+                  }}
+                  required
+                >
+                  <option value="">-- Select Rating --</option>
+                  <option value="5">⭐⭐⭐⭐⭐ Excellent (5)</option>
+                  <option value="4">⭐⭐⭐⭐ Good (4)</option>
+                  <option value="3">⭐⭐⭐ Fair (3)</option>
+                  <option value="2">⭐⭐ Poor (2)</option>
+                  <option value="1">⭐ N/A (1)</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-actions" style={{ padding: "16px 24px", borderTop: "1px solid #e5e7eb" }}>
+              <button
+                className="cancel-button"
+                onClick={() => {
+                  setEditingRating(null);
+                  setShowModal(false);
+                }}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  border: "2px solid #e5e7eb",
+                  background: "white",
+                  cursor: "pointer",
+                  fontWeight: "500",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="save-button"
+                onClick={handleSaveRating}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#10b981",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: "500",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <Save size={16} />
+                <span>Update Rating</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

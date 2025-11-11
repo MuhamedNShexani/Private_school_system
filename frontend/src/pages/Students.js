@@ -21,6 +21,7 @@ import {
   UserCheck,
   CheckSquare,
   Table,
+  Star,
 } from "lucide-react";
 
 const Students = () => {
@@ -86,6 +87,14 @@ const Students = () => {
     exerciseId: "",
     gradedDate: new Date().toISOString().split("T")[0], // Default to today
   });
+  
+  // Bulk rating modal states
+  const [showBulkRatingModal, setShowBulkRatingModal] = useState(false);
+  const [bulkRatingData, setBulkRatingData] = useState({
+    season: "",
+    date: new Date().toISOString().split("T")[0],
+  });
+  const [bulkRatings, setBulkRatings] = useState({}); // {studentId: {subjectId: rating}}
   const [subjects, setSubjects] = useState([]);
   const [seasons, setSeasons] = useState([]);
   const [chapters, setChapters] = useState([]);
@@ -956,6 +965,78 @@ const Students = () => {
     setExercises([]);
   };
 
+  // Close bulk rating modal
+  const closeBulkRatingModal = () => {
+    setShowBulkRatingModal(false);
+    setBulkRatingData({
+      season: "",
+      date: new Date().toISOString().split("T")[0],
+    });
+    setBulkRatings({});
+  };
+
+  // Load existing ratings for date and season
+  const loadExistingRatings = async (classId, branchId, date, season) => {
+    try {
+      const response = await studentsAPI.getRatingsByDateSeason(classId, branchId, date, season);
+      if (response.data?.data?.ratings) {
+        // Pre-fill the bulk ratings with existing data
+        setBulkRatings(response.data.data.ratings);
+        console.log(`✅ Loaded ${response.data.data.totalFound} existing ratings for ${date}`);
+      }
+    } catch (err) {
+      console.log("No existing ratings found for this date/season (this is okay)");
+      // Don't show error, just leave form empty
+    }
+  };
+
+  // Handle saving bulk ratings
+  const handleSaveBulkRatings = async () => {
+    if (!bulkRatingData.season) {
+      alert(t("alert.selectSeason", "Please select a season"));
+      return;
+    }
+
+    try {
+      setLoading(true);
+      let successCount = 0;
+      let failureCount = 0;
+
+      for (const student of filteredStudents) {
+        for (const subject of subjects) {
+          const rating = bulkRatings[`${student._id}-${subject._id}`];
+          if (rating) {
+            try {
+              await studentsAPI.saveRating(student._id, {
+                subjectId: subject._id,
+                season: bulkRatingData.season,
+                date: bulkRatingData.date,
+                rating,
+              });
+              successCount++;
+            } catch (err) {
+              failureCount++;
+            }
+          }
+        }
+      }
+
+      if (successCount > 0) {
+        alert(
+          t("alert.ratingSaved", "✅ Ratings saved successfully! {{count}} ratings added.", {
+            count: successCount,
+          })
+        );
+      }
+      closeBulkRatingModal();
+    } catch (err) {
+      console.error("Error saving bulk ratings:", err);
+      alert(t("alert.ratingError", "Error saving ratings. Please try again."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle dependent data loading when selections change
   useEffect(() => {
     const loadDependentData = async () => {
@@ -1432,18 +1513,36 @@ const Students = () => {
                 : t("studentCards.showAction", "Student Cards")}
             </button>
             {(isAdmin || user?.role === "Teacher") && (
-              <button
-                className="btn btn-primary"
-                onClick={openBulkGradingModal}
-                disabled={
-                  !selectedClass ||
-                  !selectedBranch ||
-                  filteredStudents.length === 0
-                }
-              >
-                <CheckSquare size={16} />
-                {t("students.bulkGrade", "Bulk Grade Students")}
-              </button>
+              <>
+                <button
+                  className="btn btn-primary"
+                  onClick={openBulkGradingModal}
+                  disabled={
+                    !selectedClass ||
+                    !selectedBranch ||
+                    filteredStudents.length === 0
+                  }
+                >
+                  <CheckSquare size={16} />
+                  {t("students.bulkGrade", "Bulk Grade Students")}
+                </button>
+                <button
+                  className="btn btn-warning"
+                  onClick={() => setShowBulkRatingModal(true)}
+                  disabled={
+                    !selectedClass ||
+                    !selectedBranch ||
+                    filteredStudents.length === 0
+                  }
+                  style={{
+                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                    marginLeft: "12px",
+                  }}
+                >
+                  <Star size={16} />
+                  {t("students.bulkRate", "Bulk Rate Students")}
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -3896,6 +3995,390 @@ const Students = () => {
           }
 
           .bulk-grading-table-container {
+            max-height: 300px;
+          }
+        }
+      `}</style>
+
+      {/* Bulk Rating Modal */}
+      {showBulkRatingModal && (
+        <div className="bulk-rating-overlay">
+          <div className="bulk-rating-modal">
+            <div className="bulk-rating-header">
+              <div className="bulk-rating-title-section">
+                <h2>{t("students.bulkRate", "Bulk Rate Students")}</h2>
+                <p className="bulk-rating-subtitle">
+                  {t("students.bulkRating.subtitle", `Rate ${filteredStudents.length} students at once`)}
+                </p>
+              </div>
+              <button onClick={closeBulkRatingModal} className="bulk-rating-close-btn">
+                ×
+              </button>
+            </div>
+
+            <div className="bulk-rating-body">
+              <div className="bulk-rating-controls">
+                <div className="bulk-rating-control">
+                  <label>{t("form.season", "Season")} *</label>
+                  <select
+                    value={bulkRatingData.season}
+                    onChange={(e) => {
+                      setBulkRatingData({ ...bulkRatingData, season: e.target.value });
+                      // Load existing ratings for this season and date
+                      if (selectedClass && selectedBranch && bulkRatingData.date) {
+                        loadExistingRatings(selectedClass, selectedBranch, bulkRatingData.date, e.target.value);
+                      }
+                    }}
+                    required
+                  >
+                    <option value="">-- Select Season --</option>
+                    {seasons.map((season) => (
+                      <option key={season._id} value={season._id}>
+                        {season.name.en || season.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="bulk-rating-control">
+                  <label>{t("form.date", "Date")}</label>
+                  <input
+                    type="date"
+                    value={bulkRatingData.date}
+                    onChange={(e) => {
+                      setBulkRatingData({ ...bulkRatingData, date: e.target.value });
+                      // Load existing ratings for this date and season
+                      if (selectedClass && selectedBranch && bulkRatingData.season) {
+                        loadExistingRatings(selectedClass, selectedBranch, e.target.value, bulkRatingData.season);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="bulk-rating-students">
+                <h3>{t("form.rateStudents", "Rate Each Student")}</h3>
+                <div className="rating-students-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{t("form.studentName", "Student Name")}</th>
+                        {subjects.map((subject) => (
+                          <th key={subject._id}>
+                            {subject.title?.en || subject.title}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredStudents.map((student) => (
+                        <tr key={student._id}>
+                          <td className="student-name-cell">
+                            <strong>{student.fullName}</strong>
+                          </td>
+                          {subjects.map((subject) => (
+                            <td key={subject._id} className="rating-input-cell">
+                              <select
+                                value={bulkRatings[`${student._id}-${subject._id}`] || ""}
+                                onChange={(e) =>
+                                  setBulkRatings({
+                                    ...bulkRatings,
+                                    [`${student._id}-${subject._id}`]: e.target.value,
+                                  })
+                                }
+                              >
+                                <option value="">-</option>
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Poor">Poor</option>
+                              </select>
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="bulk-rating-actions">
+                <button
+                  type="button"
+                  className="bulk-rating-cancel-btn"
+                  onClick={closeBulkRatingModal}
+                >
+                  {t("btn.cancel", "Cancel")}
+                </button>
+                <button
+                  type="button"
+                  className="bulk-rating-save-btn"
+                  onClick={handleSaveBulkRatings}
+                  disabled={loading}
+                >
+                  <Star size={16} />
+                  {t("btn.save", "Save Ratings")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        /* Bulk Rating Modal Styles */
+        .bulk-rating-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1001;
+          padding: 20px;
+          backdrop-filter: blur(4px);
+        }
+
+        .bulk-rating-modal {
+          background: white;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 950px;
+          max-height: 92vh;
+          overflow-y: auto;
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .bulk-rating-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          padding: 32px;
+          border-bottom: 2px solid #f0f4f8;
+          flex-shrink: 0;
+          background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%);
+        }
+
+        .bulk-rating-title-section h2 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+
+        .bulk-rating-subtitle {
+          margin: 4px 0 0 0;
+          color: #6b7280;
+          font-size: 0.9rem;
+        }
+
+        .bulk-rating-close-btn {
+          background: none;
+          border: none;
+          font-size: 1.8rem;
+          color: #9ca3af;
+          cursor: pointer;
+          padding: 0;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .bulk-rating-close-btn:hover {
+          background: rgba(0, 0, 0, 0.1);
+          color: #374151;
+          border-radius: 8px;
+        }
+
+        .bulk-rating-body {
+          padding: 32px;
+          flex: 1;
+          overflow-y: auto;
+        }
+
+        .bulk-rating-controls {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 20px;
+          margin-bottom: 32px;
+          padding: 20px;
+          background: #f8fafc;
+          border-radius: 12px;
+        }
+
+        .bulk-rating-control {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .bulk-rating-control label {
+          font-weight: 600;
+          color: #374151;
+          font-size: 0.95rem;
+        }
+
+        .bulk-rating-control input,
+        .bulk-rating-control select {
+          padding: 10px 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          background: white;
+          cursor: pointer;
+          transition: border-color 0.2s ease;
+        }
+
+        .bulk-rating-control input:focus,
+        .bulk-rating-control select:focus {
+          outline: none;
+          border-color: #f59e0b;
+          box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .bulk-rating-students {
+          margin-bottom: 32px;
+        }
+
+        .bulk-rating-students h3 {
+          margin: 0 0 16px 0;
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+
+        .rating-students-table {
+          border: 2px solid #e5e7eb;
+          border-radius: 12px;
+          overflow-x: auto;
+          max-height: 400px;
+        }
+
+        .rating-students-table table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .rating-students-table th {
+          background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
+          padding: 12px;
+          text-align: left;
+          font-weight: 700;
+          color: #1f2937;
+          border-bottom: 2px solid #e5e7eb;
+          font-size: 0.9rem;
+          white-space: nowrap;
+        }
+
+        .rating-students-table td {
+          padding: 10px 12px;
+          border-bottom: 1px solid #e5e7eb;
+          color: #374151;
+        }
+
+        .rating-students-table tbody tr:hover {
+          background: #f9fafb;
+        }
+
+        .student-name-cell {
+          font-weight: 600;
+          min-width: 150px;
+          background: #f0f9ff;
+          color: #1f2937;
+        }
+
+        .rating-input-cell {
+          text-align: center;
+        }
+
+        .rating-input-cell select {
+          width: 100%;
+          padding: 6px 8px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          background: white;
+          font-size: 0.85rem;
+          cursor: pointer;
+        }
+
+        .rating-input-cell select:focus {
+          outline: none;
+          border-color: #f59e0b;
+          box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.1);
+        }
+
+        .bulk-rating-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          padding-top: 24px;
+          border-top: 2px solid #f0f4f8;
+        }
+
+        .bulk-rating-cancel-btn,
+        .bulk-rating-save-btn {
+          padding: 12px 28px;
+          border: none;
+          border-radius: 10px;
+          font-weight: 700;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .bulk-rating-cancel-btn {
+          background: #f3f4f6;
+          color: #4b5563;
+          border: 2px solid #d1d5db;
+        }
+
+        .bulk-rating-cancel-btn:hover {
+          background: #e5e7eb;
+          transform: translateY(-1px);
+        }
+
+        .bulk-rating-save-btn {
+          background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+          color: white;
+          box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+        }
+
+        .bulk-rating-save-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 30px rgba(245, 158, 11, 0.45);
+        }
+
+        .bulk-rating-save-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        @media (max-width: 768px) {
+          .bulk-rating-controls {
+            grid-template-columns: 1fr;
+          }
+
+          .bulk-rating-modal {
+            max-width: 95vw;
+          }
+
+          .bulk-rating-header {
+            padding: 20px;
+          }
+
+          .bulk-rating-body {
+            padding: 20px;
+          }
+
+          .rating-students-table {
             max-height: 300px;
           }
         }

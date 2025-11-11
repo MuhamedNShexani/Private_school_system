@@ -86,6 +86,18 @@ export const studentsAPI = {
   updateStatus: (id, subjectId, status) =>
     api.patch(`/students/${id}/status/${subjectId}`, { status }),
   delete: (id) => api.delete(`/students/${id}`),
+  // Rating endpoints
+  getByRatingBranch: (branchId) => api.get(`/students/rating/branch/${branchId}`),
+  saveRating: (studentId, ratingData) => api.post(`/students/${studentId}/rating`, ratingData),
+  getRatings: (studentId) => api.get(`/students/${studentId}/ratings`),
+  getRatingsByDateSeason: (classId, branchId, date, season) =>
+    api.get(`/students/bulk/byDateSeason/${classId}/${branchId}`, {
+      params: { date, season },
+    }),
+  // Admin endpoints
+  getAllRatings: () => api.get(`/students/admin/allRatings`),
+  deleteRating: (ratingId) => api.delete(`/students/admin/rating/${ratingId}`),
+  updateRating: (ratingId, ratingData) => api.put(`/students/admin/rating/${ratingId}`, ratingData),
 };
 
 // Classes API

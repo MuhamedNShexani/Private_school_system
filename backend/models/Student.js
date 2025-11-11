@@ -59,6 +59,21 @@ const studentSchema = new mongoose.Schema({
     enum: ["Paid", "Unpaid", "Partial"],
     default: "Unpaid",
   },
+  ratings: [
+    {
+      subjectId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subject",
+      },
+      season: String,
+      date: Date,
+      rating: String, // e.g., "Excellent", "Good", "Fair", "Poor"
+      ratedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,

@@ -641,3 +641,16 @@
     font-size: 0.85rem;
   }
 }
+
+/* RTL Support for Tables */
+.activities-table th,
+.activities-table td {
+  unicode-bidi: embed;
+  word-break: break-word;
+}
+
+.ratings-table th,
+.ratings-table td {
+  unicode-bidi: embed;
+  word-break: break-word;
+}

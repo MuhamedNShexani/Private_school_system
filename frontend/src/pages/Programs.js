@@ -1167,39 +1167,6 @@ const Programs = () => {
               ))}
             </select>
           </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>{t("form.difficulty", "Difficulty")}</label>
-              <select
-                value={formData.difficulty || "Medium"}
-                onChange={(e) =>
-                  setFormData({ ...formData, difficulty: e.target.value })
-                }
-              >
-                <option value="Easy">{t("difficulty.easy", "Easy")}</option>
-                <option value="Medium">
-                  {t("difficulty.medium", "Medium")}
-                </option>
-                <option value="Hard">{t("difficulty.hard", "Hard")}</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>
-                {t("form.estimated_time", "Estimated Time (minutes)")}
-              </label>
-              <input
-                type="number"
-                value={formData.estimatedTime || 30}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    estimatedTime: parseInt(e.target.value),
-                  })
-                }
-                min="1"
-              />
-            </div>
-          </div>
         </>
       ),
       season: (
@@ -1581,14 +1548,6 @@ const Programs = () => {
                     <Calendar size={16} />
                     {t("btn.manage_seasons", "Manage Seasons")}
                   </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => openModal("class")}
-                    title={t("btn.add_class", "Add Class")}
-                  >
-                    <Plus size={16} />
-                    {t("btn.add_class", "Add Class")}
-                  </button>
                 </div>
               )}
             </div>
@@ -1750,16 +1709,6 @@ const Programs = () => {
                     ))}
                   </select>
                 </div>
-              )}
-              {canManageSubjects && (
-                <button
-                  className="add-btn"
-                  onClick={() => openModal("subject")}
-                  title={t("btn.add_subject", "Add Subject")}
-                >
-                  <Plus size={20} />
-                  {t("btn.add_subject", "Add Subject")}
-                </button>
               )}
             </div>
 

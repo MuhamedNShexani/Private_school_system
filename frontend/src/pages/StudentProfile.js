@@ -49,6 +49,11 @@ const StudentProfile = () => {
   const [gradesPage, setGradesPage] = useState(0);
   const [activityPage, setActivityPage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [studentRatings, setStudentRatings] = useState([]);
+  const [ratingFilterSeason, setRatingFilterSeason] = useState("");
+  const [ratingFilterMode, setRatingFilterMode] = useState("evaluation"); // month, date-range, evaluation
+  const [ratingFilterFromDate, setRatingFilterFromDate] = useState("");
+  const [ratingFilterToDate, setRatingFilterToDate] = useState("");
 
   const interpolateTemplate = (template, values) => {
     if (typeof template !== "string") {
@@ -302,6 +307,22 @@ const StudentProfile = () => {
           } catch (err) {
             console.log("No exercise grades found for student:", err);
             setExerciseGrades([]);
+          }
+
+          // Fetch student ratings
+          try {
+            const ratingsResponse = await studentsAPI.getRatings(
+              studentData._id
+            );
+            const ratingsData =
+              ratingsResponse.data?.data?.ratings ||
+              ratingsResponse.data?.ratings ||
+              [];
+            setStudentRatings(Array.isArray(ratingsData) ? ratingsData : []);
+            console.log("Ratings fetched:", ratingsData);
+          } catch (err) {
+            console.log("No ratings found for student:", err);
+            setStudentRatings([]);
           }
 
           // Fetch subjects and seasons for grade entry
@@ -582,6 +603,142 @@ const StudentProfile = () => {
     }
     return t("common.na", "N/A");
   };
+
+  const getRatingLabel = (rating) => {
+    const ratingNum = Number(rating);
+    if (ratingNum === 5) {
+      return t("studentProfile.rating.excellent", "Excellent");
+    } else if (ratingNum === 4) {
+      return t("studentProfile.rating.good", "Good");
+    } else if (ratingNum === 3) {
+      return t("studentProfile.rating.fair", "Fair");
+    } else if (ratingNum === 2) {
+      return t("studentProfile.rating.poor", "Poor");
+    } else if (ratingNum === 1) {
+      return t("common.na", "N/A");
+    }
+
+    // Handle string values
+    switch (rating?.toLowerCase?.() || rating) {
+      case "excellent":
+        return t("studentProfile.rating.excellent", "Excellent");
+      case "good":
+        return t("studentProfile.rating.good", "Good");
+      case "fair":
+        return t("studentProfile.rating.fair", "Fair");
+      case "poor":
+        return t("studentProfile.rating.poor", "Poor");
+      default:
+        return rating || t("common.na", "N/A");
+    }
+  };
+
+  const getRatingColor = (rating) => {
+    const ratingNum = Number(rating);
+    if (ratingNum === 5) {
+      return "#10b981"; // Excellent - Green
+    } else if (ratingNum === 4) {
+      return "#3b82f6"; // Good - Blue
+    } else if (ratingNum === 3) {
+      return "#f59e0b"; // Fair - Yellow
+    } else if (ratingNum === 2) {
+      return "#ef4444"; // Poor - Red
+    } else if (ratingNum === 1) {
+      return "#6b7280"; // N/A - Gray
+    }
+
+    // Handle string values
+    switch (rating?.toLowerCase?.() || rating) {
+      case "excellent":
+        return "#10b981";
+      case "good":
+        return "#3b82f6";
+      case "fair":
+        return "#f59e0b";
+      case "poor":
+        return "#ef4444";
+      default:
+        return "#6b7280";
+    }
+  };
+
+  // Filter ratings based on season and date range
+  const getFilteredRatings = useCallback(() => {
+    let filtered = [...studentRatings];
+
+    // Filter by season
+    if (ratingFilterSeason) {
+      filtered = filtered.filter((r) => r.season === ratingFilterSeason);
+    }
+
+    // Filter by mode
+    if (ratingFilterMode === "evaluation") {
+      // Show last record vs previous record comparison
+      filtered = filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+      // Keep only the last 2 records per subject
+      const lastTwo = {};
+      filtered.forEach((r) => {
+        const key = r.subjectId;
+        if (!lastTwo[key]) {
+          lastTwo[key] = [];
+        }
+        if (lastTwo[key].length < 2) {
+          lastTwo[key].push(r);
+        }
+      });
+      filtered = Object.values(lastTwo).flat();
+    } else if (ratingFilterMode === "month" && ratingFilterFromDate) {
+      const fromDate = new Date(ratingFilterFromDate);
+      const toDate = new Date(ratingFilterToDate || ratingFilterFromDate);
+      toDate.setMonth(toDate.getMonth() + 1);
+
+      filtered = filtered.filter((r) => {
+        const rDate = new Date(r.date);
+        return rDate >= fromDate && rDate < toDate;
+      });
+    } else if (
+      ratingFilterMode === "date-range" &&
+      ratingFilterFromDate &&
+      ratingFilterToDate
+    ) {
+      const fromDate = new Date(ratingFilterFromDate);
+      const toDate = new Date(ratingFilterToDate);
+      toDate.setDate(toDate.getDate() + 1); // Include the toDate
+
+      filtered = filtered.filter((r) => {
+        const rDate = new Date(r.date);
+        return rDate >= fromDate && rDate < toDate;
+      });
+    }
+
+    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [
+    studentRatings,
+    ratingFilterSeason,
+    ratingFilterMode,
+    ratingFilterFromDate,
+    ratingFilterToDate,
+  ]);
+
+  // Get ratings info for comparison
+  const getRatingsInfo = useCallback(() => {
+    const filtered = getFilteredRatings();
+    if (filtered.length === 0) return null;
+
+    const sortedByDate = [...filtered].sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
+    );
+
+    const lastUpdate = sortedByDate[0];
+    const previousRecord = sortedByDate[1];
+
+    return {
+      total: filtered.length,
+      lastUpdate,
+      previousRecord,
+      lastUpdateDate: lastUpdate?.date ? formatDate(lastUpdate.date) : "N/A",
+    };
+  }, [getFilteredRatings]);
 
   const formatDate = (date) => {
     if (!date) {
@@ -1287,6 +1444,462 @@ const StudentProfile = () => {
                   );
                 })}
               </div>
+            )}
+          </div>
+
+          {/* Mobile Header - School Info */}
+
+          {/* Student Ratings */}
+          <div className="profile-card" style={{ gridColumn: "1 / -1" }}>
+            <h3>{t("studentProfile.studentRatings", "Student Ratings")}</h3>
+
+            {studentRatings.length === 0 ? (
+              <div className="empty-section">
+                <BookOpen size={32} color="#9ca3af" />
+                <p>
+                  {t(
+                    "studentProfile.noRatings",
+                    "No ratings have been recorded yet."
+                  )}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Ratings Filter */}
+                <div
+                  style={{
+                    padding: "16px",
+                    backgroundColor: "#f3f4f6",
+                    borderRadius: "8px",
+                    marginBottom: "16px",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                    gap: "12px",
+                  }}
+                >
+                  {/* Season Filter */}
+                  <div>
+                    <label
+                      style={{
+                        fontWeight: "600",
+                        fontSize: "13px",
+                        display: "block",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      🎓 {t("form.season", "Season")}
+                    </label>
+                    <select
+                      value={ratingFilterSeason}
+                      onChange={(e) => setRatingFilterSeason(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "6px",
+                        fontSize: "13px",
+                      }}
+                    >
+                      <option value="">-- All Seasons --</option>
+                      {seasons.map((season) => (
+                        <option key={season._id} value={season._id}>
+                          {season.name?.en || season.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Filter Mode */}
+                  <div>
+                    <label
+                      style={{
+                        fontWeight: "600",
+                        fontSize: "13px",
+                        display: "block",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      📅 {t("form.filter", "Filter")}
+                    </label>
+                    <select
+                      value={ratingFilterMode}
+                      onChange={(e) => {
+                        setRatingFilterMode(e.target.value);
+                        setRatingFilterFromDate("");
+                        setRatingFilterToDate("");
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "6px",
+                        fontSize: "13px",
+                      }}
+                    >
+                      <option value="evaluation">
+                        📊 Evaluation (Last vs Previous)
+                      </option>
+                      <option value="month">📆 By Month</option>
+                      <option value="date-range">📍 Date Range</option>
+                    </select>
+                  </div>
+
+                  {/* From Date */}
+                  {(ratingFilterMode === "month" ||
+                    ratingFilterMode === "date-range") && (
+                    <div>
+                      <label
+                        style={{
+                          fontWeight: "600",
+                          fontSize: "13px",
+                          display: "block",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        📍 From
+                      </label>
+                      <input
+                        type="date"
+                        value={ratingFilterFromDate}
+                        onChange={(e) =>
+                          setRatingFilterFromDate(e.target.value)
+                        }
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "6px",
+                          fontSize: "13px",
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {/* To Date */}
+                  {ratingFilterMode === "date-range" && (
+                    <div>
+                      <label
+                        style={{
+                          fontWeight: "600",
+                          fontSize: "13px",
+                          display: "block",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        📍 To
+                      </label>
+                      <input
+                        type="date"
+                        value={ratingFilterToDate}
+                        onChange={(e) => setRatingFilterToDate(e.target.value)}
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "6px",
+                          fontSize: "13px",
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile: Show evaluation per subject in one row */}
+                {isMobile && ratingFilterMode === "evaluation" ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    {/* Column Headers */}
+                    <div
+                      style={{
+                        padding: "10px 12px",
+                        backgroundColor: "#1f2937",
+                        borderRadius: "8px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                      }}
+                    >
+                      <div style={{ flex: "0 0 auto", minWidth: "100px" }}>
+                        <div
+                          style={{
+                            fontWeight: "700",
+                            fontSize: "12px",
+                            color: "#ffffff",
+                          }}
+                        >
+                          SUBJECT
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "2px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: "700",
+                            fontSize: "11px",
+                            color: "#ffffff",
+                          }}
+                        >
+                          LATEST
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "2px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: "700",
+                            fontSize: "11px",
+                            color: "#ffffff",
+                          }}
+                        >
+                          PREVIOUS
+                        </div>
+                      </div>
+                    </div>
+
+                    {Array.from(
+                      new Set(getFilteredRatings().map((r) => r.subjectId))
+                    ).map((subjectId) => {
+                      const subjectName = (() => {
+                        const subject = subjects.find(
+                          (s) =>
+                            normalizeId(s?._id || s) === normalizeId(subjectId)
+                        );
+                        return subject
+                          ? getLocalizedText(
+                              subject.titleMultilingual || subject.title,
+                              subject.title || subjectId
+                            )
+                          : subjectId;
+                      })();
+
+                      const sortedRatings = getFilteredRatings()
+                        .filter((r) => r.subjectId === subjectId)
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))
+                        .slice(0, 2);
+
+                      const lastRating = sortedRatings[0];
+                      const previousRating = sortedRatings[1];
+
+                      return (
+                        <div
+                          key={subjectId}
+                          style={{
+                            padding: "10px 12px",
+                            backgroundColor: "#ffffff",
+                            borderRadius: "8px",
+                            border: "1px solid #e5e7eb",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "12px",
+                          }}
+                        >
+                          {/* Subject Name */}
+                          <div style={{ flex: "0 0 auto", minWidth: "100px" }}>
+                            <div
+                              style={{
+                                fontWeight: "600",
+                                fontSize: "13px",
+                                color: "#1f2937",
+                              }}
+                            >
+                              {subjectName}
+                            </div>
+                          </div>
+
+                          {/* Last Rating */}
+                          {lastRating && (
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: "2px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "4px 8px",
+                                  borderRadius: "6px",
+                                  backgroundColor: getRatingColor(
+                                    lastRating.rating
+                                  ),
+                                  color: "white",
+                                  fontWeight: "bold",
+                                  fontSize: "11px",
+                                  minWidth: "60px",
+                                  textAlign: "center",
+                                }}
+                              >
+                                {getRatingLabel(lastRating.rating)}
+                              </span>
+                              <span
+                                style={{ fontSize: "9px", color: "#9ca3af" }}
+                              >
+                                {formatDate(lastRating.date)}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Previous Rating */}
+                          {previousRating && (
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: "2px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "4px 8px",
+                                  borderRadius: "6px",
+                                  backgroundColor: getRatingColor(
+                                    previousRating.rating
+                                  ),
+                                  color: "white",
+                                  fontWeight: "bold",
+                                  fontSize: "11px",
+                                  minWidth: "60px",
+                                  textAlign: "center",
+                                }}
+                              >
+                                {getRatingLabel(previousRating.rating)}
+                              </span>
+                              <span
+                                style={{ fontSize: "9px", color: "#9ca3af" }}
+                              >
+                                {formatDate(previousRating.date)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div
+                    className="ratings-table-container"
+                    style={{
+                      overflowX:
+                        getFilteredRatings().length > 2 &&
+                        !ratingFilterMode.includes("evaluation")
+                          ? "auto"
+                          : "visible",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    <table className="ratings-table">
+                      <thead>
+                        <tr>
+                          <th>{t("studentProfile.subject", "Subject")}</th>
+                          {/* Get unique dates sorted newest first */}
+                          {Array.from(
+                            new Set(
+                              getFilteredRatings()
+                                .map((r) => r.date)
+                                .sort((a, b) => new Date(b) - new Date(a))
+                            )
+                          ).map((date) => (
+                            <th key={date}>{formatDate(date)}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Get unique subjects */}
+                        {Array.from(
+                          new Set(getFilteredRatings().map((r) => r.subjectId))
+                        ).map((subjectId) => {
+                          // Map subject ID to subject name
+                          const subjectName = (() => {
+                            const subject = subjects.find(
+                              (s) =>
+                                normalizeId(s?._id || s) ===
+                                normalizeId(subjectId)
+                            );
+                            return subject
+                              ? getLocalizedText(
+                                  subject.titleMultilingual || subject.title,
+                                  subject.title || subjectId
+                                )
+                              : subjectId;
+                          })();
+
+                          return (
+                            <tr key={subjectId}>
+                              <td
+                                className="mobile-grid-cell"
+                                data-label={t(
+                                  "studentProfile.subject",
+                                  "Subject"
+                                )}
+                              >
+                                {subjectName}
+                              </td>
+                              {/* For each date, show the rating for this subject */}
+                              {Array.from(
+                                new Set(
+                                  getFilteredRatings()
+                                    .map((r) => r.date)
+                                    .sort((a, b) => new Date(b) - new Date(a))
+                                )
+                              ).map((date) => {
+                                const rating = getFilteredRatings().find(
+                                  (r) =>
+                                    r.subjectId === subjectId && r.date === date
+                                );
+                                return (
+                                  <td
+                                    key={`${subjectId}-${date}`}
+                                    className="mobile-grid-cell"
+                                    data-label={formatDate(date)}
+                                  >
+                                    {rating ? (
+                                      <span
+                                        className="rating-badge"
+                                        style={{
+                                          backgroundColor: getRatingColor(
+                                            rating.rating
+                                          ),
+                                        }}
+                                      >
+                                        {getRatingLabel(rating.rating)}
+                                      </span>
+                                    ) : (
+                                      <span className="no-rating">—</span>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -2208,8 +2821,8 @@ const StudentProfile = () => {
                 </p>
               </div>
             ) : (
-              <div className="activities-table-container">
-                <table className="activities-table">
+              <div className="grades-table-container">
+                <table className="grades-table">
                   <thead>
                     <tr>
                       <th>{t("studentProfile.type", "Type")}</th>
@@ -2339,8 +2952,20 @@ const StudentProfile = () => {
                             <span
                               style={{
                                 fontWeight: 600,
-                                color:
-                                  grade === maxGrade ? "#10b981" : "#6b7280",
+                                color: "#ffffff",
+                                backgroundColor:
+                                  grade === maxGrade
+                                    ? "#10b981"
+                                    : grade >= maxGrade * 0.8
+                                    ? "#3b82f6"
+                                    : grade >= maxGrade * 0.6
+                                    ? "#f59e0b"
+                                    : "#ef4444",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                display: "inline-block",
+                                minWidth: "60px",
+                                textAlign: "center",
                               }}
                             >
                               {grade}/{maxGrade}
@@ -3392,6 +4017,70 @@ const StudentProfile = () => {
           background: #f1f5f9;
         }
 
+        .rating-badge {
+          color: white;
+          padding: 8px 16px;
+          border-radius: 12px;
+          font-size: 0.875rem;
+          font-weight: 700;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          letter-spacing: 0.5px;
+          display: inline-block;
+        }
+
+        .no-rating {
+          color: #cbd5e1;
+          font-size: 1.5rem;
+          font-weight: 300;
+        }
+
+        .ratings-table-container {
+          overflow-x: auto;
+          margin-top: 20px;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .ratings-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9375rem;
+          background: white;
+        }
+
+        .ratings-table th {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          padding: 16px;
+          text-align: center;
+          font-weight: 700;
+          color: #1e293b;
+          border-bottom: 2px solid #e2e8f0;
+          white-space: nowrap;
+          font-size: 0.875rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+        }
+
+        .ratings-table td {
+          padding: 16px;
+          border-bottom: 1px solid #f1f5f9;
+          color: #475569;
+          font-weight: 500;
+          text-align: center;
+        }
+
+        .ratings-table tr {
+          transition: all 0.2s ease;
+        }
+
+        .ratings-table tbody tr:hover {
+          background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
+          transform: scale(1.01);
+        }
+
         .grades-header {
           display: flex;
           justify-content: space-between;
@@ -3859,6 +4548,72 @@ const StudentProfile = () => {
 
           .profile-card .grade-badge {
             font-size: 0.82rem;
+          }
+
+          .ratings-table,
+          .ratings-table thead,
+          .ratings-table tbody,
+          .ratings-table th,
+          .ratings-table td,
+          .ratings-table tr {
+            display: block;
+            width: 100%;
+          }
+
+          .ratings-table thead {
+            display: none;
+          }
+
+          .ratings-table tr {
+            margin-bottom: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 18px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px 16px;
+            transition: all 0.2s ease;
+          }
+
+          .ratings-table tr:hover {
+            border-color: #667eea;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.12);
+          }
+
+          .ratings-table td {
+            padding: 10px 0;
+            border: none;
+            font-size: 0.9rem;
+            position: relative;
+            padding-inline-start: 0;
+            min-height: 42px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+          }
+
+          .ratings-table td::before {
+            content: attr(data-label);
+            position: relative;
+            top: auto;
+            left: auto;
+            transform: none;
+            font-weight: 700;
+            color: #667eea;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 2px;
+          }
+
+          .ratings-table td .rating-badge {
+            align-self: center;
           }
         }
       `}</style>
