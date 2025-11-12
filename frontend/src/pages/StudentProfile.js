@@ -1691,7 +1691,7 @@ const StudentProfile = () => {
                           fontWeight: "600",
                         }}
                       >
-                        ► Next
+                        ► {t("studentProfile.next", "Next")}
                       </button>
 
                       <div
@@ -1753,7 +1753,7 @@ const StudentProfile = () => {
                           fontWeight: "600",
                         }}
                       >
-                        Previous ◄
+                        {t("studentProfile.previous", "Previous")} ◄
                       </button>
                     </div>
                   )}
@@ -1814,7 +1814,7 @@ const StudentProfile = () => {
                                 color: "#ffffff",
                               }}
                             >
-                              SUBJECT
+                              {t("studentProfile.subject", "Subject")}
                             </div>
                           </div>
                           <div
@@ -1832,7 +1832,7 @@ const StudentProfile = () => {
                                 color: "#ffffff",
                               }}
                             >
-                              LATEST
+                              {t("studentProfile.latest", "LATEST")}
                             </div>
                           </div>
                           <div
@@ -1850,7 +1850,7 @@ const StudentProfile = () => {
                                 color: "#ffffff",
                               }}
                             >
-                              PREVIOUS
+                              {t("studentProfile.previous", "PREVIOUS")}
                             </div>
                           </div>
                         </div>
@@ -4468,6 +4468,27 @@ const StudentProfile = () => {
         @media (max-width: 600px) {
           .profile-layout {
             gap: 20px;
+          }
+
+          .ratings-table-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            padding: 0 10px;
+          }
+
+          .ratings-table {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 90%;
+          }
+
+          .ratings-table th {
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .profile-hero-card {
