@@ -28,6 +28,7 @@ const StudentQuizzes = () => {
   const [subjects, setSubjects] = useState([]);
   const [chapters, setChapters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSeason, setFilterSeason] = useState("");
