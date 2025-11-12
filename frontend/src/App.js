@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { TranslationProvider } from "./contexts/TranslationContext";
+import { ToastProvider } from "./contexts/ToastContext";
 import Header from "./components/Header";
 import Login from "./components/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -208,7 +209,9 @@ function App() {
     <Router>
       <AuthProvider>
         <TranslationProvider>
-          <AppContent />
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
         </TranslationProvider>
       </AuthProvider>
     </Router>

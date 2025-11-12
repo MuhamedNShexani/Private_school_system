@@ -138,6 +138,12 @@
   overflow: hidden;
 }
 
+.admin-crud-content.ratings-container {
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .data-table {
   width: 100%;
 }
@@ -172,6 +178,21 @@
 .teacher-table .table-header,
 .teacher-table .table-row {
   grid-template-columns: 2fr 1fr 1.5fr 2fr 1.5fr 2fr 2fr 1fr 1fr;
+}
+
+/* Ratings table specific layout */
+.ratings-table .table-header,
+.ratings-table .table-row {
+  grid-template-columns: 1.5fr 2fr 1.5fr 1.5fr 1.5fr 1fr;
+}
+
+.ratings-table .table-cell {
+  justify-content: center;
+  text-align: center;
+}
+
+.ratings-table .table-cell:last-child {
+  justify-content: center;
 }
 
 .table-cell {

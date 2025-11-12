@@ -54,6 +54,10 @@ const StudentProfile = () => {
   const [ratingFilterMode, setRatingFilterMode] = useState("evaluation"); // month, date-range, evaluation
   const [ratingFilterFromDate, setRatingFilterFromDate] = useState("");
   const [ratingFilterToDate, setRatingFilterToDate] = useState("");
+  const [selectedMonthYear, setSelectedMonthYear] = useState(() => {
+    const today = new Date();
+    return { year: today.getFullYear(), month: today.getMonth() };
+  });
 
   const interpolateTemplate = (template, values) => {
     if (typeof template !== "string") {
@@ -64,6 +68,14 @@ const StudentProfile = () => {
         ? String(values[key])
         : match
     );
+  };
+
+  // Helper function to format Date to YYYY-MM-DD using local time (not UTC)
+  const formatDateToYYYYMMDD = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   };
 
   const isTeacher = user?.role === "Teacher";
@@ -688,26 +700,38 @@ const StudentProfile = () => {
       });
       filtered = Object.values(lastTwo).flat();
     } else if (ratingFilterMode === "month" && ratingFilterFromDate) {
-      const fromDate = new Date(ratingFilterFromDate);
-      const toDate = new Date(ratingFilterToDate || ratingFilterFromDate);
-      toDate.setMonth(toDate.getMonth() + 1);
+      // Extract date part only (YYYY-MM-DD) to avoid timezone issues
+      const fromDateStr = ratingFilterFromDate; // Already in YYYY-MM-DD format
+      const toDateStr = ratingFilterToDate || ratingFilterFromDate;
 
       filtered = filtered.filter((r) => {
+        // Extract date part from rating date using local time
         const rDate = new Date(r.date);
-        return rDate >= fromDate && rDate < toDate;
+        const year = rDate.getFullYear();
+        const month = String(rDate.getMonth() + 1).padStart(2, "0");
+        const day = String(rDate.getDate()).padStart(2, "0");
+        const rDateStr = `${year}-${month}-${day}`;
+
+        return rDateStr >= fromDateStr && rDateStr <= toDateStr;
       });
     } else if (
       ratingFilterMode === "date-range" &&
       ratingFilterFromDate &&
       ratingFilterToDate
     ) {
-      const fromDate = new Date(ratingFilterFromDate);
-      const toDate = new Date(ratingFilterToDate);
-      toDate.setDate(toDate.getDate() + 1); // Include the toDate
+      // Extract date part only (YYYY-MM-DD) to avoid timezone issues
+      const fromDateStr = ratingFilterFromDate; // Already in YYYY-MM-DD format
+      const toDateStr = ratingFilterToDate;
 
       filtered = filtered.filter((r) => {
+        // Extract date part from rating date using local time
         const rDate = new Date(r.date);
-        return rDate >= fromDate && rDate < toDate;
+        const year = rDate.getFullYear();
+        const month = String(rDate.getMonth() + 1).padStart(2, "0");
+        const day = String(rDate.getDate()).padStart(2, "0");
+        const rDateStr = `${year}-${month}-${day}`;
+
+        return rDateStr >= fromDateStr && rDateStr <= toDateStr;
       });
     }
 
@@ -744,7 +768,18 @@ const StudentProfile = () => {
     if (!date) {
       return t("common.na", "N/A");
     }
-    return new Date(date).toLocaleDateString("en-GB");
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Convert YYYY-MM-DD to DD/MM/YYYY for display
+  const isoToDdmmyyyy = (dateStr) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("-");
+    return `${day}/${month}/${year}`;
   };
 
   const availableTrainingQuizzes = useMemo(() => {
@@ -1462,6 +1497,19 @@ const StudentProfile = () => {
                     "No ratings have been recorded yet."
                   )}
                 </p>
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#9ca3af",
+                    marginTop: "8px",
+                    fontStyle: "italic",
+                  }}
+                >
+                  {t(
+                    "studentProfile.noRatingsExplanation",
+                    "Ratings will appear here once teachers add them for this student."
+                  )}
+                </p>
               </div>
             ) : (
               <>
@@ -1509,7 +1557,7 @@ const StudentProfile = () => {
                     </select>
                   </div>
 
-                  {/* Filter Mode */}
+                  {/* Filter Mode - Radio Buttons with Icons Only */}
                   <div>
                     <label
                       style={{
@@ -1521,317 +1569,321 @@ const StudentProfile = () => {
                     >
                       📅 {t("form.filter", "Filter")}
                     </label>
-                    <select
-                      value={ratingFilterMode}
-                      onChange={(e) => {
-                        setRatingFilterMode(e.target.value);
-                        setRatingFilterFromDate("");
-                        setRatingFilterToDate("");
-                      }}
+                    <div
                       style={{
-                        width: "100%",
-                        padding: "8px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "6px",
-                        fontSize: "13px",
+                        display: "flex",
+                        gap: "12px",
+                        flexWrap: "wrap",
                       }}
                     >
-                      <option value="evaluation">
-                        📊 Evaluation (Last vs Previous)
-                      </option>
-                      <option value="month">📆 By Month</option>
-                      <option value="date-range">📍 Date Range</option>
-                    </select>
+                      {/* Evaluation Filter */}
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          gap: "6px",
+                        }}
+                        title="Evaluation (Last vs Previous)"
+                      >
+                        <input
+                          type="radio"
+                          name="ratingFilterMode"
+                          value="evaluation"
+                          checked={ratingFilterMode === "evaluation"}
+                          onChange={(e) => {
+                            const newMode = e.target.value;
+                            setRatingFilterMode(newMode);
+                            setRatingFilterFromDate("");
+                            setRatingFilterToDate("");
+                          }}
+                          style={{
+                            cursor: "pointer",
+                            accentColor: "#3b82f6",
+                          }}
+                        />
+                        <span style={{ fontSize: "20px" }} title="Evaluation">
+                          📊
+                        </span>
+                      </label>
+
+                      {/* By Month Filter */}
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                          gap: "6px",
+                        }}
+                        title="By Month"
+                      >
+                        <input
+                          type="radio"
+                          name="ratingFilterMode"
+                          value="month"
+                          checked={ratingFilterMode === "month"}
+                          onChange={(e) => {
+                            const newMode = e.target.value;
+                            setRatingFilterMode(newMode);
+
+                            // Auto-select this month when "month" filter is selected
+                            const today = new Date();
+                            const thisMonth = new Date(
+                              today.getFullYear(),
+                              today.getMonth(),
+                              1
+                            );
+                            const thisMonthStr =
+                              formatDateToYYYYMMDD(thisMonth);
+
+                            // Set to last day of this month
+                            const lastDay = new Date(
+                              today.getFullYear(),
+                              today.getMonth() + 1,
+                              0
+                            );
+                            const lastDayStr = formatDateToYYYYMMDD(lastDay);
+
+                            setRatingFilterFromDate(thisMonthStr);
+                            setRatingFilterToDate(lastDayStr);
+
+                            // Also update selected month state
+                            setSelectedMonthYear({
+                              year: today.getFullYear(),
+                              month: today.getMonth(),
+                            });
+                          }}
+                          style={{
+                            cursor: "pointer",
+                            accentColor: "#3b82f6",
+                          }}
+                        />
+                        <span style={{ fontSize: "20px" }} title="By Month">
+                          📆
+                        </span>
+                      </label>
+                    </div>
                   </div>
 
-                  {/* From Date */}
-                  {(ratingFilterMode === "month" ||
-                    ratingFilterMode === "date-range") && (
-                    <div>
-                      <label
-                        style={{
-                          fontWeight: "600",
-                          fontSize: "13px",
-                          display: "block",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        📍 From
-                      </label>
-                      <input
-                        type="date"
-                        value={ratingFilterFromDate}
-                        onChange={(e) =>
-                          setRatingFilterFromDate(e.target.value)
-                        }
-                        style={{
-                          width: "100%",
-                          padding: "8px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "6px",
-                          fontSize: "13px",
-                        }}
-                      />
-                    </div>
-                  )}
+                  {/* By Month Navigation */}
+                  {ratingFilterMode === "month" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        padding: "12px",
+                        backgroundColor: "#f3f4f6",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextMonth = new Date(
+                            selectedMonthYear.year,
+                            selectedMonthYear.month + 1,
+                            1
+                          );
+                          setSelectedMonthYear({
+                            year: nextMonth.getFullYear(),
+                            month: nextMonth.getMonth(),
+                          });
 
-                  {/* To Date */}
-                  {ratingFilterMode === "date-range" && (
-                    <div>
-                      <label
+                          // Set filter dates to next month (1st to last day)
+                          const fromDate = new Date(
+                            nextMonth.getFullYear(),
+                            nextMonth.getMonth(),
+                            1
+                          ); // First day of the month
+                          const toDate = new Date(
+                            nextMonth.getFullYear(),
+                            nextMonth.getMonth() + 1,
+                            0
+                          ); // Last day of the month
+                          setRatingFilterFromDate(
+                            formatDateToYYYYMMDD(fromDate)
+                          );
+                          setRatingFilterToDate(formatDateToYYYYMMDD(toDate));
+                        }}
                         style={{
+                          padding: "6px 12px",
+                          backgroundColor: "#3b82f6",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "14px",
                           fontWeight: "600",
-                          fontSize: "13px",
-                          display: "block",
-                          marginBottom: "6px",
                         }}
                       >
-                        📍 To
-                      </label>
-                      <input
-                        type="date"
-                        value={ratingFilterToDate}
-                        onChange={(e) => setRatingFilterToDate(e.target.value)}
+                        ► Next
+                      </button>
+
+                      <div
                         style={{
-                          width: "100%",
-                          padding: "8px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "6px",
-                          fontSize: "13px",
+                          flex: 1,
+                          textAlign: "center",
+                          fontWeight: "600",
+                          fontSize: "15px",
+                          color: "#1f2937",
                         }}
-                      />
+                      >
+                        {new Date(
+                          selectedMonthYear.year,
+                          selectedMonthYear.month,
+                          1
+                        ).toLocaleDateString("en-US", {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prevMonth = new Date(
+                            selectedMonthYear.year,
+                            selectedMonthYear.month - 1,
+                            1
+                          );
+                          setSelectedMonthYear({
+                            year: prevMonth.getFullYear(),
+                            month: prevMonth.getMonth(),
+                          });
+
+                          // Set filter dates to previous month (1st to last day)
+                          const fromDate = new Date(
+                            prevMonth.getFullYear(),
+                            prevMonth.getMonth(),
+                            1
+                          ); // First day of the month
+                          const toDate = new Date(
+                            prevMonth.getFullYear(),
+                            prevMonth.getMonth() + 1,
+                            0
+                          ); // Last day of the month
+                          setRatingFilterFromDate(
+                            formatDateToYYYYMMDD(fromDate)
+                          );
+                          setRatingFilterToDate(formatDateToYYYYMMDD(toDate));
+                        }}
+                        style={{
+                          padding: "6px 12px",
+                          backgroundColor: "#3b82f6",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Previous ◄
+                      </button>
                     </div>
                   )}
                 </div>
 
-                {/* Mobile: Show evaluation per subject in one row */}
-                {isMobile && ratingFilterMode === "evaluation" ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                    }}
-                  >
-                    {/* Column Headers */}
-                    <div
+                {/* Empty State for Filtered Results */}
+                {getFilteredRatings().length === 0 ? (
+                  <div className="empty-section">
+                    <BookOpen size={32} color="#9ca3af" />
+                    <p>
+                      {t(
+                        "studentProfile.noRatingsFiltered",
+                        "No ratings found for the selected filters."
+                      )}
+                    </p>
+                    <p
                       style={{
-                        padding: "10px 12px",
-                        backgroundColor: "#1f2937",
-                        borderRadius: "8px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: "12px",
+                        fontSize: "13px",
+                        color: "#9ca3af",
+                        marginTop: "8px",
+                        fontStyle: "italic",
                       }}
                     >
-                      <div style={{ flex: "0 0 auto", minWidth: "100px" }}>
-                        <div
-                          style={{
-                            fontWeight: "700",
-                            fontSize: "12px",
-                            color: "#ffffff",
-                          }}
-                        >
-                          SUBJECT
-                        </div>
-                      </div>
+                      {t(
+                        "studentProfile.noRatingsFilteredExplanation",
+                        "Try changing the filter mode, season, or selected month to see available ratings."
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile: Show evaluation per subject in one row */}
+                    {isMobile && ratingFilterMode === "evaluation" ? (
                       <div
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          alignItems: "center",
-                          gap: "2px",
+                          gap: "8px",
                         }}
                       >
+                        {/* Column Headers */}
                         <div
-                          style={{
-                            fontWeight: "700",
-                            fontSize: "11px",
-                            color: "#ffffff",
-                          }}
-                        >
-                          LATEST
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          gap: "2px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontWeight: "700",
-                            fontSize: "11px",
-                            color: "#ffffff",
-                          }}
-                        >
-                          PREVIOUS
-                        </div>
-                      </div>
-                    </div>
-
-                    {Array.from(
-                      new Set(getFilteredRatings().map((r) => r.subjectId))
-                    ).map((subjectId) => {
-                      const subjectName = (() => {
-                        const subject = subjects.find(
-                          (s) =>
-                            normalizeId(s?._id || s) === normalizeId(subjectId)
-                        );
-                        return subject
-                          ? getLocalizedText(
-                              subject.titleMultilingual || subject.title,
-                              subject.title || subjectId
-                            )
-                          : subjectId;
-                      })();
-
-                      const sortedRatings = getFilteredRatings()
-                        .filter((r) => r.subjectId === subjectId)
-                        .sort((a, b) => new Date(b.date) - new Date(a.date))
-                        .slice(0, 2);
-
-                      const lastRating = sortedRatings[0];
-                      const previousRating = sortedRatings[1];
-
-                      return (
-                        <div
-                          key={subjectId}
                           style={{
                             padding: "10px 12px",
-                            backgroundColor: "#ffffff",
+                            backgroundColor: "#1f2937",
                             borderRadius: "8px",
-                            border: "1px solid #e5e7eb",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
                             gap: "12px",
                           }}
                         >
-                          {/* Subject Name */}
                           <div style={{ flex: "0 0 auto", minWidth: "100px" }}>
                             <div
                               style={{
-                                fontWeight: "600",
-                                fontSize: "13px",
-                                color: "#1f2937",
+                                fontWeight: "700",
+                                fontSize: "12px",
+                                color: "#ffffff",
                               }}
                             >
-                              {subjectName}
+                              SUBJECT
                             </div>
                           </div>
-
-                          {/* Last Rating */}
-                          {lastRating && (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: "2px",
+                            }}
+                          >
                             <div
                               style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "2px",
+                                fontWeight: "700",
+                                fontSize: "11px",
+                                color: "#ffffff",
                               }}
                             >
-                              <span
-                                style={{
-                                  display: "inline-block",
-                                  padding: "4px 8px",
-                                  borderRadius: "6px",
-                                  backgroundColor: getRatingColor(
-                                    lastRating.rating
-                                  ),
-                                  color: "white",
-                                  fontWeight: "bold",
-                                  fontSize: "11px",
-                                  minWidth: "60px",
-                                  textAlign: "center",
-                                }}
-                              >
-                                {getRatingLabel(lastRating.rating)}
-                              </span>
-                              <span
-                                style={{ fontSize: "9px", color: "#9ca3af" }}
-                              >
-                                {formatDate(lastRating.date)}
-                              </span>
+                              LATEST
                             </div>
-                          )}
-
-                          {/* Previous Rating */}
-                          {previousRating && (
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: "2px",
+                            }}
+                          >
                             <div
                               style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "2px",
+                                fontWeight: "700",
+                                fontSize: "11px",
+                                color: "#ffffff",
                               }}
                             >
-                              <span
-                                style={{
-                                  display: "inline-block",
-                                  padding: "4px 8px",
-                                  borderRadius: "6px",
-                                  backgroundColor: getRatingColor(
-                                    previousRating.rating
-                                  ),
-                                  color: "white",
-                                  fontWeight: "bold",
-                                  fontSize: "11px",
-                                  minWidth: "60px",
-                                  textAlign: "center",
-                                }}
-                              >
-                                {getRatingLabel(previousRating.rating)}
-                              </span>
-                              <span
-                                style={{ fontSize: "9px", color: "#9ca3af" }}
-                              >
-                                {formatDate(previousRating.date)}
-                              </span>
+                              PREVIOUS
                             </div>
-                          )}
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div
-                    className="ratings-table-container"
-                    style={{
-                      overflowX:
-                        getFilteredRatings().length > 2 &&
-                        !ratingFilterMode.includes("evaluation")
-                          ? "auto"
-                          : "visible",
-                      maxWidth: "100%",
-                    }}
-                  >
-                    <table className="ratings-table">
-                      <thead>
-                        <tr>
-                          <th>{t("studentProfile.subject", "Subject")}</th>
-                          {/* Get unique dates sorted newest first */}
-                          {Array.from(
-                            new Set(
-                              getFilteredRatings()
-                                .map((r) => r.date)
-                                .sort((a, b) => new Date(b) - new Date(a))
-                            )
-                          ).map((date) => (
-                            <th key={date}>{formatDate(date)}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* Get unique subjects */}
+
                         {Array.from(
                           new Set(getFilteredRatings().map((r) => r.subjectId))
                         ).map((subjectId) => {
-                          // Map subject ID to subject name
                           const subjectName = (() => {
                             const subject = subjects.find(
                               (s) =>
@@ -1846,58 +1898,230 @@ const StudentProfile = () => {
                               : subjectId;
                           })();
 
+                          const sortedRatings = getFilteredRatings()
+                            .filter((r) => r.subjectId === subjectId)
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))
+                            .slice(0, 2);
+
+                          const lastRating = sortedRatings[0];
+                          const previousRating = sortedRatings[1];
+
                           return (
-                            <tr key={subjectId}>
-                              <td
-                                className="mobile-grid-cell"
-                                data-label={t(
-                                  "studentProfile.subject",
-                                  "Subject"
-                                )}
+                            <div
+                              key={subjectId}
+                              style={{
+                                padding: "10px 12px",
+                                backgroundColor: "#ffffff",
+                                borderRadius: "8px",
+                                border: "1px solid #e5e7eb",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "12px",
+                              }}
+                            >
+                              {/* Subject Name */}
+                              <div
+                                style={{ flex: "0 0 auto", minWidth: "100px" }}
                               >
-                                {subjectName}
-                              </td>
-                              {/* For each date, show the rating for this subject */}
+                                <div
+                                  style={{
+                                    fontWeight: "600",
+                                    fontSize: "13px",
+                                    color: "#1f2937",
+                                  }}
+                                >
+                                  {subjectName}
+                                </div>
+                              </div>
+
+                              {/* Last Rating */}
+                              {lastRating && (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    gap: "2px",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      display: "inline-block",
+                                      padding: "4px 8px",
+                                      borderRadius: "6px",
+                                      backgroundColor: getRatingColor(
+                                        lastRating.rating
+                                      ),
+                                      color: "white",
+                                      fontWeight: "bold",
+                                      fontSize: "11px",
+                                      minWidth: "60px",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    {getRatingLabel(lastRating.rating)}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: "9px",
+                                      color: "#9ca3af",
+                                    }}
+                                  >
+                                    {formatDate(lastRating.date)}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Previous Rating */}
+                              {previousRating && (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    gap: "2px",
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      display: "inline-block",
+                                      padding: "4px 8px",
+                                      borderRadius: "6px",
+                                      backgroundColor: getRatingColor(
+                                        previousRating.rating
+                                      ),
+                                      color: "white",
+                                      fontWeight: "bold",
+                                      fontSize: "11px",
+                                      minWidth: "60px",
+                                      textAlign: "center",
+                                    }}
+                                  >
+                                    {getRatingLabel(previousRating.rating)}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: "9px",
+                                      color: "#9ca3af",
+                                    }}
+                                  >
+                                    {formatDate(previousRating.date)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div
+                        className="ratings-table-container"
+                        style={{
+                          overflowX:
+                            getFilteredRatings().length > 2 &&
+                            !ratingFilterMode.includes("evaluation")
+                              ? "auto"
+                              : "visible",
+                          maxWidth: "100%",
+                        }}
+                      >
+                        <table className="ratings-table">
+                          <thead>
+                            <tr>
+                              <th>{t("studentProfile.subject", "Subject")}</th>
+                              {/* Get unique dates sorted newest first */}
                               {Array.from(
                                 new Set(
                                   getFilteredRatings()
                                     .map((r) => r.date)
                                     .sort((a, b) => new Date(b) - new Date(a))
                                 )
-                              ).map((date) => {
-                                const rating = getFilteredRatings().find(
-                                  (r) =>
-                                    r.subjectId === subjectId && r.date === date
-                                );
-                                return (
-                                  <td
-                                    key={`${subjectId}-${date}`}
-                                    className="mobile-grid-cell"
-                                    data-label={formatDate(date)}
-                                  >
-                                    {rating ? (
-                                      <span
-                                        className="rating-badge"
-                                        style={{
-                                          backgroundColor: getRatingColor(
-                                            rating.rating
-                                          ),
-                                        }}
-                                      >
-                                        {getRatingLabel(rating.rating)}
-                                      </span>
-                                    ) : (
-                                      <span className="no-rating">—</span>
-                                    )}
-                                  </td>
-                                );
-                              })}
+                              ).map((date) => (
+                                <th key={date}>{formatDate(date)}</th>
+                              ))}
                             </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                          </thead>
+                          <tbody>
+                            {/* Get unique subjects */}
+                            {Array.from(
+                              new Set(
+                                getFilteredRatings().map((r) => r.subjectId)
+                              )
+                            ).map((subjectId) => {
+                              // Map subject ID to subject name
+                              const subjectName = (() => {
+                                const subject = subjects.find(
+                                  (s) =>
+                                    normalizeId(s?._id || s) ===
+                                    normalizeId(subjectId)
+                                );
+                                return subject
+                                  ? getLocalizedText(
+                                      subject.titleMultilingual ||
+                                        subject.title,
+                                      subject.title || subjectId
+                                    )
+                                  : subjectId;
+                              })();
+
+                              return (
+                                <tr key={subjectId}>
+                                  <td
+                                    className="mobile-grid-cell"
+                                    data-label={t(
+                                      "studentProfile.subject",
+                                      "Subject"
+                                    )}
+                                  >
+                                    {subjectName}
+                                  </td>
+                                  {/* For each date, show the rating for this subject */}
+                                  {Array.from(
+                                    new Set(
+                                      getFilteredRatings()
+                                        .map((r) => r.date)
+                                        .sort(
+                                          (a, b) => new Date(b) - new Date(a)
+                                        )
+                                    )
+                                  ).map((date) => {
+                                    const rating = getFilteredRatings().find(
+                                      (r) =>
+                                        r.subjectId === subjectId &&
+                                        r.date === date
+                                    );
+                                    return (
+                                      <td
+                                        key={`${subjectId}-${date}`}
+                                        className="mobile-grid-cell"
+                                        data-label={formatDate(date)}
+                                      >
+                                        {rating ? (
+                                          <span
+                                            className="rating-badge"
+                                            style={{
+                                              backgroundColor: getRatingColor(
+                                                rating.rating
+                                              ),
+                                            }}
+                                          >
+                                            {getRatingLabel(rating.rating)}
+                                          </span>
+                                        ) : (
+                                          <span className="no-rating">—</span>
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}

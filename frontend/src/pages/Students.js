@@ -4034,7 +4034,7 @@ const Students = () => {
                     <option value="">-- Select Season --</option>
                     {seasons.map((season) => (
                       <option key={season._id} value={season._id}>
-                        {season.name.en || season.name}
+                        {getLocalizedText(season.nameMultilingual || season.name) || season.name}
                       </option>
                     ))}
                   </select>
@@ -4064,7 +4064,7 @@ const Students = () => {
                         <th>{t("form.studentName", "Student Name")}</th>
                         {subjects.map((subject) => (
                           <th key={subject._id}>
-                            {subject.title?.en || subject.title}
+                            {getLocalizedText(subject.titleMultilingual || subject.title) || subject.title}
                           </th>
                         ))}
                       </tr>
@@ -4266,7 +4266,7 @@ const Students = () => {
         .rating-students-table th {
           background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 100%);
           padding: 12px;
-          text-align: left;
+          text-align: center;
           font-weight: 700;
           color: #1f2937;
           border-bottom: 2px solid #e5e7eb;
@@ -4277,6 +4277,7 @@ const Students = () => {
         .rating-students-table td {
           padding: 10px 12px;
           border-bottom: 1px solid #e5e7eb;
+          text-align: center;
           color: #374151;
         }
 

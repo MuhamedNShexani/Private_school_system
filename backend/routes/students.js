@@ -3,6 +3,7 @@ const router = express.Router();
 const Student = require("../models/Student");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const mongoose = require("mongoose");
 const {
   verifyToken,
   getCurrentUser,
@@ -12,16 +13,25 @@ const {
 const multer = require("multer");
 const path = require("path");
 
+// Cache db connection at module level (used frequently)
+let ratingsCollection = null;
+const getRatingsCollection = () => {
+  if (!ratingsCollection) {
+    ratingsCollection = mongoose.connection.db.collection("ratings");
+  }
+  return ratingsCollection;
+};
+
 // Standardized response format with translation support
 const sendResponse = (res, statusCode, success, messageKey, data = null) => {
   // messageKey can be either a translation key or a direct message
   // If it contains a dot, it's a translation key; otherwise, it's a direct message
-  const message = messageKey.includes(".") ? messageKey : messageKey;
+  const isTranslationKey = messageKey.includes(".");
 
   res.status(statusCode).json({
     success,
-    message,
-    messageKey: messageKey.includes(".") ? messageKey : null,
+    message: messageKey,
+    messageKey: isTranslationKey ? messageKey : null,
     ...(data && { data }),
   });
 };
@@ -143,11 +153,6 @@ router.post(
   upload.single("image"),
   async (req, res) => {
     try {
-      console.log("Creating student with data:", req.body);
-      console.log("File:", req.file);
-      console.log("Class field:", req.body.class);
-      console.log("BranchID field:", req.body.branchID);
-
       // Extract password and hash it
       const { password, ...studentData } = req.body;
       if (!password) {
@@ -167,9 +172,7 @@ router.post(
         password: hashedPassword,
       });
 
-      console.log("Student object created:", student);
       const savedStudent = await student.save();
-      console.log("Student saved successfully:", savedStudent);
 
       // Create corresponding User account
       const nameParts = savedStudent.fullName.split(" ");
@@ -192,7 +195,6 @@ router.post(
       });
 
       const savedUser = await user.save();
-      console.log("User account created successfully:", savedUser);
 
       // Populate student data
       await savedStudent.populate("class", "name branches");
@@ -220,35 +222,59 @@ router.put(
   upload.single("image"),
   async (req, res) => {
     try {
-      console.log("Updating student with ID:", req.params.id);
-      console.log("Update data:", req.body);
-      console.log("File:", req.file);
-      console.log("Class field:", req.body.class);
-      console.log("BranchID field:", req.body.branchID);
-
-      // Prepare update data
-      const updateData = { ...req.body };
-
-      // If a new image was uploaded, save the image path
-      if (req.file) {
-        updateData.photo = `/uploads/${req.file.filename}`;
-      }
-
-      const student = await Student.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-        }
-      ).populate("class", "name branches");
+      // Fetch the student first
+      const student = await Student.findById(req.params.id);
 
       if (!student) {
         return sendResponse(res, 404, false, "api.student.notFound");
       }
 
-      console.log("Updated student:", student);
-      sendResponse(res, 200, true, "api.student.updatedSuccessfully", student);
+      // Update fields (except password for now)
+      student.fullName = req.body.fullName || student.fullName;
+      student.email = req.body.email || student.email;
+      student.phone = req.body.phone || student.phone;
+      student.username = req.body.username || student.username;
+      student.parentsNumber = req.body.parentsNumber || student.parentsNumber;
+      student.class = req.body.class || student.class;
+      student.branchID = req.body.branchID || student.branchID;
+      student.gender = req.body.gender || student.gender;
+      student.studentNumber = req.body.studentNumber || student.studentNumber;
+
+      // If a new image was uploaded, save the image path
+      if (req.file) {
+        student.photo = `/uploads/${req.file.filename}`;
+      }
+
+      // Update password only if provided (will be hashed by pre-save hook)
+      if (req.body.password && req.body.password.trim()) {
+        student.password = req.body.password;
+      }
+
+      // Save the student (this will trigger the pre-save hook for password hashing)
+      const updatedStudent = await student.save();
+
+      // Also update the User collection if password was changed
+      if (req.body.password && req.body.password.trim()) {
+        // Find the corresponding user by email/username
+        const user = await User.findOne({
+          $or: [{ email: student.email }, { username: student.username }],
+        });
+
+        if (user) {
+          user.password = req.body.password; // Will be hashed by User's pre-save hook
+          await user.save();
+        }
+      }
+
+      await updatedStudent.populate("class", "name branches");
+
+      sendResponse(
+        res,
+        200,
+        true,
+        "api.student.updatedSuccessfully",
+        updatedStudent
+      );
     } catch (error) {
       console.error("Error updating student:", error);
       sendResponse(res, 400, false, error.message);
@@ -351,14 +377,16 @@ router.post(
         return sendResponse(res, 400, false, "api.rating.missingFields");
       }
 
-      const student = await Student.findById(req.params.id);
+      const student = await Student.findById(req.params.id).populate(
+        "class",
+        "_id name branches"
+      );
       if (!student) {
         return sendResponse(res, 404, false, "api.student.notFound");
       }
 
       // Save to separate ratings collection
-      const db = require("mongoose").connection.db;
-      const ratingsCollection = db.collection("ratings");
+      const ratingsCollection = getRatingsCollection();
 
       const ratingData = {
         studentId: student._id,
@@ -367,6 +395,8 @@ router.post(
         date: new Date(date),
         rating,
         ratedAt: new Date(),
+        studentClass: student.class, // Add class info
+        studentBranch: student.branchID, // Add branch info
       };
 
       // Check if rating already exists for this subject on this exact date
@@ -383,11 +413,9 @@ router.post(
           { _id: existingRating._id },
           { $set: ratingData }
         );
-        console.log("✅ Rating updated");
       } else {
         // Insert new rating (different date = new record)
         await ratingsCollection.insertOne(ratingData);
-        console.log("✅ Rating inserted - Multiple records by date allowed");
       }
 
       await student.populate("class", "name branches");
@@ -426,8 +454,7 @@ router.get("/:id/ratings", verifyToken, getCurrentUser, async (req, res) => {
     }
 
     // Fetch ratings from separate ratings collection
-    const db = require("mongoose").connection.db;
-    const ratingsCollection = db.collection("ratings");
+    const ratingsCollection = getRatingsCollection();
 
     const ratings = await ratingsCollection
       .find({ studentId: student._id })
@@ -467,8 +494,7 @@ router.get(
       const studentIds = students.map((s) => s._id);
 
       // Fetch ratings for this date/season
-      const db = require("mongoose").connection.db;
-      const ratingsCollection = db.collection("ratings");
+      const ratingsCollection = getRatingsCollection();
 
       const ratings = await ratingsCollection
         .find({
@@ -504,25 +530,58 @@ router.get(
   requireAdmin,
   async (req, res) => {
     try {
-      const db = require("mongoose").connection.db;
-      const ratingsCollection = db.collection("ratings");
+      const ratingsCollection = getRatingsCollection();
 
       // Get all ratings with populated student info
       const ratings = await ratingsCollection.find({}).toArray();
 
-      // Populate student names
-      const enrichedRatings = await Promise.all(
-        ratings.map(async (rating) => {
-          const student = await Student.findById(rating.studentId).select(
-            "fullName username email"
+      // Get unique student IDs to avoid duplicate queries
+      const uniqueStudentIds = [...new Set(ratings.map((r) => r.studentId))];
+
+      // Fetch all students in one query instead of individual queries (N+1 fix)
+      const students = await Student.find({
+        _id: { $in: uniqueStudentIds },
+      })
+        .select("_id fullName username email class branchID")
+        .populate({
+          path: "class",
+          select: "_id name branches",
+          populate: {
+            path: "branches",
+            model: "Class",
+            select: "_id name",
+          },
+        });
+
+      // Create a map for O(1) lookup
+      const studentMap = {};
+      students.forEach((student) => {
+        studentMap[student._id] = student;
+      });
+
+      // Populate student names and class/branch info
+      const enrichedRatings = ratings.map((rating) => {
+        const student = studentMap[rating.studentId];
+
+        // Try to get branch from class branches array
+        let branchInfo = rating.studentBranch;
+        if (!branchInfo && student?.class?.branches && student?.branchID) {
+          // Find the branch object within the class
+          const foundBranch = student.class.branches.find(
+            (b) => b._id?.toString() === student.branchID?.toString()
           );
-          return {
-            ...rating,
-            studentName: student?.fullName || "Unknown",
-            studentUsername: student?.username || "N/A",
-          };
-        })
-      );
+          branchInfo = foundBranch || student.branchID;
+        }
+
+        return {
+          ...rating,
+          studentName: student?.fullName || "Unknown",
+          studentUsername: student?.username || "N/A",
+          // Use class and branch from ratings if already stored, otherwise from student
+          studentClass: rating.studentClass || student?.class,
+          studentBranch: branchInfo,
+        };
+      });
 
       sendResponse(res, 200, true, "All ratings retrieved", {
         ratings: enrichedRatings,
@@ -543,9 +602,7 @@ router.delete(
   requireAdmin,
   async (req, res) => {
     try {
-      const db = require("mongoose").connection.db;
-      const ratingsCollection = db.collection("ratings");
-      const mongoose = require("mongoose");
+      const ratingsCollection = getRatingsCollection();
 
       const result = await ratingsCollection.deleteOne({
         _id: new mongoose.Types.ObjectId(req.params.ratingId),
@@ -577,9 +634,7 @@ router.put(
         return sendResponse(res, 400, false, "All fields are required");
       }
 
-      const db = require("mongoose").connection.db;
-      const ratingsCollection = db.collection("ratings");
-      const mongoose = require("mongoose");
+      const ratingsCollection = getRatingsCollection();
 
       const updateData = {
         subjectId,

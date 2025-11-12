@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 
 const studentSchema = new mongoose.Schema({
   fullName: {
@@ -82,6 +83,19 @@ const studentSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+});
+
+// Hash password before saving (if it was modified and is not already hashed)
+studentSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Update the updatedAt field before saving

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Translations API</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Testing Translations API</h1>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+
+        async function testAPI() {
+            const apiUrl = 'http://localhost:5000/api/translations?language=en';
+            
+            try {
+                resultsDiv.innerHTML += '<div class="result"><strong>Fetching from:</strong> ' + apiUrl + '</div>';
+                
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                resultsDiv.innerHTML += '<div class="result"><strong>Status:</strong> ' + response.status + '</div>';
+                resultsDiv.innerHTML += '<div class="result"><strong>Response structure:</strong><br>';
+                resultsDiv.innerHTML += 'success: ' + data.success + '<br>';
+                resultsDiv.innerHTML += 'data type: ' + typeof data.data + '<br>';
+                resultsDiv.innerHTML += 'data is object: ' + (typeof data.data === 'object') + '<br>';
+                resultsDiv.innerHTML += 'total keys: ' + Object.keys(data.data || {}).length + '</div>';
+                
+                // Check quiz translations
+                const quizKeys = Object.keys(data.data || {}).filter(k => k.includes('chapterQuizzes'));
+                resultsDiv.innerHTML += '<div class="result"><strong>Quiz translations found:</strong> ' + quizKeys.length;
+                if (quizKeys.length > 0) {
+                    resultsDiv.innerHTML += '<br><span class="success">✅ FOUND:</span><br>';
+                    quizKeys.slice(0, 5).forEach(key => {
+                        resultsDiv.innerHTML += '  - ' + key + ': "' + data.data[key] + '"<br>';
+                    });
+                } else {
+                    resultsDiv.innerHTML += '<br><span class="error">❌ NO QUIZ TRANSLATIONS!</span>';
+                }
+                resultsDiv.innerHTML += '</div>';
+
+                // Show all keys
+                resultsDiv.innerHTML += '<div class="result"><strong>All translation keys:</strong><br>';
+                Object.keys(data.data || {}).forEach(key => {
+                    resultsDiv.innerHTML += '  ' + key + '<br>';
+                });
+                resultsDiv.innerHTML += '</div>';
+
+            } catch (error) {
+                resultsDiv.innerHTML += '<div class="result"><span class="error">❌ Error: ' + error.message + '</span></div>';
+            }
+        }
+
+        // Run test when page loads
+        setTimeout(testAPI, 500);
+    </script>
+</body>
+</html>
+

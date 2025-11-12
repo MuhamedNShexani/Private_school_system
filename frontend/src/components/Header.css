@@ -357,7 +357,10 @@
   flex-direction: column;
   gap: 0;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  margin-top: auto;
+  margin-bottom: 20px;
+  overflow: visible;
+  position: relative;
+  z-index: 200;
 }
 
 .user-profile-card {
@@ -369,7 +372,8 @@
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  overflow: visible;
+  margin-bottom: 35px;
 }
 
 .profile-top {
@@ -379,6 +383,7 @@
   justify-content: space-between;
   padding-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 8px;
 }
 
 .user-header {
@@ -432,6 +437,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  z-index: 300;
 }
 
 .language-badge {
@@ -455,15 +461,84 @@
   transform: scale(1.1);
 }
 
-.language-select-dropdown {
+.language-dropdown-menu {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 48px;
+  right: -8px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 180px;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.language-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   width: 100%;
-  height: 100%;
-  opacity: 0;
+  padding: 12px 14px;
+  background: none;
+  border: none;
   cursor: pointer;
-  z-index: 10;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.language-dropdown-item:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.language-dropdown-item.active {
+  background-color: #dbeafe;
+  color: #0284c7;
+  font-weight: 600;
+}
+
+.language-dropdown-item .lang-flag {
+  font-size: 1.2rem;
+}
+
+.language-dropdown-item .lang-name {
+  flex: 1;
+}
+
+/* RTL Language Dropdown */
+[dir="rtl"] .language-dropdown-menu {
+  right: auto;
+  left: -8px;
+}
+
+[dir="rtl"] .language-dropdown-item {
+  text-align: right;
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .language-dropdown-item .lang-flag {
+  order: 2;
+  flex-shrink: 0;
+}
+
+[dir="rtl"] .language-dropdown-item .lang-name {
+  order: 1;
+  flex: 1;
 }
 
 .profile-logout {

@@ -19,7 +19,9 @@ const Header = ({ children }) => {
   const { user, logout } = useAuth();
   const { t, currentLanguage, languages, changeLanguage } = useTranslation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const profileRef = useRef(null);
+  const languageDropdownRef = useRef(null);
   const sidebarRef = useRef(null);
 
   const isRTL = currentLanguage === "ku" || currentLanguage === "ar";
@@ -43,16 +45,22 @@ const Header = ({ children }) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
+      if (
+        languageDropdownRef.current &&
+        !languageDropdownRef.current.contains(event.target)
+      ) {
+        setIsLanguageDropdownOpen(false);
+      }
     };
 
-    if (isProfileOpen) {
+    if (isProfileOpen || isLanguageDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isProfileOpen]);
+  }, [isProfileOpen, isLanguageDropdownOpen]);
 
   // Force re-render when language changes
   useEffect(() => {
@@ -390,22 +398,35 @@ const Header = ({ children }) => {
               </div>
 
               {/* Language Selector in Profile */}
-              <div className="profile-language">
-                <select
-                  value={currentLanguage}
-                  onChange={(e) => changeLanguage(e.target.value)}
-                  className="language-select-dropdown"
+              <div className="profile-language" ref={languageDropdownRef}>
+                <button
+                  className="language-badge"
+                  onClick={() =>
+                    setIsLanguageDropdownOpen(!isLanguageDropdownOpen)
+                  }
                   title="Change Language"
                 >
-                  {languages.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.flag} {lang.name}
-                    </option>
-                  ))}
-                </select>
-                <span className="language-badge">
                   {languages.find((l) => l.code === currentLanguage)?.flag}
-                </span>
+                </button>
+                {isLanguageDropdownOpen && (
+                  <div className="language-dropdown-menu">
+                    {languages.map((lang) => (
+                      <button
+                        key={lang.code}
+                        className={`language-dropdown-item ${
+                          lang.code === currentLanguage ? "active" : ""
+                        }`}
+                        onClick={() => {
+                          changeLanguage(lang.code);
+                          setIsLanguageDropdownOpen(false);
+                        }}
+                      >
+                        <span className="lang-flag">{lang.flag}</span>
+                        <span className="lang-name">{lang.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
