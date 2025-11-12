@@ -1101,7 +1101,17 @@ const StudentProfile = () => {
             <div className="profile-hero-banner">
               <div className="student-avatar">
                 {student.photo ? (
-                  <img src={student.photo} alt={student.fullName} />
+                  <img
+                    src={
+                      student.photo.startsWith("http")
+                        ? student.photo
+                        : `${
+                            process.env.REACT_APP_API_URL ||
+                            "http://localhost:5000"
+                          }${student.photo}`
+                    }
+                    alt={student.fullName}
+                  />
                 ) : (
                   <div className="avatar-placeholder">
                     {student.fullName && student.fullName.length > 0
