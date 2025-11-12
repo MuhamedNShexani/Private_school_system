@@ -1105,10 +1105,10 @@ const StudentProfile = () => {
                     src={
                       student.photo.startsWith("http")
                         ? student.photo
-                        : `${
+                        : `${(
                             process.env.REACT_APP_API_URL ||
-                            "http://localhost:5000"
-                          }${student.photo}`
+                            "http://localhost:5000/api"
+                          ).replace(/\/api\/?$/, "")}${student.photo}`
                     }
                     alt={student.fullName}
                   />
