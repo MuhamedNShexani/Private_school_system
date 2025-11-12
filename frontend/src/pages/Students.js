@@ -167,7 +167,7 @@ const Students = () => {
     };
 
     fetchData();
-  }, []);
+  }, [t]);
 
   // Update available branches when class changes
   useEffect(() => {
@@ -1000,7 +1000,6 @@ const Students = () => {
     try {
       setLoading(true);
       let successCount = 0;
-      let failureCount = 0;
 
       for (const student of filteredStudents) {
         for (const subject of subjects) {
@@ -1015,7 +1014,7 @@ const Students = () => {
               });
               successCount++;
             } catch (err) {
-              failureCount++;
+              // Error handled silently, only count successes
             }
           }
         }

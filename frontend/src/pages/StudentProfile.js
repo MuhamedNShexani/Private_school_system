@@ -567,16 +567,6 @@ const StudentProfile = () => {
     [currentLanguage]
   );
 
-  const getStatusLabel = (status) => {
-    if (!status) {
-      return t("status.active", "Active");
-    }
-    const normalized = status.toLowerCase();
-    if (normalized === "active") return t("status.active", "Active");
-    if (normalized === "inactive") return t("status.inactive", "Inactive");
-    return t(`studentProfile.status.${normalized}`, status);
-  };
-
   const getGenderLabel = (gender) => {
     if (!gender) {
       return t("studentProfile.gender.unknown", "Not specified");
@@ -745,25 +735,6 @@ const StudentProfile = () => {
   ]);
 
   // Get ratings info for comparison
-  const getRatingsInfo = useCallback(() => {
-    const filtered = getFilteredRatings();
-    if (filtered.length === 0) return null;
-
-    const sortedByDate = [...filtered].sort(
-      (a, b) => new Date(b.date) - new Date(a.date)
-    );
-
-    const lastUpdate = sortedByDate[0];
-    const previousRecord = sortedByDate[1];
-
-    return {
-      total: filtered.length,
-      lastUpdate,
-      previousRecord,
-      lastUpdateDate: lastUpdate?.date ? formatDate(lastUpdate.date) : "N/A",
-    };
-  }, [getFilteredRatings]);
-
   const formatDate = (date) => {
     if (!date) {
       return t("common.na", "N/A");
@@ -776,12 +747,6 @@ const StudentProfile = () => {
   };
 
   // Convert YYYY-MM-DD to DD/MM/YYYY for display
-  const isoToDdmmyyyy = (dateStr) => {
-    if (!dateStr) return "";
-    const [year, month, day] = dateStr.split("-");
-    return `${day}/${month}/${year}`;
-  };
-
   const availableTrainingQuizzes = useMemo(() => {
     if (!student) {
       return [];
@@ -1110,7 +1075,6 @@ const StudentProfile = () => {
   );
 
   const branchDisplayName = getBranchDisplayName(student);
-  const joinedDateLabel = formatDate(student.createdAt);
 
   return (
     <div>
