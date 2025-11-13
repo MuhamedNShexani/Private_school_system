@@ -43,7 +43,7 @@ const AdminDashboard = () => {
     totalClasses: 0,
   });
   const [analytics, setAnalytics] = useState({
-    genderBreakdown: { male: 0, female: 0, other: 0, total: 0 },
+    genderBreakdown: { male: 0, female: 0, total: 0 },
     progressByMonth: [],
     graduationByGrade: [],
     topCourses: [],
@@ -86,7 +86,6 @@ const AdminDashboard = () => {
           genderBreakdown: analyticsRes.data.data?.genderBreakdown || {
             male: 0,
             female: 0,
-            other: 0,
             total: 0,
           },
           progressByMonth: analyticsRes.data.data?.progressByMonth || [],
@@ -108,7 +107,12 @@ const AdminDashboard = () => {
       <div className="dashboard-container">
         <div className="error-message">
           <h2>{t("admin.dashboard.accessDenied", "Access Denied")}</h2>
-          <p>{t("common.accessDeniedMsg", "You don't have permission to access the admin dashboard.")}</p>
+          <p>
+            {t(
+              "common.accessDeniedMsg",
+              "You don't have permission to access the admin dashboard."
+            )}
+          </p>
         </div>
       </div>
     );
@@ -198,14 +202,18 @@ const AdminDashboard = () => {
         <div className="analytics-grid">
           {/* Gender Breakdown */}
           <div className="chart-card">
-            <h3>{t("admin.dashboard.genderDistribution", "Student Gender Distribution")}</h3>
+            <h3>
+              {t(
+                "admin.dashboard.genderDistribution",
+                "Student Gender Distribution"
+              )}
+            </h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={[
                     { name: "Male", value: analytics.genderBreakdown.male },
                     { name: "Female", value: analytics.genderBreakdown.female },
-                    { name: "Other", value: analytics.genderBreakdown.other },
                   ]}
                   cx="50%"
                   cy="50%"
@@ -220,7 +228,6 @@ const AdminDashboard = () => {
                   {[
                     analytics.genderBreakdown.male,
                     analytics.genderBreakdown.female,
-                    analytics.genderBreakdown.other,
                   ].map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
@@ -235,7 +242,12 @@ const AdminDashboard = () => {
 
           {/* Student Progress Over Time */}
           <div className="chart-card">
-            <h3>{t("admin.dashboard.studentProgress", "Student Progress (Last 6 Months)")}</h3>
+            <h3>
+              {t(
+                "admin.dashboard.studentProgress",
+                "Student Progress (Last 6 Months)"
+              )}
+            </h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={analytics.progressByMonth}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -294,8 +306,15 @@ const AdminDashboard = () => {
               <Activity size={16} />
             </div>
             <div className="activity-content">
-              <p>{t("admin.dashboard.activityUpdated", "Analytics dashboard updated")}</p>
-              <span className="activity-time">{t("admin.dashboard.activityTime.now", "Just now")}</span>
+              <p>
+                {t(
+                  "admin.dashboard.activityUpdated",
+                  "Analytics dashboard updated"
+                )}
+              </p>
+              <span className="activity-time">
+                {t("admin.dashboard.activityTime.now", "Just now")}
+              </span>
             </div>
           </div>
           <div className="activity-item">
@@ -303,8 +322,13 @@ const AdminDashboard = () => {
               <Users size={16} />
             </div>
             <div className="activity-content">
-              <p>{stats.totalStudents} {t("admin.dashboard.studentsRegistered", "students registered")}</p>
-              <span className="activity-time">{t("admin.dashboard.activityTime.today", "Today")}</span>
+              <p>
+                {stats.totalStudents}{" "}
+                {t("admin.dashboard.studentsRegistered", "students registered")}
+              </p>
+              <span className="activity-time">
+                {t("admin.dashboard.activityTime.today", "Today")}
+              </span>
             </div>
           </div>
           <div className="activity-item">

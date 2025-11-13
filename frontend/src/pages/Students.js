@@ -412,11 +412,7 @@ const Students = () => {
     if (!gender) {
       return t("students.gender.unknown", "Not specified");
     }
-    const normalized = gender.toLowerCase();
-    if (normalized === "male" || normalized === "female") {
-      return t(`students.gender.${normalized}`, gender);
-    }
-    return t("students.gender.other", gender);
+    return t(`students.gender.${gender.toLowerCase()}`, gender);
   };
 
   const getSeasonNameVariants = useCallback(

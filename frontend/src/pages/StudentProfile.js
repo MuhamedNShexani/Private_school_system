@@ -1101,17 +1101,77 @@ const StudentProfile = () => {
             <div className="profile-hero-banner">
               <div className="student-avatar">
                 {student.photo ? (
-                  <img
-                    src={
-                      student.photo.startsWith("http")
-                        ? student.photo
-                        : `${(
-                            process.env.REACT_APP_API_URL ||
-                            "http://localhost:5000/api"
-                          ).replace(/\/api\/?$/, "")}${student.photo}`
-                    }
-                    alt={student.fullName}
-                  />
+                  <>
+                    <img
+                      src={
+                        student.photo.startsWith("http")
+                          ? student.photo
+                          : (() => {
+                              // Get base URL from environment or default (same as api.js)
+                              const apiUrl =
+                                process.env.REACT_APP_API_URL ||
+                                "http://localhost:5000/api";
+
+                              // Remove /api suffix if present to get base URL
+                              // Backend serves static files at /uploads (not /api/uploads)
+                              let baseUrl = apiUrl.replace(/\/api\/?$/, "");
+
+                              // Ensure we have a valid base URL
+                              if (!baseUrl || baseUrl.trim() === "") {
+                                baseUrl = "http://localhost:5000";
+                              }
+
+                              // Remove trailing slash if present
+                              baseUrl = baseUrl.replace(/\/$/, "");
+
+                              // Ensure photo path starts with /
+                              const photoPath = student.photo.startsWith("/")
+                                ? student.photo
+                                : `/${student.photo}`;
+
+                              const fullUrl = `${baseUrl}${photoPath}`;
+
+                              // Debug logging (remove in production if needed)
+                              if (process.env.NODE_ENV === "development") {
+                                console.log("Photo URL constructed:", {
+                                  apiUrl,
+                                  baseUrl,
+                                  photoPath,
+                                  fullUrl,
+                                  studentPhoto: student.photo,
+                                });
+                              }
+
+                              return fullUrl;
+                            })()
+                      }
+                      alt={student.fullName}
+                      onError={(e) => {
+                        console.error("Failed to load student photo:", {
+                          src: e.target.src,
+                          studentPhoto: student.photo,
+                        });
+                        // Hide image and show placeholder on error
+                        e.target.style.display = "none";
+                        const placeholder =
+                          e.target.parentElement.querySelector(
+                            ".avatar-placeholder"
+                          );
+                        if (placeholder) {
+                          placeholder.style.display = "flex";
+                        }
+                      }}
+                      style={{ display: "block" }}
+                    />
+                    <div
+                      className="avatar-placeholder"
+                      style={{ display: "none" }}
+                    >
+                      {student.fullName && student.fullName.length > 0
+                        ? student.fullName.charAt(0).toUpperCase()
+                        : student.username?.charAt(0).toUpperCase() || "?"}
+                    </div>
+                  </>
                 ) : (
                   <div className="avatar-placeholder">
                     {student.fullName && student.fullName.length > 0

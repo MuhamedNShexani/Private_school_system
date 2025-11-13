@@ -745,7 +745,7 @@ const AdminCRUD = () => {
               studentFormData.append("branchID", formData.branches[0]);
             studentFormData.append(
               "gender",
-              formData.gender || editingItem.gender || "Other"
+              formData.gender || editingItem.gender || "Male"
             );
             studentFormData.append("studentNumber", editingItem.studentNumber);
             if (formData.password)
@@ -761,7 +761,7 @@ const AdminCRUD = () => {
               parentsNumber: formData.parentsNumber || undefined,
               class: formData.classes[0] || undefined,
               branchID: formData.branches[0] || undefined,
-              gender: formData.gender || editingItem.gender || "Other",
+              gender: formData.gender || editingItem.gender || "Male",
               studentNumber: editingItem.studentNumber,
             };
             if (formData.password) studentFormData.password = formData.password;
@@ -898,7 +898,7 @@ const AdminCRUD = () => {
               studentFormData.append("class", formData.classes[0]);
             if (formData.branches[0])
               studentFormData.append("branchID", formData.branches[0]);
-            studentFormData.append("gender", formData.gender || "Other");
+            studentFormData.append("gender", formData.gender || "Male");
             studentFormData.append("studentNumber", `STU${Date.now()}`);
             studentFormData.append("password", formData.password);
             studentFormData.append("image", formData.image);
@@ -912,7 +912,7 @@ const AdminCRUD = () => {
               parentsNumber: formData.parentsNumber || undefined,
               class: formData.classes[0] || undefined,
               branchID: formData.branches[0] || undefined,
-              gender: formData.gender || "Other",
+              gender: formData.gender || "Male",
               studentNumber: `STU${Date.now()}`,
               password: formData.password,
             };
@@ -1906,9 +1906,6 @@ const AdminCRUD = () => {
                   <option value="Male">{t("form.gender.male", "Male")}</option>
                   <option value="Female">
                     {t("form.gender.female", "Female")}
-                  </option>
-                  <option value="Other">
-                    {t("form.gender.other", "Other")}
                   </option>
                 </select>
               </div>
