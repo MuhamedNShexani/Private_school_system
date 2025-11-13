@@ -455,15 +455,6 @@
   transition: all 0.2s ease;
 }
 
-/* Style for text-based language codes in badge */
-.language-badge:has(> span:not(:only-child)) {
-  font-size: 0.85rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-}
-
 .language-badge:hover {
   background: #e5e7eb;
   border-color: #d1d5db;
@@ -523,21 +514,6 @@
 
 .language-dropdown-item .lang-flag {
   font-size: 1.2rem;
-  min-width: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Style for text-based language codes like "Ku" */
-.language-dropdown-item .lang-flag:not([emoji]) {
-  font-weight: 700;
-  font-size: 0.9rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 6px;
-  padding: 2px 6px;
-  text-align: center;
 }
 
 .language-dropdown-item .lang-name {
