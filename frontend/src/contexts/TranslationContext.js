@@ -31,7 +31,7 @@ export const TranslationProvider = ({ children }) => {
     () => [
       { code: "en", name: "English", flag: "🇺🇸", dir: "ltr" },
       { code: "ar", name: "العربية", flag: "🇸🇦", dir: "rtl" },
-      { code: "ku", name: "کوردی", flag: "🇮🇶", dir: "rtl" },
+      { code: "ku", name: "کوردی", flag: "Ku", dir: "rtl" },
     ],
     []
   );

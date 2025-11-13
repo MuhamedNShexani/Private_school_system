@@ -3466,6 +3466,34 @@ const StudentProfile = () => {
           color: #ffffff;
           letter-spacing: -1px;
           line-height: 1.1;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
+        }
+
+        /* RTL Support for Desktop Layout */
+        [dir="rtl"] .profile-hero-info h2 {
+          text-align: right;
+        }
+
+        [dir="rtl"] .profile-hero-banner {
+          flex-direction: row-reverse;
+        }
+
+        [dir="rtl"] .profile-hero-content {
+          align-items: flex-end;
+        }
+
+        [dir="rtl"] .profile-hero-info {
+          align-items: flex-end;
+        }
+
+        [dir="rtl"] .profile-hero-meta {
+          justify-content: flex-end;
+        }
+
+        [dir="rtl"] .profile-hero-status {
+          justify-content: flex-end;
         }
 
         .profile-hero-meta {
@@ -4503,6 +4531,34 @@ const StudentProfile = () => {
           .profile-hero-info h2 {
             font-size: 1.6rem;
             text-align: left;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+          }
+
+          /* RTL Support for Medium Mobile Layout */
+          [dir="rtl"] .profile-hero-info h2 {
+            text-align: right;
+          }
+
+          [dir="rtl"] .profile-hero-banner {
+            flex-direction: row-reverse;
+            text-align: right;
+          }
+
+          [dir="rtl"] .profile-hero-content {
+            align-items: flex-end;
+          }
+
+          [dir="rtl"] .profile-hero-info {
+            align-items: flex-end;
+          }
+
+          [dir="rtl"] .profile-hero-meta {
+            justify-content: flex-end;
+          }
+
+          [dir="rtl"] .profile-hero-status {
+            justify-content: flex-end;
           }
 
           .profile-hero-meta {
@@ -4599,6 +4655,35 @@ const StudentProfile = () => {
             text-align: left;
             line-height: 1.2;
             margin: 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+          }
+
+          /* RTL Support for Mobile Layout */
+          [dir="rtl"] .profile-hero-info h2 {
+            text-align: right;
+          }
+
+          [dir="rtl"] .profile-hero-banner {
+            flex-direction: row-reverse;
+            text-align: right;
+          }
+
+          [dir="rtl"] .profile-hero-content {
+            align-items: flex-end;
+          }
+
+          [dir="rtl"] .profile-hero-info {
+            align-items: flex-end;
+          }
+
+          [dir="rtl"] .profile-hero-meta {
+            justify-content: flex-end;
+          }
+
+          [dir="rtl"] .profile-hero-status {
+            justify-content: flex-end;
           }
 
           .profile-hero-meta {
