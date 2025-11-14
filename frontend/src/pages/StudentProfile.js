@@ -1216,7 +1216,6 @@ const StudentProfile = () => {
                               const fullUrl = `${baseUrl}${photoPath}`;
 
                               // Debug logging (remove in production if needed)
-                             
 
                               return fullUrl;
                             })()
@@ -2236,6 +2235,7 @@ const StudentProfile = () => {
           {/* Student Homeworks */}
           <div className="profile-card" style={{ gridColumn: "1 / -1" }}>
             <div
+              className="homeworks-header-container"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -2245,13 +2245,20 @@ const StudentProfile = () => {
                 gap: "12px",
               }}
             >
-              <h3 style={{ margin: 0 }}>
-                {t("studentProfile.homeworks", "Homeworks")}
-              </h3>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                }}
+              >
+                <h3 style={{ margin: 0 }}>
+                  {t("studentProfile.homeworks", "Homeworks")}
+                </h3>
 
-              {/* Date Navigation - Small, beside title */}
-              {studentHomeworks.length > 0 &&
-                (() => {
+                {/* Date Navigation - Small, beside title */}
+                {(() => {
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   const maxDate = new Date(today);
@@ -2265,6 +2272,7 @@ const StudentProfile = () => {
 
                   return (
                     <div
+                      className="homework-date-filter"
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -2272,6 +2280,7 @@ const StudentProfile = () => {
                         padding: "6px 10px",
                         backgroundColor: "#f3f4f6",
                         borderRadius: "6px",
+                        flexShrink: 0,
                       }}
                     >
                       <button
@@ -2294,6 +2303,8 @@ const StudentProfile = () => {
                           fontSize: "12px",
                           fontWeight: "600",
                           opacity: isToday ? 0.6 : 1,
+                          minWidth: "32px",
+                          flexShrink: 0,
                         }}
                       >
                         ◄
@@ -2306,6 +2317,7 @@ const StudentProfile = () => {
                           fontWeight: "600",
                           fontSize: "13px",
                           color: "#1f2937",
+                          flexShrink: 0,
                         }}
                       >
                         {formatDateWithDay(selectedHomeworkDate)}
@@ -2331,6 +2343,8 @@ const StudentProfile = () => {
                           fontSize: "12px",
                           fontWeight: "600",
                           opacity: isMaxDate ? 0.6 : 1,
+                          minWidth: "32px",
+                          flexShrink: 0,
                         }}
                       >
                         ►
@@ -2338,6 +2352,7 @@ const StudentProfile = () => {
                     </div>
                   );
                 })()}
+              </div>
             </div>
 
             {studentHomeworks.length === 0 ? (
@@ -4201,6 +4216,51 @@ const StudentProfile = () => {
           .all-quizzes-btn {
             width: 100%;
             text-align: center;
+          }
+
+          .homeworks-header-container {
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+          }
+
+          .homeworks-header-container > div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+            width: auto;
+          }
+
+          .homeworks-header-container h3 {
+            margin: 0;
+            flex-shrink: 0;
+            font-size: 1.25rem;
+          }
+
+          .homework-date-filter {
+            width: auto;
+            justify-content: flex-start;
+            margin-top: 0;
+            padding: 3px 6px;
+            gap: 4px;
+            flex-shrink: 0;
+          }
+
+          .homework-date-filter > div {
+            minwidth: auto !important;
+            min-width: 75px !important;
+            flex: 0 0 auto;
+            max-width: 100px;
+            font-size: 9px !important;
+            padding: 0 2px;
+          }
+
+          .homework-date-filter button {
+            padding: 2px 5px !important;
+            font-size: 9px !important;
+            min-width: 24px !important;
+            height: 22px;
           }
 
           .training-quizzes-list {

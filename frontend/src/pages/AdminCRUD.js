@@ -227,10 +227,10 @@ const AdminCRUD = () => {
         seasonsRes,
         exerciseGradesRes,
       ] = await Promise.all([
-        studentsAPI.getAll(),
-        teachersAPI.getAll(),
-        subjectsAPI.getAll(),
-        classesAPI.getAll(),
+          studentsAPI.getAll(),
+          teachersAPI.getAll(),
+          subjectsAPI.getAll(),
+          classesAPI.getAll(),
         studentsAPI.getAllRatings(),
         seasonsAPI.getAll(),
         gradingAPI.getAll().catch(() => ({ data: { data: [] } })), // Fetch exercise grades on initial load
@@ -321,20 +321,20 @@ const AdminCRUD = () => {
       setLoading(true);
       const [ratingsRes, studentsRes, subjectsRes, seasonsRes] =
         await Promise.all([
-          studentsAPI.getAllRatings(),
+        studentsAPI.getAllRatings(),
           studentsAPI.getAll(),
-          subjectsAPI.getAll(),
-          seasonsAPI.getAll(),
-        ]);
+        subjectsAPI.getAll(),
+        seasonsAPI.getAll(),
+      ]);
 
       try {
         const ratingsData = ratingsRes.data?.data?.ratings || [];
         const subjectsData = extractData(subjectsRes);
         const seasonsData = extractData(seasonsRes);
-
+        
         // Store seasons for later use
         setSeasons(seasonsData);
-
+        
         // Backend already provides studentName, just add subject and season localization
         const enrichedRatings = ratingsData.map((rating) => {
           const subject = subjectsData.find(
@@ -347,7 +347,7 @@ const AdminCRUD = () => {
             subject?.title ||
             subject?.name ||
             rating.subjectId;
-
+          
           // Find season name by ID or use the stored value
           const season = seasonsData.find(
             (s) =>
@@ -368,7 +368,7 @@ const AdminCRUD = () => {
             (typeof rating.student === "object"
               ? rating.student?.branchID
               : null);
-
+          
           return {
             ...rating,
             subjectName: subjectName,
@@ -378,7 +378,7 @@ const AdminCRUD = () => {
             // studentName already comes from backend
           };
         });
-
+        
         setRatings(enrichedRatings);
         setError(null);
       } catch (enrichError) {
@@ -400,11 +400,11 @@ const AdminCRUD = () => {
       const gradesData = response.data?.data || [];
       setExerciseGrades(Array.isArray(gradesData) ? gradesData : []);
       setError(null);
-    } catch (error) {
+      } catch (error) {
       console.error("Error fetching exercise grades:", error);
       setError(t("admin.msg.failedLoadData", "Failed to load data"));
       setExerciseGrades([]);
-    } finally {
+      } finally {
       setLoading(false);
     }
   };
@@ -529,14 +529,14 @@ const AdminCRUD = () => {
         subjectId: ratingFormData.subjectId,
         rating: ratingFormData.rating,
       });
-
+      
       // Update local state
       setRatings(
         ratings.map((r) =>
           r._id === editingRating._id ? { ...r, ...ratingFormData } : r
         )
       );
-
+      
       alert("Rating updated successfully!");
       setShowModal(false);
       setEditingRating(null);
@@ -573,7 +573,7 @@ const AdminCRUD = () => {
   const handleEdit = (item) => {
     setEditingItem(item);
     console.log("Editing item:", item);
-
+    
     // Set image preview if it exists (backend returns 'photo' field)
     if (item.photo) {
       setImagePreview(item.photo);
@@ -692,7 +692,7 @@ const AdminCRUD = () => {
     const { itemId, itemType, itemName } = deleteConfirmation;
     setIsDeleting(true);
 
-    try {
+      try {
       if (itemType === "student") {
         await studentsAPI.delete(itemId);
         setStudents(students.filter((s) => s._id !== itemId));
@@ -741,8 +741,8 @@ const AdminCRUD = () => {
         itemName: "",
       });
 
-      // Refresh data to ensure consistency
-      setRefreshing(true);
+        // Refresh data to ensure consistency
+        setRefreshing(true);
       if (deletedItemType === "exerciseGrade") {
         await fetchExerciseGrades();
       } else {
@@ -751,9 +751,9 @@ const AdminCRUD = () => {
       if (deletedItemType === "rating") {
         await fetchRatings();
       }
-      setRefreshing(false);
-    } catch (error) {
-      console.error("Error deleting item:", error);
+        setRefreshing(false);
+      } catch (error) {
+        console.error("Error deleting item:", error);
       showError(t("admin.msg.failedDelete", "Failed to delete item"));
       setDeleteConfirmation({
         isOpen: false,
@@ -791,7 +791,7 @@ const AdminCRUD = () => {
         if (activeTab === "students") {
           // Prepare student data for API update
           let studentFormData;
-
+          
           if (formData.image instanceof File) {
             // Has new image - use FormData
             studentFormData = new FormData();
@@ -816,16 +816,16 @@ const AdminCRUD = () => {
           } else {
             // No new image - use regular object
             studentFormData = {
-              fullName: formData.fullName,
-              email: formData.email,
-              phone: formData.phone || undefined,
-              username: formData.username,
-              parentsNumber: formData.parentsNumber || undefined,
-              class: formData.classes[0] || undefined,
-              branchID: formData.branches[0] || undefined,
+            fullName: formData.fullName,
+            email: formData.email,
+            phone: formData.phone || undefined,
+            username: formData.username,
+            parentsNumber: formData.parentsNumber || undefined,
+            class: formData.classes[0] || undefined,
+            branchID: formData.branches[0] || undefined,
               gender: formData.gender || editingItem.gender || "Male",
               studentNumber: editingItem.studentNumber,
-            };
+          };
             if (formData.password) studentFormData.password = formData.password;
           }
 
@@ -848,7 +848,7 @@ const AdminCRUD = () => {
         } else {
           // Prepare teacher data for API (all fields that Teacher model now supports)
           let teacherFormData;
-
+          
           if (formData.image instanceof File) {
             // Has new image - use FormData
             teacherFormData = new FormData();
@@ -885,19 +885,19 @@ const AdminCRUD = () => {
           } else {
             // No new image - use regular object
             teacherFormData = {
-              name: formData.name,
-              email: formData.email,
+            name: formData.name,
+            email: formData.email,
               phone: formData.phone || undefined,
-              gender: formData.gender || undefined,
-              subjects: formData.subjects || [],
-              classes: formData.classes || [],
-              branches: formData.branches || [],
+            gender: formData.gender || undefined,
+            subjects: formData.subjects || [],
+            classes: formData.classes || [],
+            branches: formData.branches || [],
               username: formData.username || undefined,
-              experience: parseInt(formData.experience) || 0,
-            };
+            experience: parseInt(formData.experience) || 0,
+          };
 
-            // Only include password if it's provided (not empty)
-            if (formData.password && formData.password.trim() !== "") {
+          // Only include password if it's provided (not empty)
+          if (formData.password && formData.password.trim() !== "") {
               teacherFormData.password = formData.password;
             }
           }
@@ -946,7 +946,7 @@ const AdminCRUD = () => {
 
           // Prepare student data for API
           let studentFormData;
-
+          
           if (formData.image instanceof File) {
             // Has image - use FormData
             studentFormData = new FormData();
@@ -967,17 +967,17 @@ const AdminCRUD = () => {
           } else {
             // No image - use regular object
             studentFormData = {
-              fullName: formData.fullName,
-              email: formData.email,
-              phone: formData.phone || undefined,
-              username: formData.username,
-              parentsNumber: formData.parentsNumber || undefined,
+            fullName: formData.fullName,
+            email: formData.email,
+            phone: formData.phone || undefined,
+            username: formData.username,
+            parentsNumber: formData.parentsNumber || undefined,
               class: formData.classes[0] || undefined,
               branchID: formData.branches[0] || undefined,
               gender: formData.gender || "Male",
               studentNumber: `STU${Date.now()}`,
-              password: formData.password,
-            };
+            password: formData.password,
+          };
           }
 
           console.log("Creating student with data:", studentFormData);
@@ -999,7 +999,7 @@ const AdminCRUD = () => {
 
           // Prepare teacher data for API (all fields that Teacher model now supports)
           let teacherFormData;
-
+          
           if (formData.image instanceof File) {
             // Has image - use FormData
             teacherFormData = new FormData();
@@ -1033,17 +1033,17 @@ const AdminCRUD = () => {
           } else {
             // No image - use regular object
             teacherFormData = {
-              name: formData.name,
-              email: formData.email,
+            name: formData.name,
+            email: formData.email,
               phone: formData.phone || undefined,
-              gender: formData.gender || undefined,
-              subjects: formData.subjects || [],
-              classes: formData.classes || [],
-              branches: formData.branches || [],
-              username: formData.username,
-              password: formData.password,
-              experience: parseInt(formData.experience) || 0,
-            };
+            gender: formData.gender || undefined,
+            subjects: formData.subjects || [],
+            classes: formData.classes || [],
+            branches: formData.branches || [],
+            username: formData.username,
+            password: formData.password,
+            experience: parseInt(formData.experience) || 0,
+          };
           }
 
           console.log("Creating teacher with data:", teacherFormData);
@@ -1248,10 +1248,10 @@ const AdminCRUD = () => {
             </div>
           )}
           {activeTab !== "ratings" && activeTab !== "exerciseGrades" && (
-            <button className="create-button" onClick={handleCreate}>
-              <Plus size={20} />
-              <span>{t("admin.crud.addNew", "Add New")}</span>
-            </button>
+          <button className="create-button" onClick={handleCreate}>
+            <Plus size={20} />
+            <span>{t("admin.crud.addNew", "Add New")}</span>
+          </button>
           )}
         </div>
       </div>
@@ -1681,17 +1681,17 @@ const AdminCRUD = () => {
               </div>
             </div>
 
-            <div className="data-table ratings-table">
-              <div className="table-header">
+          <div className="data-table ratings-table">
+            <div className="table-header">
                 <div className="table-cell">
                   {t("form.studentName", "Student Name")}
                 </div>
-                <div className="table-cell">{t("form.subject", "Subject")}</div>
-                <div className="table-cell">{t("form.season", "Season")}</div>
-                <div className="table-cell">{t("form.date", "Date")}</div>
+              <div className="table-cell">{t("form.subject", "Subject")}</div>
+              <div className="table-cell">{t("form.season", "Season")}</div>
+              <div className="table-cell">{t("form.date", "Date")}</div>
                 <div className="table-cell">
                   {t("students.bulkRate", "Rating")}
-                </div>
+            </div>
                 <div className="table-cell">
                   {t("admin.table.actions", "Actions")}
                 </div>
@@ -1706,11 +1706,11 @@ const AdminCRUD = () => {
                       gridColumn: "1/-1",
                     }}
                   >
-                    <p>{t("admin.msg.noData", "No ratings found")}</p>
-                  </div>
-                ) : (
+                <p>{t("admin.msg.noData", "No ratings found")}</p>
+              </div>
+            ) : (
                   paginatedData.items.map((rating) => (
-                    <div key={rating._id} className="table-row">
+                <div key={rating._id} className="table-row">
                       <div className="table-cell">
                         {rating.studentName || "Unknown"}
                       </div>
@@ -1720,37 +1720,37 @@ const AdminCRUD = () => {
                       <div className="table-cell">
                         {rating.seasonName || rating.season || "N/A"}
                       </div>
-                      <div className="table-cell">
-                        {rating.date
-                          ? new Date(rating.date).toLocaleDateString()
-                          : "N/A"}
-                      </div>
-                      <div className="table-cell">
-                        <span
-                          style={{
+                  <div className="table-cell">
+                    {rating.date
+                      ? new Date(rating.date).toLocaleDateString()
+                      : "N/A"}
+                  </div>
+                  <div className="table-cell">
+                    <span
+                      style={{
                             padding: "8px 16px",
                             borderRadius: "20px",
                             backgroundColor:
                               rating.rating === "Excellent" ||
                               rating.rating === 5
-                                ? "#10b981"
+                          ? "#10b981"
                                 : rating.rating === "Good" ||
                                   rating.rating === 4
-                                ? "#3b82f6"
+                          ? "#3b82f6"
                                 : rating.rating === "Fair" ||
                                   rating.rating === 3
-                                ? "#f59e0b"
+                          ? "#f59e0b"
                                 : rating.rating === "Poor" ||
                                   rating.rating === 2
-                                ? "#ef4444"
-                                : "#6b7280",
-                            color: "white",
+                          ? "#ef4444"
+                          : "#6b7280",
+                        color: "white",
                             fontWeight: "600",
                             fontSize: "13px",
                             display: "inline-block",
                             boxShadow: "0 2px 4px rgba(0, 0, 0, 0.15)",
-                          }}
-                        >
+                      }}
+                    >
                           {rating.rating === "Excellent" || rating.rating === 5
                             ? t("form.rating.excellent", "Excellent")
                             : rating.rating === "Good" || rating.rating === 4
@@ -1760,27 +1760,27 @@ const AdminCRUD = () => {
                             : rating.rating === "Poor" || rating.rating === 2
                             ? t("form.rating.poor", "Poor")
                             : t("form.rating.na", "N/A")}
-                        </span>
-                      </div>
-                      <div className="table-cell">
-                        <button
-                          className="action-button edit"
-                          onClick={() => handleEditRating(rating)}
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          className="action-button delete"
-                          onClick={() => handleDeleteRating(rating._id)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                    </span>
+                  </div>
+                  <div className="table-cell">
+                    <button
+                      className="action-button edit"
+                      onClick={() => handleEditRating(rating)}
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      className="action-button delete"
+                      onClick={() => handleDeleteRating(rating._id)}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
                 );
               })()}
-            </div>
+          </div>
 
             {/* Pagination Controls */}
             {(() => {
@@ -2224,17 +2224,17 @@ const AdminCRUD = () => {
                       }
                     />
                   </div>
-                  <div className="form-group">
+                    <div className="form-group">
                     <label>
                       {t("admin.form.password", "Password")}{" "}
                       {!editingItem && t("admin.form.required", "*")}
                     </label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) =>
-                        setFormData({ ...formData, password: e.target.value })
-                      }
+                      <input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData({ ...formData, password: e.target.value })
+                        }
                       placeholder={
                         editingItem
                           ? t(
@@ -2244,9 +2244,9 @@ const AdminCRUD = () => {
                           : ""
                       }
                       required={!editingItem}
-                      minLength={6}
-                    />
-                  </div>
+                        minLength={6}
+                      />
+                    </div>
                   <div className="form-group">
                     <label>{t("admin.form.classLabel", "Class")}</label>
                     <select
