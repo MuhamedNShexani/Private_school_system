@@ -10,6 +10,7 @@ import {
   Globe,
   ChevronDown,
   Settings,
+  DollarSign,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "../contexts/TranslationContext";
@@ -64,9 +65,6 @@ const Header = ({ children }) => {
 
   // Force re-render when language changes
   useEffect(() => {
-    console.log("Language changed to:", currentLanguage);
-    console.log("RTL status:", isRTL);
-
     // Set document direction for proper RTL/LTR text flow
     if (isRTL) {
       document.documentElement.dir = "rtl";
@@ -78,7 +76,6 @@ const Header = ({ children }) => {
 
     // Force apply styles manually - always keep sidebar on left
     if (sidebarRef.current) {
-      console.log("Applying LTR layout (sidebar always on left)...");
       sidebarRef.current.style.left = "0";
       sidebarRef.current.style.right = "auto";
       sidebarRef.current.style.borderRight = "1px solid #e2e8f0";
@@ -88,15 +85,11 @@ const Header = ({ children }) => {
       if (mainContent) {
         mainContent.style.marginLeft = "280px";
         mainContent.style.marginRight = "0";
-        console.log("Applied LTR layout to main content");
       }
     }
   }, [currentLanguage, isRTL]);
 
   // Debug language detection
-  console.log("Current language:", currentLanguage);
-  console.log("Is RTL:", currentLanguage === "ku" || currentLanguage === "ar");
-  console.log("RTL class will be:", isRTL ? "rtl" : "ltr");
 
   // RTL styles with !important
   // const rtlSidebarStyle = isRTL
@@ -322,6 +315,24 @@ const Header = ({ children }) => {
             >
               <Users size={20} />
               <span>{t("nav.students", "Students")}</span>
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
+              to="/admin/payments"
+              className="nav-link"
+              style={
+                isRTL
+                  ? {
+                      direction: "rtl",
+                      textAlign: "right",
+                      flexDirection: "row-reverse",
+                    }
+                  : {}
+              }
+            >
+              <DollarSign size={20} />
+              <span>{t("nav.payments", "Payments")}</span>
             </Link>
           )}
           {isAdmin && (

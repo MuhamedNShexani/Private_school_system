@@ -70,7 +70,7 @@ export const TranslationProvider = ({ children }) => {
   const replaceVariables = (text, variables = {}) => {
     let result = text;
     Object.keys(variables).forEach((key) => {
-      const regex = new RegExp(`{{${key}}}`, 'g');
+      const regex = new RegExp(`{{${key}}}`, "g");
       result = result.replace(regex, variables[key]);
     });
     return result;
@@ -87,9 +87,8 @@ export const TranslationProvider = ({ children }) => {
   useEffect(() => {
     const initializeTranslations = async () => {
       // Set initial document direction and language
-      const languageInfo = languages.find(
-        (lang) => lang.code === currentLanguage
-      ) || languages[0];
+      const languageInfo =
+        languages.find((lang) => lang.code === currentLanguage) || languages[0];
       document.documentElement.dir = languageInfo.dir;
       document.documentElement.lang = currentLanguage;
 
@@ -97,29 +96,45 @@ export const TranslationProvider = ({ children }) => {
         setLoading(true);
         setError(null);
 
-        console.log(`🌐 Fetching translations for language: ${currentLanguage}`);
-        const response = await translationsAPI.getAll({ language: currentLanguage });
-        
+        console.log(
+          `🌐 Fetching translations for language: ${currentLanguage}`
+        );
+        const response = await translationsAPI.getAll({
+          language: currentLanguage,
+        });
+
         console.log(`📡 API Response:`, response.data);
 
         let translationsData = {};
-        
+
         // Handle the response format - API returns { success: true, data: { key: value, ... } }
         if (response.data && response.data.data) {
-          console.log(`📊 Response data type: ${typeof response.data.data}, is array: ${Array.isArray(response.data.data)}`);
-          
-          if (typeof response.data.data === 'object' && !Array.isArray(response.data.data)) {
+          console.log(
+            `📊 Response data type: ${typeof response.data
+              .data}, is array: ${Array.isArray(response.data.data)}`
+          );
+
+          if (
+            typeof response.data.data === "object" &&
+            !Array.isArray(response.data.data)
+          ) {
             // Data is already a key-value object (when language is specified in API)
             translationsData = response.data.data;
-            console.log(`✅ Using object format: ${Object.keys(translationsData).length} keys`);
+            console.log(
+              `✅ Using object format: ${
+                Object.keys(translationsData).length
+              } keys`
+            );
           } else if (Array.isArray(response.data.data)) {
             // Data is an array of translation objects
-            console.log(`📋 Using array format: ${response.data.data.length} items`);
+            console.log(
+              `📋 Using array format: ${response.data.data.length} items`
+            );
             response.data.data.forEach((item) => {
               if (item.key && item.translations) {
-                translationsData[item.key] = 
-                  item.translations[currentLanguage] || 
-                  item.translations.en || 
+                translationsData[item.key] =
+                  item.translations[currentLanguage] ||
+                  item.translations.en ||
                   item.key;
               }
             });
@@ -129,8 +144,15 @@ export const TranslationProvider = ({ children }) => {
         }
 
         setTranslations(translationsData);
-        console.log(`✅ Loaded ${Object.keys(translationsData).length} translations for ${currentLanguage}`);
-        console.log(`🔍 Sample keys:`, Object.keys(translationsData).slice(0, 10));
+        console.log(
+          `✅ Loaded ${
+            Object.keys(translationsData).length
+          } translations for ${currentLanguage}`
+        );
+        console.log(
+          `🔍 Sample keys:`,
+          Object.keys(translationsData).slice(0, 10)
+        );
       } catch (err) {
         console.error("Error loading translations:", err);
         setError("Failed to load translations");

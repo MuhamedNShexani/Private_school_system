@@ -55,10 +55,21 @@ const studentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed, // Object to store status for each subject
     default: {},
   },
-  paymentStatus: {
-    type: String,
-    enum: ["Paid", "Unpaid", "Partial"],
-    default: "Unpaid",
+  firstPayment: {
+    type: Boolean,
+    default: false,
+  },
+  firstPaymentDate: {
+    type: Date,
+    default: null,
+  },
+  secondPayment: {
+    type: Boolean,
+    default: false,
+  },
+  secondPaymentDate: {
+    type: Date,
+    default: null,
   },
   ratings: [
     {
@@ -70,6 +81,20 @@ const studentSchema = new mongoose.Schema({
       date: Date,
       rating: String, // e.g., "Excellent", "Good", "Fair", "Poor"
       ratedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+  homeworks: [
+    {
+      subjectId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subject",
+      },
+      date: Date,
+      description: String,
+      createdAt: {
         type: Date,
         default: Date.now,
       },

@@ -61,6 +61,19 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
+// Test route to verify payment endpoint is registered
+router.get("/test-payment-route", (req, res) => {
+  res.json({
+    message: "Payment route is registered",
+    route: "PATCH /:id/payment",
+  });
+});
+
+// Test PATCH route to verify routing works
+router.patch("/test-payment-patch", (req, res) => {
+  res.json({ message: "PATCH method works", body: req.body });
+});
+
 // GET all students (Teachers and Admins only)
 router.get(
   "/",
@@ -124,6 +137,99 @@ router.get("/username/:username", async (req, res) => {
   } catch (error) {
     console.error("Error fetching student by username:", error);
     sendResponse(res, 500, false, "api.student.failedRetrieve");
+  }
+});
+
+// PATCH update student payment status (Admin only)
+// This route MUST come before /:id routes to avoid route conflicts
+router.patch(
+  "/:id/payment",
+  verifyToken,
+  getCurrentUser,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { paymentType, paid, date } = req.body;
+
+      if (
+        !paymentType ||
+        (paymentType !== "first" && paymentType !== "second")
+      ) {
+        return sendResponse(
+          res,
+          400,
+          false,
+          "Payment type must be 'first' or 'second'"
+        );
+      }
+
+      const student = await Student.findById(req.params.id);
+      if (!student) {
+        return sendResponse(res, 404, false, "api.student.notFound");
+      }
+
+      // Update the appropriate payment field and date
+      if (paymentType === "first") {
+        student.firstPayment = paid === true || paid === "true";
+        if (student.firstPayment && date) {
+          student.firstPaymentDate = new Date(date);
+        } else if (!student.firstPayment) {
+          student.firstPaymentDate = null;
+        }
+      } else {
+        student.secondPayment = paid === true || paid === "true";
+        if (student.secondPayment && date) {
+          student.secondPaymentDate = new Date(date);
+        } else if (!student.secondPayment) {
+          student.secondPaymentDate = null;
+        }
+      }
+
+      await student.save();
+      await student.populate("class", "name branches");
+
+      sendResponse(
+        res,
+        200,
+        true,
+        "Payment status updated successfully",
+        student
+      );
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      sendResponse(res, 400, false, error.message);
+    }
+  }
+);
+
+// GET all homeworks for a student (from new Homework collection)
+// This route MUST come before /:id routes to avoid route conflicts
+router.get("/:id/homeworks", verifyToken, getCurrentUser, async (req, res) => {
+  try {
+    const Homework = require("../models/Homework");
+    const studentId = req.params.id;
+
+    // Check if user is the student themselves, or admin/teacher
+    const user = req.user;
+    if (
+      user.role === "Student" &&
+      user.studentProfile?._id?.toString() !== studentId
+    ) {
+      return sendResponse(res, 403, false, "Access denied");
+    }
+
+    const homeworks = await Homework.find({
+      assignedStudents: studentId,
+    })
+      .populate("subjectId", "titles")
+      .sort({ date: -1, createdAt: -1 });
+
+    sendResponse(res, 200, true, "Homeworks retrieved successfully", {
+      homeworks,
+    });
+  } catch (error) {
+    console.error("Error fetching homeworks:", error);
+    sendResponse(res, 400, false, error.message);
   }
 });
 
@@ -239,6 +345,22 @@ router.put(
       student.branchID = req.body.branchID || student.branchID;
       student.gender = req.body.gender || student.gender;
       student.studentNumber = req.body.studentNumber || student.studentNumber;
+      student.firstPayment =
+        req.body.firstPayment !== undefined
+          ? req.body.firstPayment
+          : student.firstPayment;
+      student.firstPaymentDate =
+        req.body.firstPaymentDate !== undefined
+          ? req.body.firstPaymentDate
+          : student.firstPaymentDate;
+      student.secondPayment =
+        req.body.secondPayment !== undefined
+          ? req.body.secondPayment
+          : student.secondPayment;
+      student.secondPaymentDate =
+        req.body.secondPaymentDate !== undefined
+          ? req.body.secondPaymentDate
+          : student.secondPaymentDate;
 
       // If a new image was uploaded, save the image path
       if (req.file) {

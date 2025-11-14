@@ -16,12 +16,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // If data is FormData, remove Content-Type header to let the browser set it with boundary
     if (config.data instanceof FormData) {
       delete config.headers["Content-Type"];
     }
-    
+
     return config;
   },
   (error) => {
@@ -85,19 +85,35 @@ export const studentsAPI = {
   update: (id, data) => api.put(`/students/${id}`, data),
   updateStatus: (id, subjectId, status) =>
     api.patch(`/students/${id}/status/${subjectId}`, { status }),
+  updatePayment: (id, paymentType, paid, date) =>
+    api.patch(`/students/${id}/payment`, { paymentType, paid, date }),
   delete: (id) => api.delete(`/students/${id}`),
   // Rating endpoints
-  getByRatingBranch: (branchId) => api.get(`/students/rating/branch/${branchId}`),
-  saveRating: (studentId, ratingData) => api.post(`/students/${studentId}/rating`, ratingData),
+  getByRatingBranch: (branchId) =>
+    api.get(`/students/rating/branch/${branchId}`),
+  saveRating: (studentId, ratingData) =>
+    api.post(`/students/${studentId}/rating`, ratingData),
   getRatings: (studentId) => api.get(`/students/${studentId}/ratings`),
   getRatingsByDateSeason: (classId, branchId, date, season) =>
     api.get(`/students/bulk/byDateSeason/${classId}/${branchId}`, {
       params: { date, season },
     }),
+  // Homework endpoints (using new Homework collection)
+  getHomeworks: (studentId) => api.get(`/students/${studentId}/homeworks`),
   // Admin endpoints
   getAllRatings: () => api.get(`/students/admin/allRatings`),
   deleteRating: (ratingId) => api.delete(`/students/admin/rating/${ratingId}`),
-  updateRating: (ratingId, ratingData) => api.put(`/students/admin/rating/${ratingId}`, ratingData),
+  updateRating: (ratingId, ratingData) =>
+    api.put(`/students/admin/rating/${ratingId}`, ratingData),
+};
+
+// Homeworks API (separate collection)
+export const homeworksAPI = {
+  create: (homeworkData) => api.post("/homeworks", homeworkData),
+  getAll: (params) => api.get("/homeworks", { params }),
+  getById: (id) => api.get(`/homeworks/${id}`),
+  delete: (id) => api.delete(`/homeworks/${id}`),
+  getByStudent: (studentId) => api.get(`/homeworks/student/${studentId}`),
 };
 
 // Classes API
@@ -258,6 +274,7 @@ export const evaluationsAPI = {
 // Grading API
 export const gradingAPI = {
   bulkGrade: (data) => api.post("/grading/bulk", data),
+  getAll: (params) => api.get("/grading", { params }),
   getGradesByExercise: (exerciseId, classId, branchId) =>
     api.get(
       `/grading/exercise/${exerciseId}/class/${classId}/branch/${branchId}`

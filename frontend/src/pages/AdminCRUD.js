@@ -7,6 +7,7 @@ import {
   subjectsAPI,
   classesAPI,
   seasonsAPI,
+  gradingAPI,
 } from "../services/api";
 import {
   Users,
@@ -20,6 +21,7 @@ import {
   Upload,
   Image,
   Star,
+  ClipboardList,
 } from "lucide-react";
 import DeleteConfirmation from "../components/DeleteConfirmation";
 import "./AdminCRUD.css";
@@ -48,6 +50,7 @@ const AdminCRUD = () => {
   const [classes, setClasses] = useState([]);
   const [seasons, setSeasons] = useState([]);
   const [ratings, setRatings] = useState([]);
+  const [exerciseGrades, setExerciseGrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -200,6 +203,8 @@ const AdminCRUD = () => {
   useEffect(() => {
     if (activeTab === "ratings") {
       fetchRatings();
+    } else if (activeTab === "exerciseGrades") {
+      fetchExerciseGrades();
     }
   }, [activeTab]);
 
@@ -220,6 +225,7 @@ const AdminCRUD = () => {
         classesRes,
         ratingsRes,
         seasonsRes,
+        exerciseGradesRes,
       ] = await Promise.all([
         studentsAPI.getAll(),
         teachersAPI.getAll(),
@@ -227,6 +233,7 @@ const AdminCRUD = () => {
         classesAPI.getAll(),
         studentsAPI.getAllRatings(),
         seasonsAPI.getAll(),
+        gradingAPI.getAll().catch(() => ({ data: { data: [] } })), // Fetch exercise grades on initial load
       ]);
 
       setStudents(extractData(studentsRes));
@@ -291,6 +298,15 @@ const AdminCRUD = () => {
       } catch (enrichError) {
         console.error("Error enriching ratings:", enrichError);
         setRatings([]);
+      }
+
+      // Process exercise grades data
+      try {
+        const gradesData = exerciseGradesRes.data?.data || [];
+        setExerciseGrades(Array.isArray(gradesData) ? gradesData : []);
+      } catch (exerciseGradesError) {
+        console.error("Error processing exercise grades:", exerciseGradesError);
+        setExerciseGrades([]);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -377,6 +393,22 @@ const AdminCRUD = () => {
     }
   };
 
+  const fetchExerciseGrades = async () => {
+    try {
+      setLoading(true);
+      const response = await gradingAPI.getAll();
+      const gradesData = response.data?.data || [];
+      setExerciseGrades(Array.isArray(gradesData) ? gradesData : []);
+      setError(null);
+    } catch (error) {
+      console.error("Error fetching exercise grades:", error);
+      setError(t("admin.msg.failedLoadData", "Failed to load data"));
+      setExerciseGrades([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Get paginated ratings with filters
   const getPaginatedRatings = () => {
     const filteredRatings = getFilteredRatings();
@@ -454,6 +486,17 @@ const AdminCRUD = () => {
 
   const handleDeleteRating = async (ratingId) => {
     openDeleteConfirmation(ratingId, "rating", "Rating");
+  };
+
+  const handleDeleteExerciseGrade = async (gradeId) => {
+    const grade = exerciseGrades.find((g) => g._id === gradeId);
+    const gradeLabel = grade
+      ? `${grade.student?.fullName || "Student"} - ${getLocalizedText(
+          grade.subject?.titles || grade.subject?.title,
+          "Exercise Grade"
+        )}`
+      : "Exercise Grade";
+    openDeleteConfirmation(gradeId, "exerciseGrade", gradeLabel);
   };
 
   const handleEditRating = (rating) => {
@@ -677,7 +720,19 @@ const AdminCRUD = () => {
             "Rating deleted successfully!"
           )
         );
+      } else if (itemType === "exerciseGrade") {
+        await gradingAPI.deleteGrade(itemId);
+        setExerciseGrades(exerciseGrades.filter((g) => g._id !== itemId));
+        success(
+          t(
+            "admin.successMessages.exerciseGradeDeleted",
+            "Exercise grade deleted successfully!"
+          )
+        );
       }
+
+      // Save itemType before resetting confirmation state
+      const deletedItemType = itemType;
 
       setDeleteConfirmation({
         isOpen: false,
@@ -688,7 +743,14 @@ const AdminCRUD = () => {
 
       // Refresh data to ensure consistency
       setRefreshing(true);
-      await fetchData();
+      if (deletedItemType === "exerciseGrade") {
+        await fetchExerciseGrades();
+      } else {
+        await fetchData();
+      }
+      if (deletedItemType === "rating") {
+        await fetchRatings();
+      }
       setRefreshing(false);
     } catch (error) {
       console.error("Error deleting item:", error);
@@ -1156,6 +1218,15 @@ const AdminCRUD = () => {
             {t("admin.crud.tabRatings", "Ratings")} ({ratings.length})
           </span>
         </button>
+        <button
+          className={`tab-button ${activeTab === "exerciseGrades" ? "active" : ""}`}
+          onClick={() => setActiveTab("exerciseGrades")}
+        >
+          <ClipboardList size={20} />
+          <span>
+            {t("admin.crud.tabExerciseGrades", "Exercise Grades")} ({exerciseGrades.length})
+          </span>
+        </button>
       </div>
 
       <div className="admin-crud-toolbar">
@@ -1176,7 +1247,7 @@ const AdminCRUD = () => {
               <span>{t("admin.msg.savingData", "Saving data...")}</span>
             </div>
           )}
-          {activeTab !== "ratings" && (
+          {activeTab !== "ratings" && activeTab !== "exerciseGrades" && (
             <button className="create-button" onClick={handleCreate}>
               <Plus size={20} />
               <span>{t("admin.crud.addNew", "Add New")}</span>
@@ -1187,10 +1258,158 @@ const AdminCRUD = () => {
 
       <div
         className={`admin-crud-content ${
-          activeTab === "ratings" ? "ratings-container" : ""
+          activeTab === "ratings" || activeTab === "exerciseGrades"
+            ? "ratings-container"
+            : ""
         }`}
       >
-        {activeTab === "ratings" ? (
+        {activeTab === "exerciseGrades" ? (
+          <>
+            <div className="data-table">
+              <div className="table-header">
+                <div className="table-cell">
+                  {t("admin.form.studentName", "Student")}
+                </div>
+                <div className="table-cell">
+                  {t("admin.form.subject", "Subject")}
+                </div>
+                <div className="table-cell">
+                  {t("admin.form.season", "Season")}
+                </div>
+                <div className="table-cell">
+                  {t("admin.form.type", "Type")}
+                </div>
+                <div className="table-cell">
+                  {t("admin.form.exercise", "Exercise")}
+                </div>
+                <div className="table-cell">
+                  {t("admin.form.grade", "Grade")}
+                </div>
+                <div className="table-cell">
+                  {t("admin.form.date", "Date")}
+                </div>
+                <div className="table-cell">
+                  {t("admin.crud.actions", "Actions")}
+                </div>
+              </div>
+              {exerciseGrades.length === 0 ? (
+                <div className="empty-state" style={{ padding: "40px", textAlign: "center" }}>
+                  <p>{t("admin.msg.noExerciseGrades", "No exercise grades found")}</p>
+                </div>
+              ) : (
+                exerciseGrades
+                  .filter((grade) => {
+                    if (!searchTerm) return true;
+                    const searchLower = searchTerm.toLowerCase();
+                    const studentName =
+                      grade.student?.fullName || grade.student?.username || "";
+                    const subjectName = getLocalizedText(
+                      grade.subject?.titles || grade.subject?.title,
+                      ""
+                    );
+                    const exerciseName = getLocalizedText(
+                      grade.exercise?.nameMultilingual || grade.exercise?.name,
+                      ""
+                    );
+                    return (
+                      studentName.toLowerCase().includes(searchLower) ||
+                      subjectName.toLowerCase().includes(searchLower) ||
+                      exerciseName.toLowerCase().includes(searchLower)
+                    );
+                  })
+                  .map((grade) => {
+                    const formatDate = (date) => {
+                      if (!date) return t("common.na", "N/A");
+                      const d = new Date(date);
+                      const day = String(d.getDate()).padStart(2, "0");
+                      const month = String(d.getMonth() + 1).padStart(2, "0");
+                      const year = d.getFullYear();
+                      return `${day}/${month}/${year}`;
+                    };
+
+                    const getGradingTypeLabel = (type) => {
+                      switch (type) {
+                        case "exercise":
+                          return t("studentProfile.activityType.exercise", "Exercise");
+                        case "monthly_exam":
+                          return t(
+                            "studentProfile.activityType.monthlyExam",
+                            "Monthly Exam"
+                          );
+                        case "attendance":
+                          return t(
+                            "studentProfile.activityType.attendance",
+                            "Attendance"
+                          );
+                        case "behaviour":
+                          return t(
+                            "studentProfile.activityType.behaviour",
+                            "Behaviour"
+                          );
+                        case "season_exam":
+                          return t(
+                            "studentProfile.activityType.seasonExam",
+                            "Season Exam"
+                          );
+                        default:
+                          return type || t("common.na", "N/A");
+                      }
+                    };
+
+                    return (
+                      <div key={grade._id} className="table-row">
+                        <div className="table-cell">
+                          {grade.student?.fullName ||
+                            grade.student?.username ||
+                            t("common.na", "N/A")}
+                        </div>
+                        <div className="table-cell">
+                          {getLocalizedText(
+                            grade.subject?.titles || grade.subject?.title,
+                            t("common.na", "N/A")
+                          )}
+                        </div>
+                        <div className="table-cell">
+                          {getLocalizedText(
+                            grade.season?.nameMultilingual || grade.season?.name,
+                            t("common.na", "N/A")
+                          )}
+                        </div>
+                        <div className="table-cell">
+                          {getGradingTypeLabel(grade.gradingType)}
+                        </div>
+                        <div className="table-cell">
+                          {grade.exercise
+                            ? getLocalizedText(
+                                grade.exercise?.nameMultilingual ||
+                                  grade.exercise?.name,
+                                t("common.na", "N/A")
+                              )
+                            : t("common.na", "N/A")}
+                        </div>
+                        <div className="table-cell">
+                          {grade.exerciseDegree
+                            ? `${grade.grade || 0}/${grade.exerciseDegree}`
+                            : grade.grade || 0}
+                        </div>
+                        <div className="table-cell">
+                          {formatDate(grade.gradedAt || grade.createdAt)}
+                        </div>
+                        <div className="table-cell">
+                          <button
+                            className="action-button delete"
+                            onClick={() => handleDeleteExerciseGrade(grade._id)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
+            </div>
+          </>
+        ) : activeTab === "ratings" ? (
           <>
             {/* Ratings Filters - Name, Class, Branch, Subject, Date */}
             <div

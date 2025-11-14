@@ -10,6 +10,7 @@ import {
   partsAPI,
   exercisesAPI,
   studentGradesAPI,
+  homeworksAPI,
 } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "../contexts/TranslationContext";
@@ -22,6 +23,13 @@ import {
   CheckSquare,
   Table,
   Star,
+  Trash2,
+  BookOpen,
+  CheckCircle,
+  XCircle,
+  X,
+  Edit,
+  Pencil,
 } from "lucide-react";
 
 const Students = () => {
@@ -54,11 +62,11 @@ const Students = () => {
 
   const filterSubjectsForTeacher = useCallback(
     (list = []) => {
-    if (!isTeacher) return list;
-    if (!teacherSubjectSet.size) return [];
-    return list.filter((subject) =>
-      teacherSubjectSet.has(normalizeId(subject?._id || subject))
-    );
+      if (!isTeacher) return list;
+      if (!teacherSubjectSet.size) return [];
+      return list.filter((subject) =>
+        teacherSubjectSet.has(normalizeId(subject?._id || subject))
+      );
     },
     [isTeacher, teacherSubjectSet]
   );
@@ -87,7 +95,7 @@ const Students = () => {
     exerciseId: "",
     gradedDate: new Date().toISOString().split("T")[0], // Default to today
   });
-  
+
   // Bulk rating modal states
   const [showBulkRatingModal, setShowBulkRatingModal] = useState(false);
   const [bulkRatingData, setBulkRatingData] = useState({
@@ -95,6 +103,32 @@ const Students = () => {
     date: new Date().toISOString().split("T")[0],
   });
   const [bulkRatings, setBulkRatings] = useState({}); // {studentId: {subjectId: rating}}
+
+  // Homework modal states
+  const [showHomeworkModal, setShowHomeworkModal] = useState(false);
+  const [homeworkData, setHomeworkData] = useState({
+    subjectId: "",
+    date: "",
+    description: "",
+  });
+  const [homeworkLoading, setHomeworkLoading] = useState(false);
+  const [checkingExistingHomework, setCheckingExistingHomework] =
+    useState(false);
+  const [homeworksList, setHomeworksList] = useState([]);
+  const [homeworksLoading, setHomeworksLoading] = useState(false);
+  const [showHomeworksList, setShowHomeworksList] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [editingHomework, setEditingHomework] = useState(null);
+  const [editHomeworkData, setEditHomeworkData] = useState({
+    subjectId: "",
+    date: "",
+    description: "",
+  });
+  const [bulkGradingSaving, setBulkGradingSaving] = useState(false);
+  const [bulkGradingSaveProgress, setBulkGradingSaveProgress] = useState({
+    total: 0,
+    saved: 0,
+  });
   const [subjects, setSubjects] = useState([]);
   const [seasons, setSeasons] = useState([]);
   const [chapters, setChapters] = useState([]);
@@ -169,12 +203,19 @@ const Students = () => {
     fetchData();
   }, [t]);
 
+  // Compute selected class and branch data
+  const selectedClassData = useMemo(() => {
+    return classes.find((cls) => cls._id === selectedClass);
+  }, [classes, selectedClass]);
+
+  const selectedBranchData = useMemo(() => {
+    if (!selectedBranch) return null;
+    return availableBranches.find((branch) => branch._id === selectedBranch);
+  }, [availableBranches, selectedBranch]);
+
   // Update available branches when class changes
   useEffect(() => {
     if (selectedClass) {
-      const selectedClassData = classes.find(
-        (cls) => cls._id === selectedClass
-      );
       if (selectedClassData) {
         setAvailableBranches(selectedClassData.branches || []);
         // Reset branch selection if current branch is not available in new class
@@ -191,7 +232,7 @@ const Students = () => {
       setAvailableBranches([]);
       setSelectedBranch("");
     }
-  }, [selectedClass, classes, selectedBranch]);
+  }, [selectedClass, selectedClassData, selectedBranch]);
 
   // Filter students based on selected class and branch
   useEffect(() => {
@@ -337,10 +378,7 @@ const Students = () => {
   }, [selectedGradesSubject]);
 
   // Get selected class and branch names for display
-  const selectedClassData = classes.find((cls) => cls._id === selectedClass);
-  const selectedBranchData = availableBranches.find(
-    (branch) => branch._id === selectedBranch
-  );
+  // Note: selectedClassData and selectedBranchData are already defined above using useMemo
   const selectedSubjectData = subjects.find(
     (subject) => subject?._id === selectedGradesSubject
   );
@@ -350,60 +388,60 @@ const Students = () => {
 
   const getLocalizedText = useCallback(
     (value, fallback = "") => {
-    if (!value) return fallback;
-    if (typeof value === "string") return value;
+      if (!value) return fallback;
+      if (typeof value === "string") return value;
 
-    if (typeof value === "object") {
-      const directMatch =
-        value[currentLanguage] || value.en || value.ar || value.ku;
-      if (directMatch) return directMatch;
+      if (typeof value === "object") {
+        const directMatch =
+          value[currentLanguage] || value.en || value.ar || value.ku;
+        if (directMatch) return directMatch;
 
-      if (value.name) {
-        return getLocalizedText(value.name, fallback);
+        if (value.name) {
+          return getLocalizedText(value.name, fallback);
+        }
+        if (value.title) {
+          return getLocalizedText(value.title, fallback);
+        }
+        if (value.label) {
+          return getLocalizedText(value.label, fallback);
+        }
       }
-      if (value.title) {
-        return getLocalizedText(value.title, fallback);
-      }
-      if (value.label) {
-        return getLocalizedText(value.label, fallback);
-      }
-    }
 
-    return fallback;
+      return fallback;
     },
     [currentLanguage]
   );
 
   const getEntityName = useCallback(
     (entity, fallback = "") => {
-    if (!entity) return fallback;
-    if (typeof entity === "string") return entity;
+      if (!entity) return fallback;
+      if (typeof entity === "string") return entity;
 
-    const bestMatch =
-      entity.nameMultilingual ||
-      entity.titleMultilingual ||
-      entity.title ||
-      entity.name ||
-      entity.label;
+      const bestMatch =
+        entity.nameMultilingual ||
+        entity.titleMultilingual ||
+        entity.title ||
+        entity.name ||
+        entity.label;
 
-    return getLocalizedText(bestMatch, fallback);
+      return getLocalizedText(bestMatch, fallback);
     },
     [getLocalizedText]
   );
 
   const getSeasonDisplayName = useCallback(
     (season, fallback) => {
-    if (!season) return fallback;
-    return (
-      getLocalizedText(
-        season.nameMultilingual ||
-          season.name ||
-          season.title ||
-          season.code ||
-          season.label,
-        fallback
-      ) || fallback
-    );
+      if (!season) return fallback;
+      return (
+        getLocalizedText(
+          season.nameMultilingual ||
+            season.name ||
+            season.title ||
+            season.code ||
+            season.label,
+          fallback
+        ) || fallback
+      );
     },
     [getLocalizedText]
   );
@@ -417,75 +455,75 @@ const Students = () => {
 
   const getSeasonNameVariants = useCallback(
     (season) => {
-    const names = new Set();
+      const names = new Set();
 
-    if (season?.nameMultilingual) {
-      Object.values(season.nameMultilingual).forEach((value) => {
-        if (value) names.add(value);
-      });
-    }
-
-    if (season?.name) {
-      if (typeof season.name === "string") {
-        names.add(season.name);
-      } else if (typeof season.name === "object") {
-        Object.values(season.name).forEach((value) => {
+      if (season?.nameMultilingual) {
+        Object.values(season.nameMultilingual).forEach((value) => {
           if (value) names.add(value);
         });
       }
-    }
 
-    if (season?.title) {
-      if (typeof season.title === "string") {
-        names.add(season.title);
-      } else if (typeof season.title === "object") {
-        Object.values(season.title).forEach((value) => {
-          if (value) names.add(value);
-        });
+      if (season?.name) {
+        if (typeof season.name === "string") {
+          names.add(season.name);
+        } else if (typeof season.name === "object") {
+          Object.values(season.name).forEach((value) => {
+            if (value) names.add(value);
+          });
+        }
       }
-    }
 
-    if (season?.code) {
-      names.add(season.code);
-    }
+      if (season?.title) {
+        if (typeof season.title === "string") {
+          names.add(season.title);
+        } else if (typeof season.title === "object") {
+          Object.values(season.title).forEach((value) => {
+            if (value) names.add(value);
+          });
+        }
+      }
 
-    const localizedName = getSeasonDisplayName(
-      season,
-      t("students.season.fallback", "Season")
-    );
-    if (localizedName) {
-      names.add(localizedName);
-    }
+      if (season?.code) {
+        names.add(season.code);
+      }
 
-    return Array.from(names).filter(Boolean);
+      const localizedName = getSeasonDisplayName(
+        season,
+        t("students.season.fallback", "Season")
+      );
+      if (localizedName) {
+        names.add(localizedName);
+      }
+
+      return Array.from(names).filter(Boolean);
     },
     [getSeasonDisplayName, t]
   );
 
   const getSeasonOrder = useCallback(
     (season) => {
-    if (season?.order) {
-      return season.order;
-    }
+      if (season?.order) {
+        return season.order;
+      }
 
-    const variants = getSeasonNameVariants(season);
-    if (
-      variants.some((name) =>
-        typeof name === "string" ? name.includes("1") : false
-      )
-    ) {
-      return 1;
-    }
+      const variants = getSeasonNameVariants(season);
+      if (
+        variants.some((name) =>
+          typeof name === "string" ? name.includes("1") : false
+        )
+      ) {
+        return 1;
+      }
 
-    if (
-      variants.some((name) =>
-        typeof name === "string" ? name.includes("2") : false
-      )
-    ) {
-      return 2;
-    }
+      if (
+        variants.some((name) =>
+          typeof name === "string" ? name.includes("2") : false
+        )
+      ) {
+        return 2;
+      }
 
-    return null;
+      return null;
     },
     [getSeasonNameVariants]
   );
@@ -971,17 +1009,350 @@ const Students = () => {
     setBulkRatings({});
   };
 
+  // Close homework modal
+  const closeHomeworkModal = () => {
+    setShowHomeworkModal(false);
+    setHomeworkData({
+      subjectId: "",
+      date: "",
+      description: "",
+    });
+    setEditingHomework(null);
+    setEditHomeworkData({
+      subjectId: "",
+      date: "",
+      description: "",
+    });
+  };
+
+  // Check for existing homework when subject and date are selected
+  useEffect(() => {
+    const checkExistingHomework = async () => {
+      // Only check if we have all required data
+      if (
+        !showHomeworkModal ||
+        !selectedClass ||
+        !selectedBranch ||
+        !homeworkData.subjectId ||
+        !homeworkData.date ||
+        filteredStudents.length === 0
+      ) {
+        return;
+      }
+
+      setCheckingExistingHomework(true);
+      try {
+        // Check if homework exists in the homeworks collection for this class/branch/subject/date
+        const response = await homeworksAPI.getAll({
+          classId: selectedClass,
+          branchId: selectedBranch,
+          subjectId: homeworkData.subjectId,
+          date: homeworkData.date,
+        });
+        const homeworks = response.data?.data?.homeworks || [];
+
+        // Normalize dates for comparison (ignore time)
+        const normalizeDate = (dateStr) => {
+          if (!dateStr) return null;
+          const d = new Date(dateStr);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime();
+        };
+
+        const targetDate = normalizeDate(homeworkData.date);
+        const targetSubjectId = homeworkData.subjectId;
+
+        // Find homework with matching subject and date
+        const existingHomework = homeworks.find((hw) => {
+          const hwSubjectId =
+            hw.subjectId?._id?.toString() ||
+            hw.subjectId?.toString() ||
+            hw.subjectId;
+          const hwDate = normalizeDate(hw.date);
+          return hwSubjectId === targetSubjectId && hwDate === targetDate;
+        });
+
+        // Pre-fill description if homework exists
+        if (existingHomework && existingHomework.description) {
+          setHomeworkData((prev) => ({
+            ...prev,
+            description: existingHomework.description,
+          }));
+        } else {
+          // Only clear if user hasn't manually typed something
+          // This prevents clearing user input while checking
+          setHomeworkData((prev) => {
+            // Only clear if description is empty (not user-modified)
+            if (!prev.description || prev.description.trim() === "") {
+              return { ...prev, description: "" };
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        console.log("No existing homework found or error checking:", err);
+        // Don't show error, just leave description as is
+      } finally {
+        setCheckingExistingHomework(false);
+      }
+    };
+
+    // Add a small delay to avoid too many API calls while user is typing/selecting
+    const timeoutId = setTimeout(() => {
+      checkExistingHomework();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    showHomeworkModal,
+    selectedClass,
+    selectedBranch,
+    homeworkData.subjectId,
+    homeworkData.date,
+    filteredStudents,
+  ]);
+
+  // Handle adding homework to all students in selected class and branch
+  const handleAddHomework = async () => {
+    if (!selectedClass || !selectedBranch) {
+      alert(
+        t("alert.selectClassBranch", "Please select class and branch first")
+      );
+      return;
+    }
+
+    if (!homeworkData.subjectId || !homeworkData.description) {
+      alert(t("alert.fillRequired", "Please fill in all required fields"));
+      return;
+    }
+
+    try {
+      setHomeworkLoading(true);
+      
+
+      const response = await homeworksAPI.create({
+        classId: selectedClass,
+        branchId: selectedBranch,
+        subjectId: homeworkData.subjectId,
+        date: homeworkData.date,
+        description: homeworkData.description,
+      });
+
+      // Show success message based on whether homework was added or updated
+      const responseData = response.data?.data || {};
+      const assignedCount = responseData.assignedCount || 0;
+      const isUpdate = responseData.isUpdate || false;
+
+      let message;
+      if (isUpdate) {
+        message = t(
+          "alert.homeworkUpdated",
+          "✅ Homework updated successfully for {{count}} students!",
+          {
+            count: assignedCount,
+          }
+        );
+      } else {
+        message = t(
+          "alert.homeworkAdded",
+          "✅ Homework added successfully to {{count}} students!",
+          {
+            count: assignedCount,
+          }
+        );
+      }
+
+      showToast(message, "success");
+      closeHomeworkModal();
+      // Refresh homeworks list if it's open
+      if (showHomeworksList) {
+        fetchHomeworks();
+      }
+    } catch (err) {
+      console.error("Error adding homework:", err);
+      console.error("Error details:", {
+        message: err.message,
+        url: err.config?.url,
+        method: err.config?.method,
+        status: err.response?.status,
+        responseData: err.response?.data,
+      });
+      showToast(
+        t("alert.homeworkError", "Error adding homework. Please try again."),
+        "error"
+      );
+    } finally {
+      setHomeworkLoading(false);
+    }
+  };
+
+  // Fetch homeworks for the selected class and branch
+  const fetchHomeworks = async () => {
+    if (!selectedClass || !selectedBranch) {
+      setHomeworksList([]);
+      return;
+    }
+
+    try {
+      setHomeworksLoading(true);
+      const response = await homeworksAPI.getAll({
+        classId: selectedClass,
+        branchId: selectedBranch,
+      });
+      const homeworks = response.data?.data?.homeworks || [];
+
+      // Filter to only show homeworks with date >= today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const filteredHomeworks = homeworks.filter((homework) => {
+        if (!homework.date) return false;
+        const homeworkDate = new Date(homework.date);
+        homeworkDate.setHours(0, 0, 0, 0);
+        return homeworkDate.getTime() >= today.getTime();
+      });
+
+      setHomeworksList(filteredHomeworks);
+    } catch (err) {
+      console.error("Error fetching homeworks:", err);
+      setHomeworksList([]);
+    } finally {
+      setHomeworksLoading(false);
+    }
+  };
+
+  // Edit homework - open edit modal
+  const handleEditHomework = (homework) => {
+    setEditingHomework(homework._id);
+    setEditHomeworkData({
+      subjectId: homework.subjectId?._id || homework.subjectId || "",
+      date: homework.date
+        ? new Date(homework.date).toISOString().split("T")[0]
+        : "",
+      description: homework.description || "",
+    });
+    // Open the homework modal in edit mode
+    setShowHomeworkModal(true);
+  };
+
+  // Update homework
+  const handleUpdateHomework = async () => {
+    if (!editingHomework) return;
+
+    if (!selectedClass || !selectedBranch) {
+      showToast(
+        t("alert.selectClassBranch", "Please select class and branch first"),
+        "error"
+      );
+      return;
+    }
+
+    if (!editHomeworkData.subjectId || !editHomeworkData.description) {
+      showToast(
+        t("alert.fillRequired", "Please fill in all required fields"),
+        "error"
+      );
+      return;
+    }
+
+    try {
+      setHomeworkLoading(true);
+      const response = await homeworksAPI.create({
+        classId: selectedClass,
+        branchId: selectedBranch,
+        subjectId: editHomeworkData.subjectId,
+        date: editHomeworkData.date,
+        description: editHomeworkData.description,
+      });
+
+      const responseData = response.data?.data || {};
+      const assignedCount = responseData.assignedCount || 0;
+
+      showToast(
+        t(
+          "alert.homeworkUpdated",
+          "✅ Homework updated successfully for {{count}} students!",
+          { count: assignedCount }
+        ),
+        "success"
+      );
+
+      setEditingHomework(null);
+      setEditHomeworkData({ subjectId: "", date: "", description: "" });
+      closeHomeworkModal();
+      fetchHomeworks();
+    } catch (err) {
+      console.error("Error updating homework:", err);
+      showToast(
+        t("alert.homeworkError", "Error updating homework. Please try again."),
+        "error"
+      );
+    } finally {
+      setHomeworkLoading(false);
+    }
+  };
+
+  // Delete homework
+  const handleDeleteHomework = async (homeworkId) => {
+    if (
+      !window.confirm(
+        t(
+          "alert.confirmDeleteHomework",
+          "Are you sure you want to delete this homework? This will remove it from all assigned students."
+        )
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await homeworksAPI.delete(homeworkId);
+      showToast(
+        t("alert.homeworkDeleted", "Homework deleted successfully!"),
+        "success"
+      );
+      fetchHomeworks();
+    } catch (err) {
+      console.error("Error deleting homework:", err);
+      showToast(
+        t(
+          "alert.deleteHomeworkError",
+          "Error deleting homework. Please try again."
+        ),
+        "error"
+      );
+    }
+  };
+
+  // Fetch homeworks when class/branch changes and list is shown
+  useEffect(() => {
+    if (showHomeworksList && selectedClass && selectedBranch) {
+      fetchHomeworks();
+    }
+  }, [showHomeworksList, selectedClass, selectedBranch]);
+
+  // Toast notification helper
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 4000);
+  };
+
   // Load existing ratings for date and season
   const loadExistingRatings = async (classId, branchId, date, season) => {
     try {
-      const response = await studentsAPI.getRatingsByDateSeason(classId, branchId, date, season);
+      const response = await studentsAPI.getRatingsByDateSeason(
+        classId,
+        branchId,
+        date,
+        season
+      );
       if (response.data?.data?.ratings) {
         // Pre-fill the bulk ratings with existing data
         setBulkRatings(response.data.data.ratings);
-        console.log(`✅ Loaded ${response.data.data.totalFound} existing ratings for ${date}`);
       }
     } catch (err) {
-      console.log("No existing ratings found for this date/season (this is okay)");
       // Don't show error, just leave form empty
     }
   };
@@ -1018,9 +1389,13 @@ const Students = () => {
 
       if (successCount > 0) {
         alert(
-          t("alert.ratingSaved", "✅ Ratings saved successfully! {{count}} ratings added.", {
-            count: successCount,
-          })
+          t(
+            "alert.ratingSaved",
+            "✅ Ratings saved successfully! {{count}} ratings added.",
+            {
+              count: successCount,
+            }
+          )
         );
       }
       closeBulkRatingModal();
@@ -1154,7 +1529,6 @@ const Students = () => {
               });
               setStudentGrades(initialGrades);
             } catch (err) {
-              console.log("No existing grades found:", err);
               // Initialize all to empty
               const initialGrades = {};
               selectedStudents.forEach((studentId) => {
@@ -1267,17 +1641,12 @@ const Students = () => {
                   initialGrades[studentId] = { grade: null, notes: "" };
                 }
               } catch (err) {
-                console.log(
-                  `No existing grade found for student ${studentId}:`,
-                  err
-                );
                 initialGrades[studentId] = { grade: null, notes: "" };
               }
             }
 
             setStudentGrades(initialGrades);
           } catch (err) {
-            console.log("Error loading existing grades:", err);
             // Initialize all to empty
             const initialGrades = {};
             selectedStudents.forEach((studentId) => {
@@ -1315,6 +1684,8 @@ const Students = () => {
 
     try {
       setError(null);
+      setBulkGradingSaving(true);
+      setBulkGradingSaveProgress({ total: 0, saved: 0 });
 
       // Filter out students with empty grades (null, undefined, or empty string)
       const grades = selectedStudents
@@ -1349,11 +1720,15 @@ const Students = () => {
             "Please enter at least one grade."
           )
         );
+        setBulkGradingSaving(false);
         return;
       }
 
       // Get student IDs that have grades
       const studentIdsWithGrades = grades.map((g) => g.studentId);
+
+      // Set progress
+      setBulkGradingSaveProgress({ total: grades.length, saved: 0 });
 
       await gradingAPI.bulkGrade({
         studentIds: studentIdsWithGrades,
@@ -1371,9 +1746,33 @@ const Students = () => {
           bulkGradingData.gradedDate || new Date().toISOString().split("T")[0],
       });
 
-      alert(t("students.bulkGrading.success", "Grades saved successfully!"));
-      closeBulkGradingModal();
+      // Update progress to complete
+      setBulkGradingSaveProgress({
+        total: grades.length,
+        saved: grades.length,
+      });
+
+      // Small delay to show completion
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      setToast({
+        message: t(
+          "students.bulkGrading.success",
+          `Successfully saved ${grades.length} grade(s)!`
+        ),
+        type: "success",
+      });
+      setTimeout(() => setToast(null), 4000);
+
+      // Close modal after a brief delay
+      setTimeout(() => {
+        closeBulkGradingModal();
+        setBulkGradingSaving(false);
+        setBulkGradingSaveProgress({ total: 0, saved: 0 });
+      }, 1000);
     } catch (err) {
+      setBulkGradingSaving(false);
+      setBulkGradingSaveProgress({ total: 0, saved: 0 });
       setError(
         err.response?.data?.message ||
           t(
@@ -1381,6 +1780,16 @@ const Students = () => {
             "Failed to save grades. Please try again."
           )
       );
+      setToast({
+        message:
+          err.response?.data?.message ||
+          t(
+            "students.bulkGrading.errors.saveFailed",
+            "Failed to save grades. Please try again."
+          ),
+        type: "error",
+      });
+      setTimeout(() => setToast(null), 4000);
       console.error("Error saving grades:", err);
     }
   };
@@ -1530,17 +1939,225 @@ const Students = () => {
                     filteredStudents.length === 0
                   }
                   style={{
-                    background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                    background:
+                      "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
                     marginLeft: "12px",
                   }}
                 >
                   <Star size={16} />
                   {t("students.bulkRate", "Bulk Rate Students")}
                 </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowHomeworkModal(true)}
+                  disabled={
+                    !selectedClass ||
+                    !selectedBranch ||
+                    filteredStudents.length === 0
+                  }
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)",
+                    marginLeft: "12px",
+                  }}
+                >
+                  📚 {t("students.addHomework", "HomeWork")}
+                </button>
+                <button
+                  className="btn btn-info"
+                  onClick={() => {
+                    setShowHomeworksList(!showHomeworksList);
+                    if (!showHomeworksList) {
+                      fetchHomeworks();
+                    }
+                  }}
+                  disabled={
+                    !selectedClass ||
+                    !selectedBranch ||
+                    filteredStudents.length === 0
+                  }
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)",
+                    marginLeft: "12px",
+                  }}
+                >
+                  <BookOpen size={16} />
+                  {t("students.manageHomeworks", "Manage Homeworks")}
+                </button>
               </>
             )}
           </div>
         </div>
+
+        {/* Homeworks Management Section */}
+        {showHomeworksList && selectedClass && selectedBranch && (
+          <div className="homeworks-management-section">
+            <div className="homeworks-management-card">
+              <div className="homeworks-management-header">
+                <h3>
+                  <BookOpen size={20} style={{ marginRight: "8px" }} />
+                  {t("students.homeworksList", "Homeworks List")}
+                </h3>
+                <button
+                  className="close-btn"
+                  onClick={() => setShowHomeworksList(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="homeworks-management-body">
+                {homeworksLoading ? (
+                  <div style={{ textAlign: "center", padding: "20px" }}>
+                    {t("common.loading", "Loading...")}
+                  </div>
+                ) : homeworksList.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "20px" }}>
+                    {t(
+                      "students.noHomeworks",
+                      "No homeworks found for this class and branch."
+                    )}
+                  </div>
+                ) : (
+                  <table className="homeworks-management-table">
+                    <thead>
+                      <tr>
+                        <th>{t("form.subject", "Subject")}</th>
+                        <th>{t("form.date", "Date")}</th>
+                        <th>{t("form.homework", "Homework")}</th>
+                        <th>
+                          {t("students.assignedStudents", "Assigned Students")}
+                        </th>
+                        <th>{t("common.actions", "Actions")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {homeworksList.map((homework) => {
+                        const formatDate = (dateStr) => {
+                          if (!dateStr) return "";
+                          const date = new Date(dateStr);
+                          return date.toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          });
+                        };
+
+                        // Get subject name - handle both populated object and ID
+                        const getSubjectName = () => {
+                          if (!homework.subjectId) {
+                            return t("common.unknown", "Unknown");
+                          }
+
+                          // If it's a populated object
+                          if (typeof homework.subjectId === "object") {
+                            // Check if titles exists (object with {en, ar, ku})
+                            if (homework.subjectId.titles) {
+                              return getLocalizedText(
+                                homework.subjectId.titles,
+                                t("common.unknown", "Unknown")
+                              );
+                            }
+                            // Fallback to title if titles doesn't exist
+                            if (homework.subjectId.title) {
+                              return getLocalizedText(
+                                homework.subjectId.title,
+                                t("common.unknown", "Unknown")
+                              );
+                            }
+                            return t("common.unknown", "Unknown");
+                          }
+
+                          // If it's just an ID, try to find it in subjects list
+                          const subject = subjects.find(
+                            (s) => s._id === homework.subjectId
+                          );
+                          if (subject) {
+                            if (subject.titles) {
+                              return getLocalizedText(
+                                subject.titles,
+                                t("common.unknown", "Unknown")
+                              );
+                            }
+                            if (subject.title) {
+                              return getLocalizedText(
+                                subject.title,
+                                t("common.unknown", "Unknown")
+                              );
+                            }
+                          }
+
+                          return t("common.unknown", "Unknown");
+                        };
+
+                        return (
+                          <tr key={homework._id}>
+                            <td>{getSubjectName()}</td>
+                            <td>{formatDate(homework.date)}</td>
+                            <td
+                              style={{
+                                maxWidth: "300px",
+                                wordWrap: "break-word",
+                                overflowWrap: "break-word",
+                              }}
+                            >
+                              {homework.description}
+                            </td>
+                            <td>
+                              {homework.assignedStudents?.length || 0}{" "}
+                              {t("common.students", "students")}
+                            </td>
+                            <td>
+                              <div className="homework-actions-cell">
+                                <button
+                                  className="edit-btn"
+                                  onClick={() => handleEditHomework(homework)}
+                                  title={t("common.edit", "Edit")}
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  className="delete-btn"
+                                  onClick={() =>
+                                    handleDeleteHomework(homework._id)
+                                  }
+                                  title={t("common.delete", "Delete")}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toast Notification */}
+        {toast && (
+          <div className={`toast-notification toast-${toast.type}`}>
+            <div className="toast-content">
+              {toast.type === "success" ? (
+                <CheckCircle size={20} className="toast-icon" />
+              ) : (
+                <XCircle size={20} className="toast-icon" />
+              )}
+              <span className="toast-message">{toast.message}</span>
+            </div>
+            <button
+              className="toast-close"
+              onClick={() => setToast(null)}
+              aria-label="Close"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
 
         {/* Current Selection Display */}
         {(selectedClass || selectedBranch) && (
@@ -2232,21 +2849,23 @@ const Students = () => {
           <div className="bulk-grading-modal">
             <div className="bulk-grading-header">
               <div className="bulk-grading-title-section">
-              <h2>{t("students.bulkGrade", "Bulk Grade Students")}</h2>
+                <h2>{t("students.bulkGrade", "Bulk Grade Students")}</h2>
                 <p className="bulk-grading-subtitle">
-                  {t("students.bulkGrading.subtitle", `Grade ${selectedStudents.length} students at once`)}
+                  {t(
+                    "students.bulkGrading.subtitle",
+                    `Grade ${selectedStudents.length} students at once`
+                  )}
                 </p>
               </div>
-              <button onClick={closeBulkGradingModal} className="bulk-grading-close-btn">
+              <button
+                onClick={closeBulkGradingModal}
+                className="bulk-grading-close-btn"
+              >
                 ×
               </button>
             </div>
 
-            {error && (
-              <div className="bulk-grading-error-banner">
-                {error}
-              </div>
-            )}
+            {error && <div className="bulk-grading-error-banner">{error}</div>}
 
             <form onSubmit={handleBulkGradingSubmit}>
               <div className="modal-body">
@@ -2254,12 +2873,14 @@ const Students = () => {
                 <div className="bulk-grading-section">
                   <div className="bulk-grading-section-header">
                     <h3>
-                    {t(
-                      "students.bulkGrading.section.details",
-                      "Select Exercise Details"
-                    )}
-                  </h3>
-                    <span className="bulk-grading-step-indicator">Step 1 of 2</span>
+                      {t(
+                        "students.bulkGrading.section.details",
+                        "Select Exercise Details"
+                      )}
+                    </h3>
+                    <span className="bulk-grading-step-indicator">
+                      Step 1 of 2
+                    </span>
                   </div>
 
                   <div className="bulk-grading-form-grid">
@@ -2602,12 +3223,14 @@ const Students = () => {
                   <div className="bulk-grading-section">
                     <div className="bulk-grading-section-header">
                       <h3>
-                      {t(
-                        "students.bulkGrading.section.grades",
-                        "Enter Grades for Students"
-                      )}
-                    </h3>
-                      <span className="bulk-grading-step-indicator">Step 2 of 2</span>
+                        {t(
+                          "students.bulkGrading.section.grades",
+                          "Enter Grades for Students"
+                        )}
+                      </h3>
+                      <span className="bulk-grading-step-indicator">
+                        Step 2 of 2
+                      </span>
                     </div>
                     <p className="bulk-grading-helper-text">
                       {t(
@@ -2780,6 +3403,7 @@ const Students = () => {
                                       "students.bulkGrading.placeholders.grade",
                                       "Enter grade..."
                                     )}
+                                    disabled={bulkGradingSaving}
                                     style={{
                                       padding: "8px 12px",
                                       border: "1px solid #d1d5db",
@@ -2787,6 +3411,10 @@ const Students = () => {
                                       width: "100%",
                                       maxWidth: "120px",
                                       fontSize: "0.875rem",
+                                      opacity: bulkGradingSaving ? 0.6 : 1,
+                                      cursor: bulkGradingSaving
+                                        ? "not-allowed"
+                                        : "text",
                                     }}
                                   />
                                 </td>
@@ -2809,12 +3437,17 @@ const Students = () => {
                                       "students.bulkGrading.placeholders.notes",
                                       "Optional notes..."
                                     )}
+                                    disabled={bulkGradingSaving}
                                     style={{
                                       padding: "8px 12px",
                                       border: "1px solid #d1d5db",
                                       borderRadius: "6px",
                                       width: "100%",
                                       fontSize: "0.875rem",
+                                      opacity: bulkGradingSaving ? 0.6 : 1,
+                                      cursor: bulkGradingSaving
+                                        ? "not-allowed"
+                                        : "text",
                                     }}
                                   />
                                 </td>
@@ -2828,12 +3461,44 @@ const Students = () => {
                 )}
               </div>
 
+              {/* Save Progress Indicator */}
+              {bulkGradingSaving && bulkGradingSaveProgress.total > 0 && (
+                <div className="bulk-grading-progress-container">
+                  <div className="bulk-grading-progress-bar">
+                    <div
+                      className="bulk-grading-progress-fill"
+                      style={{
+                        width: `${
+                          (bulkGradingSaveProgress.saved /
+                            bulkGradingSaveProgress.total) *
+                          100
+                        }%`,
+                        transition: "width 0.3s ease",
+                      }}
+                    ></div>
+                  </div>
+                  <p className="bulk-grading-progress-text">
+                    {bulkGradingSaveProgress.saved ===
+                    bulkGradingSaveProgress.total
+                      ? t(
+                          "students.bulkGrading.progress.complete",
+                          "✓ All grades saved successfully!"
+                        )
+                      : t(
+                          "students.bulkGrading.progress.saving",
+                          `Saving ${bulkGradingSaveProgress.saved} of ${bulkGradingSaveProgress.total} grades...`
+                        )}
+                  </p>
+                </div>
+              )}
+
               {/* Form Actions */}
               <div className="bulk-grading-actions">
                 <button
                   type="button"
                   className="bulk-grading-cancel-btn"
                   onClick={closeBulkGradingModal}
+                  disabled={bulkGradingSaving}
                 >
                   {t("students.bulkGrading.actions.cancel", "Cancel")}
                 </button>
@@ -2841,6 +3506,7 @@ const Students = () => {
                   type="submit"
                   className="bulk-grading-submit-btn"
                   disabled={
+                    bulkGradingSaving ||
                     !bulkGradingData.gradingType ||
                     !bulkGradingData.subjectId ||
                     !bulkGradingData.seasonId ||
@@ -2851,7 +3517,36 @@ const Students = () => {
                     loadingDependencies
                   }
                 >
-                  {t("students.bulkGrading.actions.save", "Save Grades")}
+                  {bulkGradingSaving ? (
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span
+                        className="spinner"
+                        style={{
+                          width: "16px",
+                          height: "16px",
+                          border: "2px solid rgba(255,255,255,0.3)",
+                          borderTop: "2px solid white",
+                          borderRadius: "50%",
+                          animation: "spin 0.8s linear infinite",
+                          display: "inline-block",
+                        }}
+                      ></span>
+                      {bulkGradingSaveProgress.total > 0
+                        ? t(
+                            "students.bulkGrading.actions.savingProgress",
+                            `Saving... (${bulkGradingSaveProgress.saved}/${bulkGradingSaveProgress.total})`
+                          )
+                        : t("students.bulkGrading.actions.saving", "Saving...")}
+                    </span>
+                  ) : (
+                    t("students.bulkGrading.actions.save", "Save Grades")
+                  )}
                 </button>
               </div>
             </form>
@@ -3940,6 +4635,52 @@ const Students = () => {
           transform: none;
         }
 
+        .bulk-grading-progress-container {
+          padding: 20px 24px;
+          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+          border-top: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .bulk-grading-progress-bar {
+          width: 100%;
+          height: 8px;
+          background: #e5e7eb;
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 12px;
+          position: relative;
+        }
+
+        .bulk-grading-progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+          border-radius: 10px;
+          transition: width 0.3s ease;
+          box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+        }
+
+        .bulk-grading-progress-text {
+          text-align: center;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #059669;
+          margin: 0;
+        }
+
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        .spinner {
+          animation: spin 0.8s linear infinite;
+        }
+
         @media (max-width: 768px) {
           .bulk-grading-modal {
             max-width: 95vw;
@@ -4003,10 +4744,16 @@ const Students = () => {
               <div className="bulk-rating-title-section">
                 <h2>{t("students.bulkRate", "Bulk Rate Students")}</h2>
                 <p className="bulk-rating-subtitle">
-                  {t("students.bulkRating.subtitle", `Rate ${filteredStudents.length} students at once`)}
+                  {t(
+                    "students.bulkRating.subtitle",
+                    `Rate ${filteredStudents.length} students at once`
+                  )}
                 </p>
               </div>
-              <button onClick={closeBulkRatingModal} className="bulk-rating-close-btn">
+              <button
+                onClick={closeBulkRatingModal}
+                className="bulk-rating-close-btn"
+              >
                 ×
               </button>
             </div>
@@ -4018,10 +4765,22 @@ const Students = () => {
                   <select
                     value={bulkRatingData.season}
                     onChange={(e) => {
-                      setBulkRatingData({ ...bulkRatingData, season: e.target.value });
+                      setBulkRatingData({
+                        ...bulkRatingData,
+                        season: e.target.value,
+                      });
                       // Load existing ratings for this season and date
-                      if (selectedClass && selectedBranch && bulkRatingData.date) {
-                        loadExistingRatings(selectedClass, selectedBranch, bulkRatingData.date, e.target.value);
+                      if (
+                        selectedClass &&
+                        selectedBranch &&
+                        bulkRatingData.date
+                      ) {
+                        loadExistingRatings(
+                          selectedClass,
+                          selectedBranch,
+                          bulkRatingData.date,
+                          e.target.value
+                        );
                       }
                     }}
                     required
@@ -4029,7 +4788,9 @@ const Students = () => {
                     <option value="">-- Select Season --</option>
                     {seasons.map((season) => (
                       <option key={season._id} value={season._id}>
-                        {getLocalizedText(season.nameMultilingual || season.name) || season.name}
+                        {getLocalizedText(
+                          season.nameMultilingual || season.name
+                        ) || season.name}
                       </option>
                     ))}
                   </select>
@@ -4040,10 +4801,22 @@ const Students = () => {
                     type="date"
                     value={bulkRatingData.date}
                     onChange={(e) => {
-                      setBulkRatingData({ ...bulkRatingData, date: e.target.value });
+                      setBulkRatingData({
+                        ...bulkRatingData,
+                        date: e.target.value,
+                      });
                       // Load existing ratings for this date and season
-                      if (selectedClass && selectedBranch && bulkRatingData.season) {
-                        loadExistingRatings(selectedClass, selectedBranch, e.target.value, bulkRatingData.season);
+                      if (
+                        selectedClass &&
+                        selectedBranch &&
+                        bulkRatingData.season
+                      ) {
+                        loadExistingRatings(
+                          selectedClass,
+                          selectedBranch,
+                          e.target.value,
+                          bulkRatingData.season
+                        );
                       }
                     }}
                   />
@@ -4059,7 +4832,9 @@ const Students = () => {
                         <th>{t("form.studentName", "Student Name")}</th>
                         {subjects.map((subject) => (
                           <th key={subject._id}>
-                            {getLocalizedText(subject.titleMultilingual || subject.title) || subject.title}
+                            {getLocalizedText(
+                              subject.titleMultilingual || subject.title
+                            ) || subject.title}
                           </th>
                         ))}
                       </tr>
@@ -4073,11 +4848,16 @@ const Students = () => {
                           {subjects.map((subject) => (
                             <td key={subject._id} className="rating-input-cell">
                               <select
-                                value={bulkRatings[`${student._id}-${subject._id}`] || ""}
+                                value={
+                                  bulkRatings[
+                                    `${student._id}-${subject._id}`
+                                  ] || ""
+                                }
                                 onChange={(e) =>
                                   setBulkRatings({
                                     ...bulkRatings,
-                                    [`${student._id}-${subject._id}`]: e.target.value,
+                                    [`${student._id}-${subject._id}`]:
+                                      e.target.value,
                                   })
                                 }
                               >
@@ -4114,6 +4894,198 @@ const Students = () => {
                   {t("btn.save", "Save Ratings")}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Homework Modal */}
+      {showHomeworkModal && (
+        <div className="homework-overlay">
+          <div className="homework-modal">
+            <div className="homework-header">
+              <div className="homework-title-section">
+                <h2>
+                  📚{" "}
+                  {editingHomework
+                    ? t("students.editHomework", "Edit Homework")
+                    : t("students.addHomework", "Add Homework")}
+                </h2>
+                <p className="homework-subtitle">
+                  {t(
+                    "students.homework.subtitle",
+                    "Add homework for ALL students in {{class}} - {{branch}} ({{count}} students)",
+                    {
+                      class: getEntityName(
+                        selectedClassData,
+                        t("common.na", "N/A")
+                      ),
+                      branch: getEntityName(
+                        selectedBranchData,
+                        t("common.na", "N/A")
+                      ),
+                      count: filteredStudents.length,
+                    }
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={closeHomeworkModal}
+                className="homework-close-btn"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="homework-body">
+              <div className="homework-form">
+                <div className="homework-control">
+                  <label htmlFor="homework-subject">
+                    {t("form.subject", "Subject")} *
+                  </label>
+                  <select
+                    id="homework-subject"
+                    value={
+                      editingHomework
+                        ? editHomeworkData.subjectId
+                        : homeworkData.subjectId
+                    }
+                    onChange={(e) => {
+                      if (editingHomework) {
+                        setEditHomeworkData({
+                          ...editHomeworkData,
+                          subjectId: e.target.value,
+                        });
+                      } else {
+                        setHomeworkData({
+                          ...homeworkData,
+                          subjectId: e.target.value,
+                        });
+                      }
+                    }}
+                    required
+                  >
+                    <option value="">-- Select Subject --</option>
+                    {subjects.map((subject) => (
+                      <option key={subject._id} value={subject._id}>
+                        {getLocalizedText(subject.titles || subject.title)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="homework-control">
+                  <label htmlFor="homework-date">
+                    {t("form.date", "Date")}
+                  </label>
+                  <input
+                    id="homework-date"
+                    type="date"
+                    value={
+                      editingHomework
+                        ? editHomeworkData.date
+                        : homeworkData.date
+                    }
+                    onChange={(e) => {
+                      if (editingHomework) {
+                        setEditHomeworkData({
+                          ...editHomeworkData,
+                          date: e.target.value,
+                        });
+                      } else {
+                        setHomeworkData({
+                          ...homeworkData,
+                          date: e.target.value,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="homework-control">
+                  <label htmlFor="homework-description">
+                    {t("form.homework", "Homework")} *
+                    {checkingExistingHomework && (
+                      <span
+                        style={{
+                          marginLeft: "8px",
+                          fontSize: "0.85rem",
+                          color: "#6b7280",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        (
+                        {t(
+                          "form.checkingExisting",
+                          "Checking for existing homework..."
+                        )}
+                        )
+                      </span>
+                    )}
+                  </label>
+                  <textarea
+                    id="homework-description"
+                    placeholder={t(
+                      "form.homeworkPlaceholder",
+                      "Enter homework details..."
+                    )}
+                    value={
+                      editingHomework
+                        ? editHomeworkData.description
+                        : homeworkData.description
+                    }
+                    onChange={(e) => {
+                      if (editingHomework) {
+                        setEditHomeworkData({
+                          ...editHomeworkData,
+                          description: e.target.value,
+                        });
+                      } else {
+                        setHomeworkData({
+                          ...homeworkData,
+                          description: e.target.value,
+                        });
+                      }
+                    }}
+                    rows={5}
+                    required
+                    disabled={checkingExistingHomework && !editingHomework}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="homework-actions">
+              <button
+                type="button"
+                className="homework-cancel-btn"
+                onClick={closeHomeworkModal}
+                disabled={homeworkLoading}
+              >
+                {t("btn.cancel", "Cancel")}
+              </button>
+              <button
+                type="button"
+                className="homework-submit-btn"
+                onClick={
+                  editingHomework ? handleUpdateHomework : handleAddHomework
+                }
+                disabled={
+                  homeworkLoading ||
+                  !selectedClass ||
+                  !selectedBranch ||
+                  (editingHomework
+                    ? !editHomeworkData.subjectId ||
+                      !editHomeworkData.description
+                    : !homeworkData.subjectId || !homeworkData.description)
+                }
+              >
+                {homeworkLoading
+                  ? t("btn.loading", "Loading...")
+                  : editingHomework
+                  ? t("btn.update", "Update")
+                  : t("btn.add", "Add")}
+              </button>
             </div>
           </div>
         </div>
@@ -4376,6 +5348,433 @@ const Students = () => {
 
           .rating-students-table {
             max-height: 300px;
+          }
+        }
+
+        /* Homework Modal Styles */
+        .homework-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1001;
+          padding: 20px;
+          backdrop-filter: blur(4px);
+        }
+
+        .homework-modal {
+          background: white;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 600px;
+          max-height: 92vh;
+          overflow-y: auto;
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .homework-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          padding: 32px;
+          border-bottom: 2px solid #f0f4f8;
+          flex-shrink: 0;
+          background: linear-gradient(135deg, #e9d5ff 0%, #f3e8ff 100%);
+        }
+
+        .homework-title-section h2 {
+          margin: 0;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1f2937;
+        }
+
+        .homework-subtitle {
+          margin: 4px 0 0 0;
+          color: #6b7280;
+          font-size: 0.9rem;
+        }
+
+        .homework-close-btn {
+          background: none;
+          border: none;
+          font-size: 1.8rem;
+          color: #9ca3af;
+          cursor: pointer;
+          padding: 0;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .homework-close-btn:hover {
+          background: rgba(0, 0, 0, 0.1);
+          color: #374151;
+          border-radius: 8px;
+        }
+
+        .homework-body {
+          padding: 32px;
+          flex: 1;
+          overflow-y: auto;
+        }
+
+        .homework-form {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .homework-control {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .homework-control label {
+          font-weight: 600;
+          color: #374151;
+          font-size: 0.95rem;
+        }
+
+        .homework-control input,
+        .homework-control select,
+        .homework-control textarea {
+          padding: 12px 14px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 0.95rem;
+          background: white;
+          cursor: pointer;
+          transition: border-color 0.2s ease;
+          font-family: inherit;
+        }
+
+        .homework-control textarea {
+          cursor: text;
+          resize: vertical;
+          min-height: 120px;
+        }
+
+        .homework-control input:focus,
+        .homework-control select:focus,
+        .homework-control textarea:focus {
+          outline: none;
+          border-color: #8b5cf6;
+          box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .homework-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 12px;
+          padding: 24px 32px;
+          border-top: 2px solid #f0f4f8;
+          flex-shrink: 0;
+        }
+
+        .homework-cancel-btn,
+        .homework-submit-btn {
+          padding: 12px 28px;
+          border: none;
+          border-radius: 10px;
+          font-weight: 700;
+          font-size: 0.95rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          letter-spacing: 0.3px;
+        }
+
+        .homework-cancel-btn {
+          background: #f3f4f6;
+          color: #4b5563;
+          border: 2px solid #d1d5db;
+        }
+
+        .homework-cancel-btn:hover:not(:disabled) {
+          background: #e5e7eb;
+          transform: translateY(-1px);
+        }
+
+        .homework-submit-btn {
+          background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+          color: white;
+          box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+        }
+
+        .homework-submit-btn:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 30px rgba(139, 92, 246, 0.45);
+        }
+
+        .homework-submit-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        @media (max-width: 768px) {
+          .homework-modal {
+            max-width: 95vw;
+          }
+
+          .homework-header {
+            padding: 24px;
+          }
+
+          .homework-body {
+            padding: 24px;
+          }
+
+          .homework-actions {
+            padding: 20px 24px;
+          }
+
+          .homework-cancel-btn,
+          .homework-submit-btn {
+            flex: 1;
+          }
+        }
+
+        /* Homeworks Management Section Styles */
+        .homeworks-management-section {
+          margin: 24px 0;
+        }
+
+        .homeworks-management-card {
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
+        }
+
+        .homeworks-management-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px 24px;
+          background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+          color: white;
+        }
+
+        .homeworks-management-header h3 {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+        }
+
+        .homeworks-management-header .close-btn {
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          color: white;
+          font-size: 1.5rem;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .homeworks-management-header .close-btn:hover {
+          background: rgba(255, 255, 255, 0.3);
+        }
+
+        .homeworks-management-body {
+          padding: 24px;
+        }
+
+        .homeworks-management-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9375rem;
+        }
+
+        .homeworks-management-table thead {
+          background: #f8fafc;
+        }
+
+        .homeworks-management-table th {
+          padding: 12px 16px;
+          text-align: center;
+          font-weight: 700;
+          color: #1e293b;
+          border-bottom: 2px solid #e2e8f0;
+        }
+
+        .homeworks-management-table td {
+          padding: 12px 16px;
+          border-bottom: 1px solid #f1f5f9;
+          color: #475569;
+          text-align: center;
+        }
+
+        .homeworks-management-table tbody tr:hover {
+          background: #f8fafc;
+        }
+
+        .homework-actions-cell {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .homeworks-management-table .edit-btn {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 8px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .homeworks-management-table .edit-btn:hover {
+          background: #2563eb;
+          transform: scale(1.05);
+        }
+
+        .homeworks-management-table .delete-btn {
+          background: #ef4444;
+          color: white;
+          border: none;
+          padding: 8px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .homeworks-management-table .delete-btn:hover {
+          background: #dc2626;
+          transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+          .homeworks-management-table {
+            font-size: 0.875rem;
+          }
+
+          .homeworks-management-table th,
+          .homeworks-management-table td {
+            padding: 8px 12px;
+          }
+        }
+
+        /* Toast Notification Styles */
+        .toast-notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          min-width: 320px;
+          max-width: 500px;
+          padding: 16px 20px;
+          border-radius: 12px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+          z-index: 10000;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          animation: slideInRight 0.3s ease-out;
+          backdrop-filter: blur(10px);
+        }
+
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        .toast-success {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          border-left: 4px solid #047857;
+        }
+
+        .toast-error {
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+          color: white;
+          border-left: 4px solid #b91c1c;
+        }
+
+        .toast-info {
+          background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          color: white;
+          border-left: 4px solid #1d4ed8;
+        }
+
+        .toast-content {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .toast-icon {
+          flex-shrink: 0;
+        }
+
+        .toast-message {
+          font-weight: 500;
+          font-size: 0.9375rem;
+          line-height: 1.5;
+        }
+
+        .toast-close {
+          background: rgba(255, 255, 255, 0.2);
+          border: none;
+          color: white;
+          width: 24px;
+          height: 24px;
+          border-radius: 6px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.2s ease;
+          padding: 0;
+        }
+
+        .toast-close:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+          .toast-notification {
+            top: 10px;
+            right: 10px;
+            left: 10px;
+            min-width: auto;
+            max-width: none;
           }
         }
       `}</style>

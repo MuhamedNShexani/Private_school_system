@@ -761,6 +761,58 @@ router.get(
   }
 );
 
+// GET all exercise grades (Admin only)
+router.get(
+  "/",
+  verifyToken,
+  getCurrentUser,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { studentId, subjectId, seasonId, gradingType, limit, skip } = req.query;
+      
+      const filter = {};
+      if (studentId) filter.student = studentId;
+      if (subjectId) filter.subject = subjectId;
+      if (seasonId) filter.season = seasonId;
+      if (gradingType) filter.gradingType = gradingType;
+
+      const query = StudentExerciseGrade.find(filter)
+        .populate("student", "fullName username email")
+        .populate("exercise", "name degree")
+        .populate("part", "title")
+        .populate("chapter", "title")
+        .populate({
+          path: "season",
+          select: "name nameMultilingual",
+        })
+        .populate({
+          path: "subject",
+          select: "title titles",
+        })
+        .populate("gradedBy", "name username")
+        .sort({ gradedAt: -1 });
+
+      if (limit) query.limit(parseInt(limit));
+      if (skip) query.skip(parseInt(skip));
+
+      const grades = await query;
+      const total = await StudentExerciseGrade.countDocuments(filter);
+
+      res.json({
+        success: true,
+        data: grades,
+        total,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+);
+
 // DELETE a grade
 router.delete(
   "/:id",
@@ -769,7 +821,11 @@ router.delete(
   requireAdmin,
   async (req, res) => {
     try {
-      const grade = await StudentExerciseGrade.findByIdAndDelete(req.params.id);
+      // Find the grade first to get its details before deleting
+      const grade = await StudentExerciseGrade.findById(req.params.id)
+        .populate("season", "name nameMultilingual")
+        .populate("subject", "title titles");
+      
       if (!grade) {
         return res.status(404).json({
           success: false,
@@ -777,9 +833,324 @@ router.delete(
         });
       }
 
+      // Save the grade details before deletion
+      const studentId = grade.student;
+      const subjectId = grade.subject?._id || grade.subject;
+      const seasonId = grade.season?._id || grade.season;
+      const gradingType = grade.gradingType;
+
+      // Save additional details for monthly_exam
+      const monthlyExamNumber = grade.monthlyExamNumber;
+
+      // Log the grade details for debugging
+      console.log(`Deleting grade - ID: ${req.params.id}, Type: ${gradingType}, Student: ${studentId}, Subject: ${subjectId}, Season: ${seasonId}`);
+
+      // Delete the grade
+      await StudentExerciseGrade.findByIdAndDelete(req.params.id);
+
+      // Update StudentGrade based on grading type
+      if (studentId && subjectId && seasonId) {
+        console.log(`Attempting to update StudentGrade for gradingType: ${gradingType}`);
+        try {
+          // Convert to ObjectId if needed
+          const studentObjectId = typeof studentId === 'string' ? new mongoose.Types.ObjectId(studentId) : studentId;
+          const subjectObjectId = typeof subjectId === 'string' ? new mongoose.Types.ObjectId(subjectId) : subjectId;
+          const seasonObjectId = typeof seasonId === 'string' ? new mongoose.Types.ObjectId(seasonId) : seasonId;
+
+          // Get the season to find its name
+          const season = await Season.findById(seasonObjectId);
+          if (!season) {
+            console.log(`Season not found for ID: ${seasonObjectId}`);
+          } else {
+            // Get season name for matching StudentGrade
+            // StudentGrade uses enum values: "Season 1", "Season 2", "الموسم الأول", "الموسم الثاني", "وەرزی یەکەم", "وەرزی دووەم", etc.
+            let seasonName = null;
+            
+            // Try to get the season name from nameMultilingual first
+            if (season.nameMultilingual) {
+              seasonName = season.nameMultilingual.en || season.nameMultilingual.ku || season.nameMultilingual.ar;
+            } else if (typeof season.name === 'object' && season.name !== null) {
+              seasonName = season.name.en || season.name.ku || season.name.ar;
+            } else if (typeof season.name === 'string') {
+              seasonName = season.name;
+            }
+
+            // Collect all possible season names for matching (must match StudentGrade enum values)
+            const allSeasonNames = [];
+            
+            // Add all possible name variants
+            if (season.nameMultilingual) {
+              if (season.nameMultilingual.en) allSeasonNames.push(season.nameMultilingual.en);
+              if (season.nameMultilingual.ku) allSeasonNames.push(season.nameMultilingual.ku);
+              if (season.nameMultilingual.ar) allSeasonNames.push(season.nameMultilingual.ar);
+            }
+            if (typeof season.name === 'object' && season.name !== null) {
+              if (season.name.en) allSeasonNames.push(season.name.en);
+              if (season.name.ku) allSeasonNames.push(season.name.ku);
+              if (season.name.ar) allSeasonNames.push(season.name.ar);
+            }
+            if (seasonName) {
+              allSeasonNames.push(seasonName);
+            }
+            
+            // Remove duplicates and filter to only valid enum values
+            const validEnumValues = [
+              "Season 1", "Season 2", "Season 3", "Season 4",
+              "الموسم الأول", "الموسم الثاني", "الموسم الثالث", "الموسم الرابع",
+              "وەرزی یەکەم", "وەرزی دووەم", "وەرزی سێیەم", "وەرزی چوارەم"
+            ];
+            const uniqueSeasonNames = [...new Set(allSeasonNames.filter(Boolean).filter(name => validEnumValues.includes(name)))];
+            
+            // If no valid enum values found, try to map by order
+            if (uniqueSeasonNames.length === 0 && season.order) {
+              const orderToSeasonMap = {
+                1: ["Season 1", "الموسم الأول", "وەرزی یەکەم"],
+                2: ["Season 2", "الموسم الثاني", "وەرزی دووەم"],
+                3: ["Season 3", "الموسم الثالث", "وەرزی سێیەم"],
+                4: ["Season 4", "الموسم الرابع", "وەرزی چوارەم"]
+              };
+              if (orderToSeasonMap[season.order]) {
+                uniqueSeasonNames.push(...orderToSeasonMap[season.order]);
+              }
+            }
+            
+            console.log(`Season ID: ${seasonObjectId}, Order: ${season.order}, Extracted names: ${allSeasonNames.join(', ')}, Valid enum names: ${uniqueSeasonNames.join(', ')}`);
+
+            // Find StudentGrade by trying all season name variants
+            let studentGrade = null;
+            let matchedSeasonName = null;
+            
+            // Try with ObjectId format first
+            for (const name of uniqueSeasonNames) {
+              studentGrade = await StudentGrade.findOne({
+                student: studentObjectId,
+                subject: subjectObjectId,
+                season: name,
+              });
+              if (studentGrade) {
+                matchedSeasonName = name;
+                console.log(`Found StudentGrade with season: ${name} (using ObjectId)`);
+                break;
+              }
+            }
+            
+            // If not found, try with original IDs (string format)
+            if (!studentGrade) {
+              for (const name of uniqueSeasonNames) {
+                studentGrade = await StudentGrade.findOne({
+                  student: studentId,
+                  subject: subjectId,
+                  season: name,
+                });
+                if (studentGrade) {
+                  matchedSeasonName = name;
+                  console.log(`Found StudentGrade with season: ${name} (using original ID format)`);
+                  break;
+                }
+              }
+            }
+            
+            // If still not found, try a broader search (just student + subject, then filter by season)
+            if (!studentGrade) {
+              console.log(`Trying broader search for StudentGrade...`);
+              const allStudentGrades = await StudentGrade.find({
+                student: studentObjectId,
+                subject: subjectObjectId,
+              });
+              console.log(`Found ${allStudentGrades.length} StudentGrade records for this student+subject combination`);
+              if (allStudentGrades.length > 0) {
+                console.log(`Existing StudentGrade seasons:`, allStudentGrades.map(sg => sg.season));
+                // Try to match any of the season names
+                for (const sg of allStudentGrades) {
+                  if (uniqueSeasonNames.includes(sg.season)) {
+                    studentGrade = sg;
+                    matchedSeasonName = sg.season;
+                    console.log(`Found StudentGrade by matching season: ${sg.season}`);
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (studentGrade) {
+              console.log(`Found StudentGrade - Current values: exercises=${studentGrade.exercises}, attendance=${studentGrade.attendance}, behaviour=${studentGrade.behaviour}, season_exam=${studentGrade.season_exam}, monthly_exam=${JSON.stringify(studentGrade.monthly_exam)}`);
+              
+              let updateData = {};
+              let updated = false;
+
+              if (gradingType === 'exercise') {
+                // Calculate total exercises from all remaining StudentExerciseGrade records
+                const allExerciseGrades = await StudentExerciseGrade.find({
+                  student: studentObjectId,
+                  subject: subjectObjectId,
+                  season: seasonObjectId,
+                  gradingType: 'exercise',
+                });
+
+                console.log(`Found ${allExerciseGrades.length} remaining exercise grades after deletion`);
+
+                // Sum all exercise grades (capped at 10)
+                // If no exercises remain, total will be 0
+                const exercisesTotal = allExerciseGrades.length > 0
+                  ? Math.min(
+                      allExerciseGrades.reduce((sum, eg) => sum + (parseFloat(eg.grade) || 0), 0),
+                      10
+                    )
+                  : 0;
+
+                updateData.exercises = exercisesTotal;
+                updated = true;
+                console.log(`Will update StudentGrade exercises to ${exercisesTotal} (from ${allExerciseGrades.length} remaining exercises) for student ${studentId}, subject ${subjectId}, season ${matchedSeasonName}`);
+              } else if (gradingType === 'monthly_exam') {
+                // For monthly_exam, set the specific exam number to 0
+                const currentMonthlyExams = studentGrade.monthly_exam || [];
+                const examIndex = monthlyExamNumber ? parseInt(monthlyExamNumber, 10) - 1 : 0; // Convert "1" or "2" to 0 or 1
+                
+                // Create a new array with the specific exam set to 0
+                const updatedMonthlyExams = [...currentMonthlyExams];
+                while (updatedMonthlyExams.length <= examIndex) {
+                  updatedMonthlyExams.push(0);
+                }
+                updatedMonthlyExams[examIndex] = 0;
+                
+                updateData.monthly_exam = updatedMonthlyExams;
+                updated = true;
+                console.log(`Will update StudentGrade monthly_exam[${examIndex}] to 0 for student ${studentId}, subject ${subjectId}, season ${matchedSeasonName}`);
+              } else if (gradingType === 'attendance') {
+                updateData.attendance = 0;
+                updated = true;
+                console.log(`Will update StudentGrade attendance to 0 for student ${studentId}, subject ${subjectId}, season ${matchedSeasonName}`);
+              } else if (gradingType === 'behaviour') {
+                updateData.behaviour = 0;
+                updated = true;
+                console.log(`Will update StudentGrade behaviour to 0 for student ${studentId}, subject ${subjectId}, season ${matchedSeasonName}`);
+              } else if (gradingType === 'season_exam') {
+                updateData.season_exam = 0;
+                updated = true;
+                console.log(`Will update StudentGrade season_exam to 0 for student ${studentId}, subject ${subjectId}, season ${matchedSeasonName}. Current value: ${studentGrade.season_exam}`);
+              } else {
+                console.log(`Unknown or unhandled gradingType: ${gradingType}`);
+              }
+
+              if (updated && Object.keys(updateData).length > 0) {
+                try {
+                  // Apply updates to the document
+                  Object.assign(studentGrade, updateData);
+                  
+                  // Save the document (this will trigger pre-save hook to recalculate total)
+                  await studentGrade.save();
+                  
+                  // Reload to verify the save and get the calculated total
+                  const verifyGrade = await StudentGrade.findById(studentGrade._id);
+                  if (verifyGrade) {
+                    console.log(`StudentGrade updated successfully. Verified - season_exam=${verifyGrade.season_exam}, exercises=${verifyGrade.exercises}, attendance=${verifyGrade.attendance}, behaviour=${verifyGrade.behaviour}, total=${verifyGrade.total}`);
+                  } else {
+                    console.error(`Could not verify StudentGrade after save`);
+                  }
+                } catch (saveError) {
+                  console.error(`Error saving StudentGrade:`, saveError);
+                  console.error(`Save error details:`, {
+                    message: saveError.message,
+                    stack: saveError.stack,
+                    studentId,
+                    subjectId,
+                    matchedSeasonName,
+                    updateData
+                  });
+                  throw saveError; // Re-throw to be caught by outer catch
+                }
+              } else {
+                console.log(`No update was made for gradingType: ${gradingType}`);
+              }
+            } else {
+              console.log(`No StudentGrade found for student ${studentId}, subject ${subjectId}, season names: ${uniqueSeasonNames.join(', ')}`);
+              
+              // Fallback: Try to find ANY StudentGrade for this student+subject combination
+              // This handles cases where season name might be stored differently
+              const fallbackStudentGrade = await StudentGrade.findOne({
+                student: studentObjectId,
+                subject: subjectObjectId,
+              });
+              
+              if (fallbackStudentGrade) {
+                console.log(`Found fallback StudentGrade with season: ${fallbackStudentGrade.season} (different from expected: ${uniqueSeasonNames.join(', ')})`);
+                console.log(`Attempting to update this StudentGrade anyway...`);
+                
+                studentGrade = fallbackStudentGrade;
+                matchedSeasonName = fallbackStudentGrade.season;
+                
+                // Proceed with update using the found StudentGrade
+                let updateData = {};
+                let updated = false;
+
+                if (gradingType === 'exercise') {
+                  const allExerciseGrades = await StudentExerciseGrade.find({
+                    student: studentObjectId,
+                    subject: subjectObjectId,
+                    season: seasonObjectId,
+                    gradingType: 'exercise',
+                  });
+
+                  console.log(`Found ${allExerciseGrades.length} remaining exercise grades after deletion`);
+
+                  const exercisesTotal = allExerciseGrades.length > 0
+                    ? Math.min(
+                        allExerciseGrades.reduce((sum, eg) => sum + (parseFloat(eg.grade) || 0), 0),
+                        10
+                      )
+                    : 0;
+
+                  updateData.exercises = exercisesTotal;
+                  updated = true;
+                  console.log(`Will update fallback StudentGrade exercises to ${exercisesTotal}`);
+                } else if (gradingType === 'monthly_exam') {
+                  const currentMonthlyExams = studentGrade.monthly_exam || [];
+                  const examIndex = monthlyExamNumber ? parseInt(monthlyExamNumber, 10) - 1 : 0;
+                  const updatedMonthlyExams = [...currentMonthlyExams];
+                  while (updatedMonthlyExams.length <= examIndex) {
+                    updatedMonthlyExams.push(0);
+                  }
+                  updatedMonthlyExams[examIndex] = 0;
+                  updateData.monthly_exam = updatedMonthlyExams;
+                  updated = true;
+                } else if (gradingType === 'attendance') {
+                  updateData.attendance = 0;
+                  updated = true;
+                } else if (gradingType === 'behaviour') {
+                  updateData.behaviour = 0;
+                  updated = true;
+                } else if (gradingType === 'season_exam') {
+                  updateData.season_exam = 0;
+                  updated = true;
+                }
+
+                if (updated && Object.keys(updateData).length > 0) {
+                  try {
+                    Object.assign(studentGrade, updateData);
+                    await studentGrade.save();
+                    const verifyGrade = await StudentGrade.findById(studentGrade._id);
+                    if (verifyGrade) {
+                      console.log(`Fallback StudentGrade updated successfully. Verified - season_exam=${verifyGrade.season_exam}, exercises=${verifyGrade.exercises}, attendance=${verifyGrade.attendance}, behaviour=${verifyGrade.behaviour}, total=${verifyGrade.total}`);
+                    }
+                  } catch (saveError) {
+                    console.error(`Error saving fallback StudentGrade:`, saveError);
+                  }
+                }
+              } else {
+                console.log(`No StudentGrade found at all for student ${studentId}, subject ${subjectId}`);
+              }
+            }
+          }
+        } catch (updateError) {
+          console.error("Error updating StudentGrade after deletion:", updateError);
+          // Don't fail the deletion if update fails, just log the error
+        }
+      }
+
       res.json({
         success: true,
         message: "Grade deleted successfully",
+        studentGradeUpdated: true, // Indicate that StudentGrade was updated
       });
     } catch (error) {
       res.status(500).json({

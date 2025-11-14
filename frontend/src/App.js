@@ -25,6 +25,7 @@ import AdminCRUD from "./pages/AdminCRUD";
 import StudentManagement from "./pages/StudentManagement";
 import StudentProfile from "./pages/StudentProfile";
 import PaymentsManagement from "./pages/PaymentsManagement";
+import UpdatePayment from "./pages/UpdatePayment";
 import TeacherProfile from "./pages/TeacherProfile";
 import TranslationManagement from "./pages/TranslationManagement";
 import "./App.css";
@@ -86,6 +87,14 @@ function AppContent() {
             element={
               <ProtectedRoute requiredRole="Admin">
                 <PaymentsManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/payments/update"
+            element={
+              <ProtectedRoute requiredRole="Admin">
+                <UpdatePayment />
               </ProtectedRoute>
             }
           />

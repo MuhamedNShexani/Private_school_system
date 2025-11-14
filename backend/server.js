@@ -77,6 +77,7 @@ app.use("/api/evaluations", require("./routes/evaluations"));
 app.use("/api/grading", require("./routes/grading"));
 app.use("/api/analytics", require("./routes/analytics"));
 app.use("/api/translations", require("./routes/translations"));
+app.use("/api/homeworks", require("./routes/homeworks"));
 
 // Basic route
 app.get("/", (req, res) => {

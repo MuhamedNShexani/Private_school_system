@@ -50,6 +50,7 @@ const StudentProfile = () => {
   const [activityPage, setActivityPage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [studentRatings, setStudentRatings] = useState([]);
+  const [studentHomeworks, setStudentHomeworks] = useState([]);
   const [ratingFilterSeason, setRatingFilterSeason] = useState("");
   const [ratingFilterMode, setRatingFilterMode] = useState("evaluation"); // month, date-range, evaluation
   const [ratingFilterFromDate, setRatingFilterFromDate] = useState("");
@@ -57,6 +58,10 @@ const StudentProfile = () => {
   const [selectedMonthYear, setSelectedMonthYear] = useState(() => {
     const today = new Date();
     return { year: today.getFullYear(), month: today.getMonth() };
+  });
+  const [selectedHomeworkDate, setSelectedHomeworkDate] = useState(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate());
   });
 
   const interpolateTemplate = (template, values) => {
@@ -77,6 +82,46 @@ const StudentProfile = () => {
     const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   };
+
+  // Ensure selectedHomeworkDate is within the 7-day range (today to today + 6)
+  useEffect(() => {
+    if (!selectedHomeworkDate) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + 6); // Today + 6 days = 7 days total
+
+    const currentDate = new Date(selectedHomeworkDate);
+    currentDate.setHours(0, 0, 0, 0);
+
+    // If date is before today or after maxDate, reset to today
+    if (
+      currentDate.getTime() < today.getTime() ||
+      currentDate.getTime() > maxDate.getTime()
+    ) {
+      setSelectedHomeworkDate(new Date(today));
+    }
+  }, [selectedHomeworkDate]);
+
+  // Filter homeworks by selected date
+  const filteredHomeworks = useMemo(() => {
+    if (!selectedHomeworkDate) return studentHomeworks;
+
+    const normalizeDate = (date) => {
+      if (!date) return null;
+      const d = new Date(date);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    };
+
+    const targetDate = normalizeDate(selectedHomeworkDate);
+
+    return studentHomeworks.filter((homework) => {
+      const hwDate = normalizeDate(homework.date);
+      return hwDate === targetDate;
+    });
+  }, [studentHomeworks, selectedHomeworkDate]);
 
   const isTeacher = user?.role === "Teacher";
   const teacherSubjectIds = useMemo(() => {
@@ -253,25 +298,16 @@ const StudentProfile = () => {
         let studentData;
         const usernameParam = searchParams.get("username");
 
-        console.log("StudentProfile - User role:", user?.role);
-        console.log("StudentProfile - Username param:", usernameParam);
-
         if (user?.role === "Student") {
           // Student can only see their own profile
-          console.log("StudentProfile - Getting own profile for student");
           const response = await studentsAPI.getByUsername(user.username);
           studentData = extractData(response);
         } else if (usernameParam) {
           // If username is provided in URL, get that specific student
-          console.log(
-            "StudentProfile - Getting profile for username:",
-            usernameParam
-          );
           const response = await studentsAPI.getByUsername(usernameParam);
           studentData = extractData(response);
         } else {
           // For teachers/admins without specific username, get the first student as example
-          console.log("StudentProfile - Getting first student as example");
           const response = await studentsAPI.getAll();
           const allStudents = extractData(response, true);
           studentData = allStudents?.[0] || null;
@@ -293,7 +329,6 @@ const StudentProfile = () => {
             );
             setGrades(filteredGrades);
           } catch (err) {
-            console.log("No grades found for student:", err);
             setGrades([]);
           }
 
@@ -317,7 +352,6 @@ const StudentProfile = () => {
             );
             setExerciseGrades(filteredExercises);
           } catch (err) {
-            console.log("No exercise grades found for student:", err);
             setExerciseGrades([]);
           }
 
@@ -331,10 +365,24 @@ const StudentProfile = () => {
               ratingsResponse.data?.ratings ||
               [];
             setStudentRatings(Array.isArray(ratingsData) ? ratingsData : []);
-            console.log("Ratings fetched:", ratingsData);
           } catch (err) {
-            console.log("No ratings found for student:", err);
             setStudentRatings([]);
+          }
+
+          // Fetch student homeworks
+          try {
+            const homeworksResponse = await studentsAPI.getHomeworks(
+              studentData._id
+            );
+            const homeworksData =
+              homeworksResponse.data?.data?.homeworks ||
+              homeworksResponse.data?.homeworks ||
+              [];
+            setStudentHomeworks(
+              Array.isArray(homeworksData) ? homeworksData : []
+            );
+          } catch (err) {
+            setStudentHomeworks([]);
           }
 
           // Fetch subjects and seasons for grade entry
@@ -479,7 +527,6 @@ const StudentProfile = () => {
               }
             }
           } catch (err) {
-            console.log("Error fetching subjects/seasons or quizzes:", err);
             setSubjects([]);
             setSeasons([]);
             setChapters([]);
@@ -744,6 +791,43 @@ const StudentProfile = () => {
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const year = d.getFullYear();
     return `${day}/${month}/${year}`;
+  };
+
+  // Format date with day name
+  const formatDateWithDay = (date) => {
+    if (!date) {
+      return t("common.na", "N/A");
+    }
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+
+    let dayLabel;
+    if (d.getTime() === today.getTime()) {
+      dayLabel = t("days.today", "Today");
+    } else if (d.getTime() === tomorrow.getTime()) {
+      dayLabel = t("days.tomorrow", "Tomorrow");
+    } else {
+      const dayNames = [
+        t("days.sunday", "Sunday"),
+        t("days.monday", "Monday"),
+        t("days.tuesday", "Tuesday"),
+        t("days.wednesday", "Wednesday"),
+        t("days.thursday", "Thursday"),
+        t("days.friday", "Friday"),
+        t("days.saturday", "Saturday"),
+      ];
+      dayLabel = dayNames[d.getDay()];
+    }
+
+    return `${day}/${month}/${year} (${dayLabel})`;
   };
 
   // Convert YYYY-MM-DD to DD/MM/YYYY for display
@@ -1132,15 +1216,7 @@ const StudentProfile = () => {
                               const fullUrl = `${baseUrl}${photoPath}`;
 
                               // Debug logging (remove in production if needed)
-                              if (process.env.NODE_ENV === "development") {
-                                console.log("Photo URL constructed:", {
-                                  apiUrl,
-                                  baseUrl,
-                                  photoPath,
-                                  fullUrl,
-                                  studentPhoto: student.photo,
-                                });
-                              }
+                             
 
                               return fullUrl;
                             })()
@@ -1496,10 +1572,6 @@ const StudentProfile = () => {
                           className="training-play-btn"
                           onClick={(e) => {
                             e.preventDefault();
-                            console.log(
-                              "Quiz play button clicked for quiz:",
-                              quiz._id
-                            );
                             navigate(`/quizzes/${quiz._id}/play`, {
                               state: { quiz, from: "/student/profile" },
                             });
@@ -2161,6 +2233,222 @@ const StudentProfile = () => {
             )}
           </div>
 
+          {/* Student Homeworks */}
+          <div className="profile-card" style={{ gridColumn: "1 / -1" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "16px",
+                flexWrap: "wrap",
+                gap: "12px",
+              }}
+            >
+              <h3 style={{ margin: 0 }}>
+                {t("studentProfile.homeworks", "Homeworks")}
+              </h3>
+
+              {/* Date Navigation - Small, beside title */}
+              {studentHomeworks.length > 0 &&
+                (() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const maxDate = new Date(today);
+                  maxDate.setDate(maxDate.getDate() + 6); // Today + 6 days = 7 days total
+
+                  const currentDate = new Date(selectedHomeworkDate);
+                  currentDate.setHours(0, 0, 0, 0);
+
+                  const isToday = currentDate.getTime() === today.getTime();
+                  const isMaxDate = currentDate.getTime() === maxDate.getTime();
+
+                  return (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "6px 10px",
+                        backgroundColor: "#f3f4f6",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isToday) {
+                            const prevDate = new Date(selectedHomeworkDate);
+                            prevDate.setDate(prevDate.getDate() - 1);
+                            setSelectedHomeworkDate(prevDate);
+                          }
+                        }}
+                        disabled={isToday}
+                        style={{
+                          padding: "4px 8px",
+                          backgroundColor: isToday ? "#9ca3af" : "#3b82f6",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: isToday ? "not-allowed" : "pointer",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          opacity: isToday ? 0.6 : 1,
+                        }}
+                      >
+                        ◄
+                      </button>
+
+                      <div
+                        style={{
+                          minWidth: "120px",
+                          textAlign: "center",
+                          fontWeight: "600",
+                          fontSize: "13px",
+                          color: "#1f2937",
+                        }}
+                      >
+                        {formatDateWithDay(selectedHomeworkDate)}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isMaxDate) {
+                            const nextDate = new Date(selectedHomeworkDate);
+                            nextDate.setDate(nextDate.getDate() + 1);
+                            setSelectedHomeworkDate(nextDate);
+                          }
+                        }}
+                        disabled={isMaxDate}
+                        style={{
+                          padding: "4px 8px",
+                          backgroundColor: isMaxDate ? "#9ca3af" : "#3b82f6",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: isMaxDate ? "not-allowed" : "pointer",
+                          fontSize: "12px",
+                          fontWeight: "600",
+                          opacity: isMaxDate ? 0.6 : 1,
+                        }}
+                      >
+                        ►
+                      </button>
+                    </div>
+                  );
+                })()}
+            </div>
+
+            {studentHomeworks.length === 0 ? (
+              <div className="empty-section">
+                <BookOpen size={32} color="#9ca3af" />
+                <p>
+                  {t(
+                    "studentProfile.noHomeworks",
+                    "No homeworks have been assigned yet."
+                  )}
+                </p>
+              </div>
+            ) : (
+              <>
+                {filteredHomeworks.length === 0 ? (
+                  <div className="empty-section">
+                    <BookOpen size={32} color="#9ca3af" />
+                    <p>
+                      {t(
+                        "studentProfile.noHomeworksForDate",
+                        "No homeworks found for the selected date."
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="homeworks-table-container">
+                    <table className="homeworks-table">
+                      <thead>
+                        <tr>
+                          <th>{t("studentProfile.subject", "Subject")}</th>
+                          <th>{formatDateWithDay(selectedHomeworkDate)}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredHomeworks
+                          .sort(
+                            (a, b) =>
+                              new Date(b.createdAt) - new Date(a.createdAt)
+                          )
+                          .map((homework) => {
+                            // Get subject name - handle titles object with {en, ar, ku}
+                            const getSubjectName = () => {
+                              if (!homework.subjectId) {
+                                return t(
+                                  "studentProfile.unknownSubject",
+                                  "Unknown Subject"
+                                );
+                              }
+
+                              // If it's a populated object with titles
+                              if (
+                                typeof homework.subjectId === "object" &&
+                                homework.subjectId.titles
+                              ) {
+                                return getLocalizedText(
+                                  homework.subjectId.titles,
+                                  t(
+                                    "studentProfile.unknownSubject",
+                                    "Unknown Subject"
+                                  )
+                                );
+                              }
+
+                              // Fallback to title if titles doesn't exist
+                              if (homework.subjectId.title) {
+                                return getLocalizedText(
+                                  homework.subjectId.title,
+                                  t(
+                                    "studentProfile.unknownSubject",
+                                    "Unknown Subject"
+                                  )
+                                );
+                              }
+
+                              return t(
+                                "studentProfile.unknownSubject",
+                                "Unknown Subject"
+                              );
+                            };
+
+                            return (
+                              <tr key={homework._id}>
+                                <td
+                                  className="mobile-grid-cell"
+                                  data-label={t(
+                                    "studentProfile.subject",
+                                    "Subject"
+                                  )}
+                                >
+                                  {getSubjectName()}
+                                </td>
+                                <td
+                                  className="mobile-grid-cell"
+                                  data-label={formatDateWithDay(
+                                    selectedHomeworkDate
+                                  )}
+                                  style={{ textAlign: "center" }}
+                                >
+                                  {homework.description}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
           {/* Student Grades */}
           <div className="profile-card" style={{ gridColumn: "1 / -1" }}>
             <div className="grades-header">
@@ -2235,9 +2523,6 @@ const StudentProfile = () => {
                         {t("studentProfile.seasonExam", "Season Exam")} (60)
                       </th>
                       <th>{t("studentProfile.total", "Total")} (100)</th>
-                      {canEdit && (
-                        <th>{t("studentProfile.actions", "Actions")}</th>
-                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -2325,38 +2610,10 @@ const StudentProfile = () => {
                               const seasonMatch = seasonNames.includes(
                                 g.season
                               );
-                              if (!seasonMatch || !subjectMatch) {
-                                console.log(
-                                  `Grade not matched - Subject: ${subjectMatch} (grade: ${gradeSubjectId}, current: ${subjectId}), Season: ${
-                                    g.season
-                                  }, Looking for: ${JSON.stringify(
-                                    seasonNames
-                                  )}`
-                                );
-                              }
+
                               return subjectMatch && seasonMatch;
                             });
 
-                            if (grade) {
-                              console.log(
-                                `Found grade for ${
-                                  subject.title?.en || subject.title
-                                }: exercises=${grade.exercises}, total=${
-                                  grade.total
-                                }, season=${grade.season}, subjectId=${
-                                  grade.subject?._id || grade.subject
-                                }`
-                              );
-                            } else {
-                              console.log(
-                                `No grade found for subject: ${
-                                  subject.title?.en || subject.title
-                                }, subjectId: ${subjectId}, seasonNames:`,
-                                seasonNames
-                              );
-                            }
-
-                            const isEditing = editingGrade === grade?._id;
                             const gradeKey = `${subjectId}-${seasonName}`;
 
                             return (
@@ -2392,24 +2649,7 @@ const StudentProfile = () => {
                                     " (10)"
                                   }
                                 >
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="10"
-                                      value={gradeForm.exercises || 0}
-                                      onChange={(e) =>
-                                        setGradeForm({
-                                          ...gradeForm,
-                                          exercises:
-                                            parseFloat(e.target.value) || 0,
-                                        })
-                                      }
-                                      style={{ width: "60px", padding: "4px" }}
-                                    />
-                                  ) : (
-                                    grade?.exercises || 0
-                                  )}
+                                  {grade?.exercises || 0}
                                 </td>
                                 <td
                                   className="mobile-grid-cell"
@@ -2420,92 +2660,17 @@ const StudentProfile = () => {
                                     ) + " (20)"
                                   }
                                 >
-                                  {isEditing ? (
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        gap: "4px",
-                                        alignItems: "center",
-                                      }}
-                                    >
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        max="20"
-                                        placeholder={t(
-                                          "studentProfile.monthlyExamPlaceholder1",
-                                          "Exam 1"
-                                        )}
-                                        value={
-                                          Array.isArray(gradeForm.monthly_exam)
-                                            ? gradeForm.monthly_exam[0] || 0
-                                            : 0
-                                        }
-                                        onChange={(e) => {
-                                          const exams = Array.isArray(
-                                            gradeForm.monthly_exam
-                                          )
-                                            ? [...gradeForm.monthly_exam]
-                                            : [];
-                                          exams[0] =
-                                            parseFloat(e.target.value) || 0;
-                                          setGradeForm({
-                                            ...gradeForm,
-                                            monthly_exam: exams,
-                                          });
-                                        }}
-                                        style={{
-                                          width: "60px",
-                                          padding: "4px",
-                                        }}
-                                      />
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        max="20"
-                                        placeholder={t(
-                                          "studentProfile.monthlyExamPlaceholder2",
-                                          "Exam 2"
-                                        )}
-                                        value={
-                                          Array.isArray(gradeForm.monthly_exam)
-                                            ? gradeForm.monthly_exam[1] || 0
-                                            : 0
-                                        }
-                                        onChange={(e) => {
-                                          const exams = Array.isArray(
-                                            gradeForm.monthly_exam
-                                          )
-                                            ? [...gradeForm.monthly_exam]
-                                            : [0];
-                                          exams[1] =
-                                            parseFloat(e.target.value) || 0;
-                                          setGradeForm({
-                                            ...gradeForm,
-                                            monthly_exam: exams,
-                                          });
-                                        }}
-                                        style={{
-                                          width: "60px",
-                                          padding: "4px",
-                                        }}
-                                      />
-                                    </div>
-                                  ) : grade?.monthly_exam &&
-                                    grade.monthly_exam.length > 0 ? (
-                                    grade.monthly_exam.length === 2 ? (
-                                      `${
-                                        grade.monthly_exam.reduce(
-                                          (a, b) => a + b,
-                                          0
-                                        ) / 2
-                                      } (${grade.monthly_exam.join(", ")})`
-                                    ) : (
-                                      grade.monthly_exam[0]
-                                    )
-                                  ) : (
-                                    0
-                                  )}
+                                  {grade?.monthly_exam &&
+                                  grade.monthly_exam.length > 0
+                                    ? grade.monthly_exam.length === 2
+                                      ? `${
+                                          grade.monthly_exam.reduce(
+                                            (a, b) => a + b,
+                                            0
+                                          ) / 2
+                                        } (${grade.monthly_exam.join(", ")})`
+                                      : grade.monthly_exam[0]
+                                    : 0}
                                 </td>
                                 <td
                                   className="mobile-grid-cell"
@@ -2516,24 +2681,7 @@ const StudentProfile = () => {
                                     ) + " (5)"
                                   }
                                 >
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="5"
-                                      value={gradeForm.attendance || 0}
-                                      onChange={(e) =>
-                                        setGradeForm({
-                                          ...gradeForm,
-                                          attendance:
-                                            parseFloat(e.target.value) || 0,
-                                        })
-                                      }
-                                      style={{ width: "60px", padding: "4px" }}
-                                    />
-                                  ) : (
-                                    grade?.attendance || 0
-                                  )}
+                                  {grade?.attendance || 0}
                                 </td>
                                 <td
                                   className="mobile-grid-cell"
@@ -2542,24 +2690,7 @@ const StudentProfile = () => {
                                     " (5)"
                                   }
                                 >
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="5"
-                                      value={gradeForm.behaviour || 0}
-                                      onChange={(e) =>
-                                        setGradeForm({
-                                          ...gradeForm,
-                                          behaviour:
-                                            parseFloat(e.target.value) || 0,
-                                        })
-                                      }
-                                      style={{ width: "60px", padding: "4px" }}
-                                    />
-                                  ) : (
-                                    grade?.behaviour || 0
-                                  )}
+                                  {grade?.behaviour || 0}
                                 </td>
                                 <td
                                   className="mobile-grid-cell"
@@ -2570,24 +2701,7 @@ const StudentProfile = () => {
                                     ) + " (60)"
                                   }
                                 >
-                                  {isEditing ? (
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="60"
-                                      value={gradeForm.season_exam || 0}
-                                      onChange={(e) =>
-                                        setGradeForm({
-                                          ...gradeForm,
-                                          season_exam:
-                                            parseFloat(e.target.value) || 0,
-                                        })
-                                      }
-                                      style={{ width: "60px", padding: "4px" }}
-                                    />
-                                  ) : (
-                                    grade?.season_exam || 0
-                                  )}
+                                  {grade?.season_exam || 0}
                                 </td>
                                 <td
                                   className="mobile-grid-cell"
@@ -2609,409 +2723,12 @@ const StudentProfile = () => {
                                     </span>
                                   </div>
                                 </td>
-                                {canEdit && (
-                                  <td
-                                    className="mobile-actions-cell"
-                                    data-label={t(
-                                      "studentProfile.actions",
-                                      "Actions"
-                                    )}
-                                  >
-                                    {isEditing ? (
-                                      <div
-                                        style={{ display: "flex", gap: "8px" }}
-                                      >
-                                        <button
-                                          onClick={() => saveGrade(grade._id)}
-                                          style={{
-                                            padding: "4px 8px",
-                                            background: "#10b981",
-                                            color: "white",
-                                            border: "none",
-                                            borderRadius: "4px",
-                                            cursor: "pointer",
-                                          }}
-                                        >
-                                          <Save size={14} />
-                                        </button>
-                                        <button
-                                          onClick={cancelEditing}
-                                          style={{
-                                            padding: "4px 8px",
-                                            background: "#ef4444",
-                                            color: "white",
-                                            border: "none",
-                                            borderRadius: "4px",
-                                            cursor: "pointer",
-                                          }}
-                                        >
-                                          <X size={14} />
-                                        </button>
-                                      </div>
-                                    ) : grade ? (
-                                      <button
-                                        onClick={() => startEditingGrade(grade)}
-                                        style={{
-                                          padding: "4px 8px",
-                                          background: "#3b82f6",
-                                          color: "white",
-                                          border: "none",
-                                          borderRadius: "4px",
-                                          cursor: "pointer",
-                                        }}
-                                      >
-                                        <Edit size={14} />
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => {
-                                          setEditingGrade(gradeKey);
-                                          setGradeForm({
-                                            season_exam: 0,
-                                            exercises: 0,
-                                            attendance: 0,
-                                            behaviour: 0,
-                                            monthly_exam: [],
-                                            notes: "",
-                                          });
-                                        }}
-                                        style={{
-                                          padding: "4px 8px",
-                                          background: "#10b981",
-                                          color: "white",
-                                          border: "none",
-                                          borderRadius: "4px",
-                                          cursor: "pointer",
-                                        }}
-                                      >
-                                        {t("studentProfile.addGrade", "Add")}
-                                      </button>
-                                    )}
-                                  </td>
-                                )}
                               </tr>
                             );
                           });
                         })
                         .flat();
                     })()}
-                    {editingGrade &&
-                      !grades.find((g) => g._id === editingGrade) &&
-                      (() => {
-                        // Filter seasons to show only Season 1 and Season 2 (by order)
-                        const seasonsToShow = seasons
-                          .filter((s) => {
-                            const order =
-                              s.order ||
-                              (s.nameMultilingual
-                                ? s.nameMultilingual?.en?.includes("1")
-                                  ? 1
-                                  : s.nameMultilingual?.en?.includes("2")
-                                  ? 2
-                                  : null
-                                : null);
-                            return order === 1 || order === 2;
-                          })
-                          .sort((a, b) => (a.order || 0) - (b.order || 0));
-
-                        const [subjectId, ...seasonNameParts] =
-                          editingGrade.split("-");
-                        const seasonName = seasonNameParts.join("-");
-                        const subject = subjects.find(
-                          (s) => (s._id || s) === subjectId
-                        );
-                        const season = seasonsToShow.find((s) => {
-                          const names = [];
-                          if (s.nameMultilingual) {
-                            if (s.nameMultilingual.en)
-                              names.push(s.nameMultilingual.en);
-                            if (s.nameMultilingual.ar)
-                              names.push(s.nameMultilingual.ar);
-                            if (s.nameMultilingual.ku)
-                              names.push(s.nameMultilingual.ku);
-                          } else if (s.name) {
-                            names.push(s.name);
-                          }
-                          return names.includes(seasonName);
-                        });
-
-                        return season ? (
-                          <tr key={`new-${editingGrade}`}>
-                            <td
-                              className="mobile-grid-cell"
-                              data-label={t(
-                                "studentProfile.subject",
-                                "Subject"
-                              )}
-                            >
-                              {getLocalizedText(
-                                subject?.titleMultilingual || subject?.title,
-                                t(
-                                  "studentProfile.unknownSubject",
-                                  "Unknown Subject"
-                                )
-                              )}
-                            </td>
-                            <td
-                              className="mobile-grid-cell"
-                              data-label={t("studentProfile.season", "Season")}
-                            >
-                              {seasonName}
-                            </td>
-                            <td
-                              className="mobile-grid-cell"
-                              data-label={
-                                t("studentProfile.exercises", "Exercises") +
-                                " (10)"
-                              }
-                            >
-                              <input
-                                type="number"
-                                min="0"
-                                max="10"
-                                value={gradeForm.exercises || 0}
-                                onChange={(e) =>
-                                  setGradeForm({
-                                    ...gradeForm,
-                                    exercises: parseFloat(e.target.value) || 0,
-                                  })
-                                }
-                                style={{ width: "60px", padding: "4px" }}
-                              />
-                            </td>
-                            <td
-                              className="mobile-grid-cell"
-                              data-label={
-                                t(
-                                  "studentProfile.monthlyExam",
-                                  "Monthly Exam"
-                                ) + " (20)"
-                              }
-                            >
-                              <div
-                                style={{
-                                  display: "flex",
-                                  gap: "4px",
-                                  alignItems: "center",
-                                }}
-                              >
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="20"
-                                  placeholder={t(
-                                    "studentProfile.monthlyExamPlaceholder1",
-                                    "Exam 1"
-                                  )}
-                                  value={
-                                    Array.isArray(gradeForm.monthly_exam)
-                                      ? gradeForm.monthly_exam[0] || 0
-                                      : 0
-                                  }
-                                  onChange={(e) => {
-                                    const exams = Array.isArray(
-                                      gradeForm.monthly_exam
-                                    )
-                                      ? [...gradeForm.monthly_exam]
-                                      : [];
-                                    exams[0] = parseFloat(e.target.value) || 0;
-                                    setGradeForm({
-                                      ...gradeForm,
-                                      monthly_exam: exams,
-                                    });
-                                  }}
-                                  style={{ width: "60px", padding: "4px" }}
-                                />
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="20"
-                                  placeholder={t(
-                                    "studentProfile.monthlyExamPlaceholder2",
-                                    "Exam 2"
-                                  )}
-                                  value={
-                                    Array.isArray(gradeForm.monthly_exam)
-                                      ? gradeForm.monthly_exam[1] || 0
-                                      : 0
-                                  }
-                                  onChange={(e) => {
-                                    const exams = Array.isArray(
-                                      gradeForm.monthly_exam
-                                    )
-                                      ? [...gradeForm.monthly_exam]
-                                      : [0];
-                                    exams[1] = parseFloat(e.target.value) || 0;
-                                    setGradeForm({
-                                      ...gradeForm,
-                                      monthly_exam: exams,
-                                    });
-                                  }}
-                                  style={{ width: "60px", padding: "4px" }}
-                                />
-                              </div>
-                            </td>
-                            <td
-                              className="mobile-grid-cell"
-                              data-label={
-                                t("studentProfile.attendance", "Attendance") +
-                                " (5)"
-                              }
-                            >
-                              <input
-                                type="number"
-                                min="0"
-                                max="5"
-                                value={gradeForm.attendance || 0}
-                                onChange={(e) =>
-                                  setGradeForm({
-                                    ...gradeForm,
-                                    attendance: parseFloat(e.target.value) || 0,
-                                  })
-                                }
-                                style={{ width: "60px", padding: "4px" }}
-                              />
-                            </td>
-                            <td
-                              className="mobile-grid-cell"
-                              data-label={
-                                t("studentProfile.behaviour", "Behaviour") +
-                                " (5)"
-                              }
-                            >
-                              <input
-                                type="number"
-                                min="0"
-                                max="5"
-                                value={gradeForm.behaviour || 0}
-                                onChange={(e) =>
-                                  setGradeForm({
-                                    ...gradeForm,
-                                    behaviour: parseFloat(e.target.value) || 0,
-                                  })
-                                }
-                                style={{ width: "60px", padding: "4px" }}
-                              />
-                            </td>
-                            <td
-                              className="mobile-grid-cell"
-                              data-label={
-                                t("studentProfile.seasonExam", "Season Exam") +
-                                " (60)"
-                              }
-                            >
-                              <input
-                                type="number"
-                                min="0"
-                                max="60"
-                                value={gradeForm.season_exam || 0}
-                                onChange={(e) =>
-                                  setGradeForm({
-                                    ...gradeForm,
-                                    season_exam:
-                                      parseFloat(e.target.value) || 0,
-                                  })
-                                }
-                                style={{ width: "60px", padding: "4px" }}
-                              />
-                            </td>
-                            <td
-                              className="mobile-grid-cell"
-                              data-label={
-                                t("studentProfile.total", "Total") + " (100)"
-                              }
-                            >
-                              <div className="mobile-badge-wrapper">
-                                <span
-                                  className="grade-badge mobile-block-badge"
-                                  style={{
-                                    backgroundColor: getGradeColor(
-                                      (gradeForm.season_exam || 0) +
-                                        (gradeForm.exercises || 0) +
-                                        (gradeForm.attendance || 0) +
-                                        (gradeForm.behaviour || 0) +
-                                        (Array.isArray(
-                                          gradeForm.monthly_exam
-                                        ) && gradeForm.monthly_exam.length > 0
-                                          ? Math.min(
-                                              gradeForm.monthly_exam.length ===
-                                                2
-                                                ? gradeForm.monthly_exam.reduce(
-                                                    (a, b) => a + b,
-                                                    0
-                                                  ) / 2
-                                                : gradeForm.monthly_exam[0],
-                                              20
-                                            )
-                                          : 0) || 0
-                                    ),
-                                  }}
-                                >
-                                  {Math.min(
-                                    (gradeForm.season_exam || 0) +
-                                      (gradeForm.exercises || 0) +
-                                      (gradeForm.attendance || 0) +
-                                      (gradeForm.behaviour || 0) +
-                                      (Array.isArray(gradeForm.monthly_exam) &&
-                                      gradeForm.monthly_exam.length > 0
-                                        ? Math.min(
-                                            gradeForm.monthly_exam.length === 2
-                                              ? gradeForm.monthly_exam.reduce(
-                                                  (a, b) => a + b,
-                                                  0
-                                                ) / 2
-                                              : gradeForm.monthly_exam[0],
-                                            20
-                                          )
-                                        : 0) || 0,
-                                    100
-                                  )}
-                                </span>
-                              </div>
-                            </td>
-                            {canEdit && (
-                              <td
-                                className="mobile-actions-cell"
-                                data-label={t(
-                                  "studentProfile.actions",
-                                  "Actions"
-                                )}
-                              >
-                                <div style={{ display: "flex", gap: "8px" }}>
-                                  <button
-                                    onClick={() =>
-                                      createGrade(subjectId, seasonName)
-                                    }
-                                    style={{
-                                      padding: "4px 8px",
-                                      background: "#10b981",
-                                      color: "white",
-                                      border: "none",
-                                      borderRadius: "4px",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <Save size={14} />
-                                  </button>
-                                  <button
-                                    onClick={cancelEditing}
-                                    style={{
-                                      padding: "4px 8px",
-                                      background: "#ef4444",
-                                      color: "white",
-                                      border: "none",
-                                      borderRadius: "4px",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </div>
-                              </td>
-                            )}
-                          </tr>
-                        ) : null;
-                      })()}
                   </tbody>
                 </table>
                 {isMobile && gradeSubjects.length > 1 && (
@@ -4363,6 +4080,59 @@ const StudentProfile = () => {
         }
 
         .ratings-table tbody tr:hover {
+          background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
+          transform: scale(1.01);
+        }
+
+        .homeworks-table-container {
+          overflow-x: auto;
+          margin-top: 20px;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .homeworks-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9375rem;
+          background: white;
+        }
+
+        .homeworks-table th {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          padding: 16px;
+          text-align: center;
+          font-weight: 700;
+          color: #1e293b;
+          border-bottom: 2px solid #e2e8f0;
+          white-space: normal;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          font-size: 0.875rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+        }
+
+        .homeworks-table td {
+          padding: 16px;
+          border-bottom: 1px solid #f1f5f9;
+          color: #475569;
+          font-weight: 500;
+          text-align: center;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          white-space: normal;
+          max-width: 0;
+        }
+
+        .homeworks-table tr {
+          transition: all 0.2s ease;
+        }
+
+        .homeworks-table tbody tr:hover {
           background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
           transform: scale(1.01);
         }

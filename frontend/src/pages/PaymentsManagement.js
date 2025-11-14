@@ -1,148 +1,101 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTranslation } from "../contexts/TranslationContext";
+import { useToast } from "../contexts/ToastContext";
 import { studentsAPI } from "../services/api";
-import {
-  DollarSign,
-  Search,
-  Filter,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-} from "lucide-react";
+import { DollarSign, CheckCircle, XCircle, Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 import "./PaymentsManagement.css";
 
 const PaymentsManagement = () => {
-  const { isAdmin, isTeacher } = useAuth();
+  const { isAdmin } = useAuth();
+  const { t, currentLanguage } = useTranslation();
+  const { error: showError } = useToast();
+
+  // Helper function to get localized text
+  const getLocalizedText = (value, fallback = "") => {
+    if (!value) return fallback;
+    if (typeof value === "string") return value;
+
+    if (typeof value === "object") {
+      const directMatch =
+        value[currentLanguage] || value.en || value.ar || value.ku;
+      if (directMatch) return directMatch;
+    }
+
+    return fallback;
+  };
+
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [paymentFilter, setPaymentFilter] = useState("all");
-  const hasPermission = isAdmin || isTeacher;
+
+  // Ensure students is always an array (defensive check)
+  const safeStudents = Array.isArray(students) ? students : [];
 
   useEffect(() => {
-    if (hasPermission) {
-      fetchStudents();
+    if (isAdmin) {
+      fetchData();
     }
-  }, [hasPermission]);
+  }, [isAdmin]);
 
-  const fetchStudents = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await studentsAPI.getAll();
-      setStudents(response.data);
+      const studentsRes = await studentsAPI.getAll();
+
+      // Handle students - check various possible response formats
+      let studentsData = [];
+      if (Array.isArray(studentsRes?.data)) {
+        studentsData = studentsRes.data;
+      } else if (
+        studentsRes?.data?.data &&
+        Array.isArray(studentsRes.data.data)
+      ) {
+        studentsData = studentsRes.data.data;
+      } else if (Array.isArray(studentsRes)) {
+        studentsData = studentsRes;
+      }
+
+      setStudents(studentsData);
     } catch (error) {
-      console.error("Error fetching students:", error);
-      setError("Failed to load students");
+      console.error("Error fetching data:", error);
+      setError("Failed to load data");
+      showError("Failed to load payment data");
+      setStudents([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePaymentStatusUpdate = async (studentId, newStatus) => {
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
     try {
-      const student = students.find((s) => s._id === studentId);
-      if (!student) return;
-
-      const updatedStudent = {
-        ...student,
-        paymentStatus: newStatus,
-      };
-
-      await studentsAPI.update(studentId, updatedStudent);
-
-      // Update local state
-      setStudents(
-        students.map((s) =>
-          s._id === studentId ? { ...s, paymentStatus: newStatus } : s
-        )
-      );
-    } catch (error) {
-      console.error("Error updating payment status:", error);
-      setError("Failed to update payment status");
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, "0");
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return "-";
     }
   };
 
-  const handleBulkUpdate = async (status) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to mark all filtered students as ${status}?`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const filteredStudents = getFilteredStudents();
-      const updatePromises = filteredStudents
-        .filter((student) => student.paymentStatus !== status)
-        .map((student) =>
-          studentsAPI.update(student._id, { ...student, paymentStatus: status })
-        );
-
-      await Promise.all(updatePromises);
-      fetchStudents();
-    } catch (error) {
-      console.error("Error updating payment statuses:", error);
-      setError("Failed to update payment statuses");
-    }
+  const getPaymentStatus = (student) => {
+    const first = student.firstPayment ? (
+      <CheckCircle size={16} className="status-icon paid" />
+    ) : (
+      <XCircle size={16} className="status-icon unpaid" />
+    );
+    const second = student.secondPayment ? (
+      <CheckCircle size={16} className="status-icon paid" />
+    ) : (
+      <XCircle size={16} className="status-icon unpaid" />
+    );
+    return { first, second };
   };
 
-  const getFilteredStudents = () => {
-    return students.filter((student) => {
-      const matchesSearch =
-        student.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (student.studentNumber &&
-          student.studentNumber
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()));
-      const matchesFilter =
-        paymentFilter === "all" || student.paymentStatus === paymentFilter;
-      return matchesSearch && matchesFilter;
-    });
-  };
-
-  const getPaymentStats = () => {
-    const total = students.length;
-    const paid = students.filter((s) => s.paymentStatus === "Paid").length;
-    const unpaid = students.filter((s) => s.paymentStatus === "Unpaid").length;
-    const partial = students.filter(
-      (s) => s.paymentStatus === "Partial"
-    ).length;
-
-    return { total, paid, unpaid, partial };
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "Paid":
-        return <CheckCircle size={16} className="status-icon paid" />;
-      case "Unpaid":
-        return <XCircle size={16} className="status-icon unpaid" />;
-      case "Partial":
-        return <AlertCircle size={16} className="status-icon partial" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Paid":
-        return "paid";
-      case "Unpaid":
-        return "unpaid";
-      case "Partial":
-        return "partial";
-      default:
-        return "";
-    }
-  };
-
-  const stats = getPaymentStats();
-  const filteredStudents = getFilteredStudents();
-
-  if (!hasPermission) {
+  if (!isAdmin) {
     return (
       <div className="payments-container">
         <div className="error-message">
@@ -170,8 +123,35 @@ const PaymentsManagement = () => {
         <div className="header-content">
           <h1>
             <DollarSign size={32} />
-            Payment Management
+            {t("nav.payments", "Payment Management")}
           </h1>
+          <Link
+            to="/admin/payments/update"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "12px 24px",
+              background: "linear-gradient(135deg, #10b981, #047857)",
+              color: "white",
+              textDecoration: "none",
+              borderRadius: "8px",
+              fontWeight: "600",
+              transition: "all 0.2s ease",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow =
+                "0 8px 25px rgba(16, 185, 129, 0.3)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <Plus size={20} />
+            {t("admin.updatePayment", "Update Payment")}
+          </Link>
         </div>
       </div>
 
@@ -182,152 +162,137 @@ const PaymentsManagement = () => {
         </div>
       )}
 
-      <div className="payment-stats">
-        <div className="stat-card total">
-          <div className="stat-icon">
-            <DollarSign size={24} />
+      <div className="payment-summary-section">
+        <h2>Payment Summary</h2>
+        <div className="summary-stats">
+          <div className="stat-card">
+            <div className="stat-label">Total Students</div>
+            <div className="stat-value">{safeStudents.length}</div>
           </div>
-          <div className="stat-content">
-            <h3>{stats.total}</h3>
-            <p>Total Students</p>
-          </div>
-        </div>
-        <div className="stat-card paid">
-          <div className="stat-icon">
-            <CheckCircle size={24} />
-          </div>
-          <div className="stat-content">
-            <h3>{stats.paid}</h3>
-            <p>Paid</p>
-          </div>
-        </div>
-        <div className="stat-card partial">
-          <div className="stat-icon">
-            <AlertCircle size={24} />
-          </div>
-          <div className="stat-content">
-            <h3>{stats.partial}</h3>
-            <p>Partial</p>
-          </div>
-        </div>
-        <div className="stat-card unpaid">
-          <div className="stat-icon">
-            <XCircle size={24} />
-          </div>
-          <div className="stat-content">
-            <h3>{stats.unpaid}</h3>
-            <p>Unpaid</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="payments-controls">
-        <div className="search-bar">
-          <Search size={20} />
-          <input
-            type="text"
-            placeholder="Search students..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="filters">
-          <Filter size={20} />
-          <select
-            value={paymentFilter}
-            onChange={(e) => setPaymentFilter(e.target.value)}
-            className="filter-select"
-          >
-            <option value="all">All Status</option>
-            <option value="Paid">Paid</option>
-            <option value="Partial">Partial</option>
-            <option value="Unpaid">Unpaid</option>
-          </select>
-        </div>
-        <div className="bulk-actions">
-          <button
-            onClick={() => handleBulkUpdate("Paid")}
-            className="bulk-btn paid"
-            disabled={filteredStudents.length === 0}
-          >
-            Mark All as Paid
-          </button>
-          <button
-            onClick={() => handleBulkUpdate("Unpaid")}
-            className="bulk-btn unpaid"
-            disabled={filteredStudents.length === 0}
-          >
-            Mark All as Unpaid
-          </button>
-        </div>
-      </div>
-
-      <div className="students-table">
-        <div className="table-header">
-          <div className="col-name">Student Name</div>
-          <div className="col-id">Student ID</div>
-          <div className="col-class">Class</div>
-          <div className="col-status">Payment Status</div>
-          <div className="col-actions">Actions</div>
-        </div>
-        <div className="table-body">
-          {filteredStudents.length === 0 ? (
-            <div className="empty-state">
-              <DollarSign size={48} />
-              <h3>No students found</h3>
-              <p>
-                {searchTerm || paymentFilter !== "all"
-                  ? "No students match your current filters."
-                  : "No students have been registered yet."}
-              </p>
+          <div className="stat-card">
+            <div className="stat-label">First Payment Paid</div>
+            <div className="stat-value">
+              {Array.isArray(safeStudents)
+                ? safeStudents.filter((s) => s.firstPayment).length
+                : 0}
             </div>
-          ) : (
-            filteredStudents.map((student) => (
-              <div key={student._id} className="table-row">
-                <div className="col-name">
-                  <div className="student-info">
-                    <div className="student-avatar">
-                      {student.photo ? (
-                        <img src={student.photo} alt={student.fullName} />
-                      ) : (
-                        <div className="avatar-placeholder">
-                          {student.fullName.charAt(0).toUpperCase()}
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Second Payment Paid</div>
+            <div className="stat-value">
+              {Array.isArray(safeStudents)
+                ? safeStudents.filter((s) => s.secondPayment).length
+                : 0}
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Both Payments Paid</div>
+            <div className="stat-value">
+              {Array.isArray(safeStudents)
+                ? safeStudents.filter((s) => s.firstPayment && s.secondPayment)
+                    .length
+                : 0}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="students-payment-table">
+        <h2>Students Payment Status</h2>
+        <div className="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("admin.studentName", "Student Name")}</th>
+                <th>{t("admin.class", "Class")}</th>
+                <th>{t("admin.branch", "Branch")}</th>
+                <th>{t("admin.firstPayment", "First Payment")}</th>
+                <th>{t("admin.secondPayment", "Second Payment")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!Array.isArray(safeStudents) || safeStudents.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="empty-state">
+                    No students found
+                  </td>
+                </tr>
+              ) : (
+                safeStudents.map((student) => {
+                  const status = getPaymentStatus(student);
+                  return (
+                    <tr key={student._id}>
+                      <td>{student.fullName}</td>
+                      <td>
+                        {getLocalizedText(
+                          student.class?.nameMultilingual || student.class?.name
+                        )}
+                      </td>
+                      <td>
+                        {(() => {
+                          // Find branch in class.branches array
+                          if (student.class?.branches && student.branchID) {
+                            const branchIdStr =
+                              typeof student.branchID === "object"
+                                ? student.branchID?._id?.toString()
+                                : student.branchID?.toString();
+                            const branch = student.class.branches.find(
+                              (b) =>
+                                (b._id?.toString() || b._id) === branchIdStr
+                            );
+                            if (branch) {
+                              return getLocalizedText(
+                                branch.nameMultilingual || branch.name
+                              );
+                            }
+                          }
+                          return "-";
+                        })()}
+                      </td>
+                      <td className="status-cell">
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          {status.first}
+                          {student.firstPayment && (
+                            <span
+                              style={{ fontSize: "0.75rem", color: "#64748b" }}
+                            >
+                              {formatDate(student.firstPaymentDate)}
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <span className="student-name">{student.fullName}</span>
-                  </div>
-                </div>
-                <div className="col-id">{student.studentNumber || "No ID"}</div>
-                <div className="col-class">
-                  {student.class?.name?.en || student.class?.name || "No Class"}
-                </div>
-                <div className="col-status">
-                  <div
-                    className={`payment-status ${getStatusColor(
-                      student.paymentStatus
-                    )}`}
-                  >
-                    {getStatusIcon(student.paymentStatus)}
-                    <span>{student.paymentStatus}</span>
-                  </div>
-                </div>
-                <div className="col-actions">
-                  <select
-                    value={student.paymentStatus}
-                    onChange={(e) =>
-                      handlePaymentStatusUpdate(student._id, e.target.value)
-                    }
-                    className="status-select"
-                  >
-                    <option value="Paid">Paid</option>
-                    <option value="Partial">Partial</option>
-                    <option value="Unpaid">Unpaid</option>
-                  </select>
-                </div>
-              </div>
-            ))
-          )}
+                      </td>
+                      <td className="status-cell">
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          {status.second}
+                          {student.secondPayment && (
+                            <span
+                              style={{ fontSize: "0.75rem", color: "#64748b" }}
+                            >
+                              {formatDate(student.secondPaymentDate)}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

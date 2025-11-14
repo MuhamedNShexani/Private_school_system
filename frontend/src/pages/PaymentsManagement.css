@@ -428,6 +428,213 @@
   margin: 0;
 }
 
+/* Payment Form Section */
+.payment-form-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.payment-form-section h2 {
+  color: #1e293b;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.form-group label svg {
+  color: #6366f1;
+}
+
+.form-group select,
+.form-group input[type="date"] {
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  background: white;
+  transition: border-color 0.3s ease;
+  color: #1e293b;
+}
+
+.form-group select:focus,
+.form-group input[type="date"]:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+.form-group select:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.submit-btn {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+/* Payment Summary Section */
+.payment-summary-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+.payment-summary-section h2 {
+  color: #1e293b;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.summary-stats .stat-card {
+  text-align: center;
+  padding: 24px;
+}
+
+.summary-stats .stat-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.summary-stats .stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Students Payment Table */
+.students-payment-table {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  padding: 30px;
+  overflow: hidden;
+}
+
+.students-payment-table h2 {
+  color: #1e293b;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.students-payment-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.students-payment-table thead {
+  background: #f8fafc;
+}
+
+.students-payment-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.students-payment-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #64748b;
+}
+
+.students-payment-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.students-payment-table .status-cell {
+  text-align: center;
+}
+
+.students-payment-table .status-cell svg {
+  vertical-align: middle;
+}
+
+.students-payment-table .empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}
+
 @media (max-width: 768px) {
   .payments-container {
     padding: 16px;
@@ -485,5 +692,28 @@
   
   .col-actions {
     order: 5;
+  }
+
+  .payment-form-section,
+  .payment-summary-section,
+  .students-payment-table {
+    padding: 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .students-payment-table table {
+    font-size: 0.9rem;
+  }
+
+  .students-payment-table th,
+  .students-payment-table td {
+    padding: 12px 8px;
   }
 }
