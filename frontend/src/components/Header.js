@@ -226,6 +226,51 @@ const Header = ({ children }) => {
           : {}
       }
     >
+      {/* Mobile Top Navbar */}
+      <header className="mobile-top-navbar">
+        <Link to="/" className="mobile-logo">
+          <img src="/logo.jpg" alt="School Logo" className="mobile-logo-img" />
+          <span className="mobile-school-name">
+            {t("app.schoolName", "CLEVER PRIVATE HIGH SCHOOL")}
+          </span>
+        </Link>
+        <div className="mobile-nav-actions">
+          {/* Language Switcher */}
+          <div className="mobile-language-switcher" ref={languageDropdownRef}>
+            <button
+              className="mobile-language-badge"
+              onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+              title="Change Language"
+            >
+              {languages.find((l) => l.code === currentLanguage)?.flag}
+            </button>
+            {isLanguageDropdownOpen && (
+              <div className="mobile-language-dropdown">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    className={`mobile-language-item ${
+                      lang.code === currentLanguage ? "active" : ""
+                    }`}
+                    onClick={() => {
+                      changeLanguage(lang.code);
+                      setIsLanguageDropdownOpen(false);
+                    }}
+                  >
+                    <span className="lang-flag">{lang.flag}</span>
+                    <span className="lang-name">{lang.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Logout Button */}
+          <button onClick={handleLogout} className="mobile-logout-btn">
+            <LogOut size={18} />
+          </button>
+        </div>
+      </header>
+
       {/* Vertical Sidebar */}
       <aside ref={sidebarRef} className="sidebar">
         {/* School Logo - Top */}

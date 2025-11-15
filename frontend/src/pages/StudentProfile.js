@@ -382,6 +382,7 @@ const StudentProfile = () => {
               Array.isArray(homeworksData) ? homeworksData : []
             );
           } catch (err) {
+            console.error("Error fetching student homeworks:", err);
             setStudentHomeworks([]);
           }
 

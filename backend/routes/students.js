@@ -211,15 +211,25 @@ router.get("/:id/homeworks", verifyToken, getCurrentUser, async (req, res) => {
 
     // Check if user is the student themselves, or admin/teacher
     const user = req.user;
-    if (
-      user.role === "Student" &&
-      user.studentProfile?._id?.toString() !== studentId
-    ) {
-      return sendResponse(res, 403, false, "Access denied");
+    if (user.role === "Student") {
+      // Find the Student document by username to get the student's _id
+      const student = await Student.findOne({ username: user.username });
+      if (!student) {
+        return sendResponse(res, 404, false, "Student profile not found");
+      }
+      // Compare student's _id with the requested studentId
+      if (student._id.toString() !== studentId.toString()) {
+        return sendResponse(res, 403, false, "Access denied");
+      }
     }
 
+    // Convert studentId to ObjectId for query
+    const studentObjectId = mongoose.Types.ObjectId.isValid(studentId)
+      ? new mongoose.Types.ObjectId(studentId)
+      : studentId;
+
     const homeworks = await Homework.find({
-      assignedStudents: studentId,
+      assignedStudents: studentObjectId,
     })
       .populate("subjectId", "titles")
       .sort({ date: -1, createdAt: -1 });

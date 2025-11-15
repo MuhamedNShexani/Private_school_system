@@ -807,64 +807,242 @@
   }
 }
 
-@media (max-width: 768px) {
-  .sidebar {
+/* Mobile Top Navbar */
+.mobile-top-navbar {
+  display: none;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
     width: 100%;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.mobile-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #1e293b;
+  font-weight: 700;
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-logo-img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 6px;
+  flex-shrink: 0;
   }
 
-  .sidebar.open {
-    transform: translateX(0);
+.mobile-school-name {
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.mobile-language-switcher {
+  position: relative;
   }
 
-  .sidebar-layout.rtl .sidebar {
-    transform: translateX(100%);
+.mobile-language-badge {
+  font-size: 1.3rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #f3f4f6;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.mobile-language-badge:hover {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  transform: scale(1.05);
   }
 
-  .sidebar-layout.rtl .sidebar.open {
-    transform: translateX(0);
+.mobile-language-dropdown {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  min-width: 160px;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
+/* RTL Support for Mobile Navbar */
+[dir="rtl"] .mobile-language-dropdown {
+  right: auto;
+  left: 0;
+}
+
+[dir="rtl"] .mobile-language-item {
+  text-align: right;
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .mobile-language-item .lang-flag {
+  order: 2;
+  flex-shrink: 0;
   }
 
-  [dir="rtl"] .sidebar-layout .sidebar {
-    transform: translateX(100%);
+[dir="rtl"] .mobile-language-item .lang-name {
+  order: 1;
+  flex: 1;
+}
+
+.mobile-language-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.mobile-language-item:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.mobile-language-item.active {
+  background-color: #dbeafe;
+  color: #0284c7;
+  font-weight: 600;
+}
+
+.mobile-language-item .lang-flag {
+  font-size: 1.1rem;
+}
+
+.mobile-language-item .lang-name {
+  flex: 1;
+}
+
+.mobile-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.mobile-logout-btn:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #f87171 100%);
+  color: #b91c1c;
+  border-color: #f87171;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+@media (max-width: 768px) {
+  /* Show mobile navbar, hide sidebar */
+  .mobile-top-navbar {
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 1000 !important;
   }
 
-  [dir="rtl"] .sidebar-layout .sidebar.open {
-    transform: translateX(0);
+  .sidebar {
+    display: none !important;
+    width: 0 !important;
+  }
+
+  .sidebar-layout {
+    flex-direction: column !important;
   }
 
   .main-content {
-    margin-left: 0;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    padding-top: 60px !important;
   }
 
   .sidebar-layout.rtl .main-content {
-    margin-right: 0;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
   }
 
   [dir="rtl"] .sidebar-layout .main-content {
-    margin-right: 0;
-  }
-
-  .sidebar-header {
-    padding: 16px;
-  }
-
-  .logo {
-    font-size: 1.1rem;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
   }
 
   .top-bar {
-    padding: 12px 16px;
+    display: none !important;
   }
 
-  .account-dropdown {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
-    min-width: 280px;
+  .page-content {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Account for fixed navbar height */
+  .sidebar-layout {
+    padding-top: 60px !important;
+  }
+
+  /* Ensure no left spacing from sidebar */
+  .sidebar-layout,
+  .sidebar-layout.rtl,
+  [dir="rtl"] .sidebar-layout {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   .student-top-bar {
@@ -893,37 +1071,43 @@
 }
 
 @media (max-width: 480px) {
-  .sidebar-header {
-    padding: 12px;
+  .mobile-top-navbar {
+    padding: 10px 12px;
   }
 
-  .logo {
-    font-size: 1rem;
+  .mobile-logo-img {
+    width: 32px;
+    height: 32px;
   }
 
-  .logo span {
-    display: none;
+  .mobile-school-name {
+    font-size: 0.8rem;
   }
 
-  .top-bar {
-    padding: 8px 12px;
+  .mobile-language-badge {
+    width: 32px;
+    height: 32px;
+    font-size: 1.2rem;
   }
 
-  .account-trigger {
-    padding: 6px 8px;
+  .mobile-logout-btn {
+    width: 32px;
+    height: 32px;
   }
 
-  .account-avatar {
-    width: 28px;
-    height: 28px;
+  .mobile-logout-btn svg {
+    width: 16px;
+    height: 16px;
   }
 
-  .nav-link {
-    padding: 12px 16px;
+  .mobile-language-dropdown {
+    top: 40px;
+    min-width: 140px;
   }
 
-  .nav-link span {
-    font-size: 13px;
+  .mobile-language-item {
+    padding: 8px 10px;
+    font-size: 12px;
   }
 
   .student-logo span {
@@ -971,4 +1155,31 @@
 .sidebar-layout .main-content {
   margin-left: 280px !important;
   margin-right: 0 !important;
+}
+
+/* Override for mobile - sidebar must be hidden */
+@media (max-width: 768px) {
+  .sidebar-layout .sidebar {
+    display: none !important;
+    width: 0 !important;
+    left: -100% !important;
+  }
+
+  .sidebar-layout .main-content {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
+
+  [dir="rtl"] .sidebar-layout .sidebar {
+    display: none !important;
+    width: 0 !important;
+    right: -100% !important;
+  }
+
+  [dir="rtl"] .sidebar-layout .main-content {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+  }
 }

@@ -301,6 +301,24 @@ export const analyticsAPI = {
     api.get(`/analytics/student-progress/${studentId}`, {
       params: { timeRange },
     }),
+  getRateChangesDates: (classId) =>
+    api.get("/analytics/rate-changes/dates", {
+      params: { classId },
+    }),
+  getRateChanges: (classId, date) =>
+    api.get("/analytics/rate-changes", {
+      params: { classId, date },
+    }),
+  getTopStudents: () => api.get("/analytics/top-students"),
+  getWorstStudents: () => api.get("/analytics/worst-students"),
+  getPassRate: (classId, season) =>
+    api.get("/analytics/pass-rate", {
+      params: { classId, season },
+    }),
+  getPassRateByGrade: (season) =>
+    api.get("/analytics/pass-rate-by-grade", {
+      params: { season },
+    }),
 };
 
 // Authentication API

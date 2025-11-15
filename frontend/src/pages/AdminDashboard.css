@@ -2,6 +2,9 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .dashboard-header {
@@ -239,6 +242,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chart-card {
@@ -246,6 +251,21 @@
   border-radius: 12px;
   padding: 20px;
   border: 1px solid #e2e8f0;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 24px;
+}
+
+/* Desktop: Ensure Student Performance by Class maintains original height */
+@media (min-width: 769px) {
+  .student-performance-report .recharts-responsive-container {
+    height: 300px !important;
+  }
+
+  .student-performance-report .recharts-wrapper,
+  .student-performance-report .recharts-surface {
+    height: 300px !important;
+  }
 }
 
 .chart-card h3 {
@@ -315,22 +335,587 @@
 
 @media (max-width: 768px) {
   .dashboard-container {
-    padding: 16px;
+    padding: 8px;
+    max-width: 100vw;
+    width: 100vw;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  .dashboard-header {
+    margin-bottom: 16px;
+    padding: 0 4px;
   }
 
   .dashboard-header h1 {
-    font-size: 2rem;
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+
+  .dashboard-header p {
+    font-size: 0.85rem;
+    line-height: 1.4;
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+
+  .stat-card {
+    padding: 12px;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .stat-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .stat-value {
+    font-size: 1.2rem;
+    line-height: 1.2;
+  }
+
+  .stat-title {
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  .stat-description {
+    font-size: 0.7rem;
+    line-height: 1.2;
   }
 
   .action-buttons {
     grid-template-columns: 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .analytics-section {
+    padding: 12px;
+    margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .analytics-section h2 {
+    font-size: 1.15rem;
+    margin-bottom: 14px;
+    line-height: 1.3;
   }
 
   .analytics-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .chart-card {
+    padding: 14px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 20px;
+    overflow-x: hidden;
+  }
+
+  .chart-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .chart-card h2 {
+    font-size: 1rem;
+    margin-bottom: 14px;
+    line-height: 1.3;
+  }
+
+  .recent-activity {
+    padding: 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .recent-activity h2 {
+    font-size: 1.15rem;
+    margin-bottom: 14px;
+    line-height: 1.3;
+  }
+
+  .activity-item {
+    padding: 10px;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .activity-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .activity-content {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .activity-content p {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    word-wrap: break-word;
+  }
+
+  /* Table responsiveness */
+  .chart-card table {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 0.8rem;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chart-card table thead,
+  .chart-card table tbody {
+    display: table;
+    width: 100%;
+    table-layout: auto;
+  }
+
+  table th,
+  table td {
+    padding: 8px 4px !important;
+    font-size: 0.75rem !important;
+    white-space: nowrap;
+    min-width: 60px;
+  }
+
+  /* Filter controls - stack vertically on mobile */
+  .filter-controls {
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .filter-controls > div {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+  }
+
+  .filter-controls label {
+    font-size: 0.875rem !important;
+  }
+
+  /* Select and input elements */
+  .chart-card select,
+  .chart-card input {
+    font-size: 14px !important;
+    padding: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Date navigation container */
+  .date-navigation {
+    padding: 8px 6px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .date-navigation > div {
+    font-size: 0.875rem !important;
+  }
+
+  /* Date/Class navigation buttons */
+  .chart-card button {
+    padding: 8px !important;
+    min-width: 40px !important;
+    flex-shrink: 0;
+  }
+
+  /* Class navigation container */
+  .chart-card
+    > div[style*="display: flex"][style*="align-items: center"][style*="border: 1px solid"] {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ResponsiveContainer adjustments - make charts smaller on mobile */
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: 180px !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Override inline height styles for ResponsiveContainer */
+  .chart-card .recharts-wrapper {
+    height: 180px !important;
+  }
+
+  .chart-card .recharts-surface {
+    height: 180px !important;
+  }
+
+  /* Performance table adjustments */
+  .chart-card > div[style*="marginTop"] table {
+    width: 100% !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Best/Worst performing cards */
+  .performance-cards {
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .performance-cards > div {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Student Performance by Class - Override general chart rules for 768px */
+  .student-performance-report .recharts-responsive-container {
+    height: 250px !important;
+  }
+
+  .student-performance-report .recharts-wrapper,
+  .student-performance-report .recharts-surface {
+    height: 250px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 6px;
+    max-width: 100vw;
+    width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  .dashboard-header {
+    padding: 0 2px;
+    margin-bottom: 12px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+  }
+
+  .dashboard-header p {
+    font-size: 0.8rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+    width: 100%;
+  }
+
+  .stat-card {
+    padding: 10px;
+    gap: 8px;
+    flex-direction: row;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  .stat-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  .stat-value {
+    font-size: 1.1rem;
+  }
+
+  .stat-title {
+    font-size: 0.75rem;
+  }
+
+  .stat-description {
+    font-size: 0.65rem;
+  }
+
+  .analytics-section {
+    padding: 10px;
+    margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .analytics-section h2 {
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+  }
+
+  .analytics-grid {
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .chart-card {
+    padding: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 16px;
+    overflow-x: hidden;
+  }
+
+  .chart-card h3 {
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+  }
+
+  .chart-card h2 {
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+  }
+
+  .recent-activity {
+    padding: 12px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .recent-activity h2 {
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+  }
+
+  table {
+    font-size: 0.7rem;
+    width: 100% !important;
+  }
+
+  table th,
+  table td {
+    padding: 6px 3px !important;
+    font-size: 0.7rem !important;
+  }
+
+  .recharts-responsive-container {
+    height: 150px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Override inline height styles for ResponsiveContainer on small phones */
+  .chart-card .recharts-wrapper {
+    height: 150px !important;
+  }
+
+  .chart-card .recharts-surface {
+    height: 150px !important;
+  }
+
+  .filter-controls {
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .filter-controls label {
+    font-size: 0.8rem !important;
+  }
+
+  .chart-card select,
+  .chart-card input {
+    font-size: 13px !important;
+    padding: 8px !important;
+    width: 100% !important;
+  }
+
+  .date-navigation {
+    padding: 6px 4px !important;
+    width: 100% !important;
+  }
+
+  .date-navigation > div {
+    font-size: 0.8rem !important;
+  }
+
+  .chart-card button {
+    padding: 6px !important;
+    min-width: 36px !important;
+  }
+
+  .activity-item {
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .activity-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .activity-content {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .activity-content p {
+    font-size: 0.8rem;
+  }
+
+  /* Stack best/worst performing class cards */
+  .performance-cards {
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .performance-cards > div {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Pass Rate by Grade - Mobile Optimizations for 480px */
+  .pass-rate-grade-report {
+    padding: 10px !important;
+  }
+
+  .pass-rate-grade-report .recharts-responsive-container {
+    height: 220px !important;
+  }
+
+  .pass-rate-grade-report .recharts-wrapper,
+  .pass-rate-grade-report .recharts-surface {
+    height: 220px !important;
+  }
+
+  .pass-rate-grade-report .recharts-legend-wrapper {
+    padding-top: 8px !important;
+    font-size: 0.7rem !important;
+  }
+
+  /* Pass Rate by Subject - Mobile Optimizations for 480px */
+  .pass-rate-subject-report {
+    padding: 10px !important;
+  }
+
+  .pass-rate-subject-report .recharts-responsive-container {
+    height: 220px !important;
+  }
+
+  .pass-rate-subject-report .recharts-wrapper,
+  .pass-rate-subject-report .recharts-surface {
+    height: 220px !important;
+  }
+
+  .pass-rate-subject-report .recharts-xAxis {
+    font-size: 9px !important;
+  }
+
+  .pass-rate-subject-report .recharts-xAxis .recharts-label {
+    font-size: 9px !important;
+  }
+
+  .pass-rate-subject-report .recharts-legend-wrapper {
+    padding-top: 8px !important;
+    font-size: 0.7rem !important;
+  }
+
+  /* Student Performance by Class - Mobile Optimizations for 480px */
+  .student-performance-report {
+    padding: 10px !important;
+  }
+
+  .student-performance-report .recharts-responsive-container {
+    height: 220px !important;
+  }
+
+  .student-performance-report .recharts-wrapper,
+  .student-performance-report .recharts-surface {
+    height: 220px !important;
+  }
+
+  .student-performance-report .recharts-xAxis {
+    font-size: 9px !important;
+  }
+
+  .student-performance-report .recharts-xAxis .recharts-label {
+    font-size: 9px !important;
+  }
+
+  /* Performance table - make it scrollable on mobile */
+  .student-performance-report table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    font-size: 0.7rem !important;
+  }
+
+  .student-performance-report table thead,
+  .student-performance-report table tbody {
+    display: table !important;
+    width: 100% !important;
+    min-width: 500px !important;
+  }
+
+  .student-performance-report table th,
+  .student-performance-report table td {
+    padding: 6px 4px !important;
+    font-size: 0.7rem !important;
+    white-space: nowrap !important;
+  }
+
+  /* Best/Worst performing cards - better mobile styling for 480px */
+  .student-performance-report .performance-cards > div {
+    padding: 10px !important;
+    font-size: 0.85rem !important;
+  }
+
+  .student-performance-report .performance-cards > div > div:first-child {
+    font-size: 0.8rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .student-performance-report .performance-cards > div > div:nth-child(2) {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 3px !important;
+  }
+
+  .student-performance-report .performance-cards > div > div:nth-child(n + 3) {
+    font-size: 0.75rem !important;
+    margin-top: 3px !important;
   }
 }

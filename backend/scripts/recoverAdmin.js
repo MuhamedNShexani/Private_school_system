@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
 
 // Load environment variables
 dotenv.config();
@@ -21,23 +20,38 @@ mongoose
 // Function to recover admin user
 async function recoverAdmin() {
   try {
-    // Check if admin user already exists
-    const existingAdmin = await User.findOne({ role: "Admin" });
+    // Check if admin user already exists with the correct email
+    const existingAdmin = await User.findOne({
+      $or: [{ email: "admin@platform.com" }, { role: "Admin" }],
+    });
+
     if (existingAdmin) {
-      console.log("Admin user already exists:", existingAdmin.username);
-      return;
+      if (existingAdmin.email === "admin@platform.com") {
+        console.log(
+          "Admin user already exists with email:",
+          existingAdmin.email
+        );
+        console.log(
+          "If you need to reset the password, delete the user first."
+        );
+        return;
+      } else {
+        console.log(
+          "Found existing admin with different email:",
+          existingAdmin.email
+        );
+        console.log("Creating new admin with admin@platform.com...");
+      }
     }
 
-    // Hash the admin password
-    const hashedPassword = await bcrypt.hash("admin123", 12);
-
-    // Create admin user
+    // Create admin user (password will be hashed by User model's pre-save hook)
     const adminUser = new User({
-      firstName: "Admin",
-      lastName: "User",
-      email: "admin@school.com",
-      password: hashedPassword,
+      firstName: "System",
+      lastName: "Administrator",
+      email: "admin@platform.com",
+      password: "admin123", // Will be automatically hashed by pre-save hook
       role: "Admin",
+      isActive: true,
       adminProfile: {
         permissions: [
           "manage_users",
@@ -47,13 +61,12 @@ async function recoverAdmin() {
           "manage_chapters",
           "view_analytics",
         ],
-        department: "Administration",
       },
     });
 
     const savedAdmin = await adminUser.save();
     console.log("Admin user recovered successfully!");
-    console.log("Email: admin@school.com");
+    console.log("Email: admin@platform.com");
     console.log("Password: admin123");
     console.log("Role: Admin");
     console.log("Admin ID:", savedAdmin._id);
