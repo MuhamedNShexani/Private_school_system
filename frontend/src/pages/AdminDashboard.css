@@ -558,22 +558,24 @@
     box-sizing: border-box !important;
   }
 
-  /* ResponsiveContainer adjustments - make charts smaller on mobile */
+  /* ResponsiveContainer adjustments - make charts appropriately sized on mobile */
   .recharts-responsive-container {
     width: 100% !important;
-    height: 180px !important;
+    height: 280px !important;
     max-width: 100% !important;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible !important;
   }
 
   /* Override inline height styles for ResponsiveContainer */
   .chart-card .recharts-wrapper {
-    height: 180px !important;
+    height: 280px !important;
+    overflow: visible !important;
   }
 
   .chart-card .recharts-surface {
-    height: 180px !important;
+    height: 280px !important;
+    overflow: visible !important;
   }
 
   /* Performance table adjustments */
@@ -596,14 +598,40 @@
     box-sizing: border-box !important;
   }
 
+  /* Pass Rate by Grade - Mobile Optimizations for 768px */
+  .pass-rate-grade-report .recharts-responsive-container {
+    height: 280px !important;
+    overflow: visible !important;
+  }
+
+  .pass-rate-grade-report .recharts-wrapper,
+  .pass-rate-grade-report .recharts-surface {
+    height: 280px !important;
+    overflow: visible !important;
+  }
+
+  /* Pass Rate by Subject - Mobile Optimizations for 768px */
+  .pass-rate-subject-report .recharts-responsive-container {
+    height: 280px !important;
+    overflow: visible !important;
+  }
+
+  .pass-rate-subject-report .recharts-wrapper,
+  .pass-rate-subject-report .recharts-surface {
+    height: 280px !important;
+    overflow: visible !important;
+  }
+
   /* Student Performance by Class - Override general chart rules for 768px */
   .student-performance-report .recharts-responsive-container {
-    height: 250px !important;
+    height: 280px !important;
+    overflow: visible !important;
   }
 
   .student-performance-report .recharts-wrapper,
   .student-performance-report .recharts-surface {
-    height: 250px !important;
+    height: 280px !important;
+    overflow: visible !important;
   }
 }
 
@@ -726,20 +754,22 @@
   }
 
   .recharts-responsive-container {
-    height: 150px !important;
+    height: 250px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible !important;
   }
 
   /* Override inline height styles for ResponsiveContainer on small phones */
   .chart-card .recharts-wrapper {
-    height: 150px !important;
+    height: 250px !important;
+    overflow: visible !important;
   }
 
   .chart-card .recharts-surface {
-    height: 150px !important;
+    height: 250px !important;
+    overflow: visible !important;
   }
 
   .filter-controls {
@@ -812,12 +842,12 @@
   }
 
   .pass-rate-grade-report .recharts-responsive-container {
-    height: 220px !important;
+    height: 250px !important;
   }
 
   .pass-rate-grade-report .recharts-wrapper,
   .pass-rate-grade-report .recharts-surface {
-    height: 220px !important;
+    height: 250px !important;
   }
 
   .pass-rate-grade-report .recharts-legend-wrapper {
@@ -831,12 +861,12 @@
   }
 
   .pass-rate-subject-report .recharts-responsive-container {
-    height: 220px !important;
+    height: 250px !important;
   }
 
   .pass-rate-subject-report .recharts-wrapper,
   .pass-rate-subject-report .recharts-surface {
-    height: 220px !important;
+    height: 250px !important;
   }
 
   .pass-rate-subject-report .recharts-xAxis {
@@ -858,12 +888,12 @@
   }
 
   .student-performance-report .recharts-responsive-container {
-    height: 220px !important;
+    height: 250px !important;
   }
 
   .student-performance-report .recharts-wrapper,
   .student-performance-report .recharts-surface {
-    height: 220px !important;
+    height: 250px !important;
   }
 
   .student-performance-report .recharts-xAxis {

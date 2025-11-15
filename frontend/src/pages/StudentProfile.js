@@ -1,5 +1,11 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import {
   studentsAPI,
   studentGradesAPI,
@@ -24,13 +30,17 @@ import {
   X,
   ClipboardList,
   PlayCircle,
+  LogOut,
+  Globe,
 } from "lucide-react";
 
 const StudentProfile = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { t, currentLanguage } = useTranslation();
+  const { t, currentLanguage, languages, changeLanguage } = useTranslation();
   const [searchParams] = useSearchParams();
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+  const languageDropdownRef = useRef(null);
   const [student, setStudent] = useState(null);
   const [grades, setGrades] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -1013,6 +1023,30 @@ const StudentProfile = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Close language dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        languageDropdownRef.current &&
+        !languageDropdownRef.current.contains(event.target)
+      ) {
+        setIsLanguageDropdownOpen(false);
+      }
+    };
+
+    if (isLanguageDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isLanguageDropdownOpen]);
+
+  const handleLogout = () => {
+    logout();
+  };
+
   // Start editing a grade
   const startEditingGrade = (grade) => {
     setEditingGrade(grade._id);
@@ -1163,23 +1197,59 @@ const StudentProfile = () => {
 
   return (
     <div>
-      {/* <div className="page-header">
-        <div className="container">
-          <h1>
-            <User
-              size={32}
-              style={{ marginRight: "12px", verticalAlign: "middle" }}
-            />
-            {t("studentProfile.title", "Student Profile")}
-          </h1>
-          <p>
-            {t("studentProfile.subtitle", "Detailed information about")}{" "}
-            {student.fullName}
-          </p>
+      {/* Navigation Bar - Matching AdminDashboard mobile-top-navbar design */}
+      <header className="student-profile-navbar">
+        <Link to="/student/profile" className="student-profile-logo">
+          <img
+            src="/logo.jpg"
+            alt="School Logo"
+            className="student-profile-logo-img"
+          />
+          <span className="student-profile-school-name">
+            {t("app.schoolName", "CLEVER PRIVATE HIGH SCHOOL")}
+          </span>
+        </Link>
+        <div className="student-profile-nav-actions">
+          {/* Language Switcher */}
+          <div
+            className="student-profile-language-switcher"
+            ref={languageDropdownRef}
+          >
+            <button
+              className="student-profile-language-badge"
+              onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+              title="Change Language"
+            >
+              {languages.find((l) => l.code === currentLanguage)?.flag}
+            </button>
+            {isLanguageDropdownOpen && (
+              <div className="student-profile-language-dropdown">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    className={`student-profile-language-item ${
+                      lang.code === currentLanguage ? "active" : ""
+                    }`}
+                    onClick={() => {
+                      changeLanguage(lang.code);
+                      setIsLanguageDropdownOpen(false);
+                    }}
+                  >
+                    <span className="lang-flag">{lang.flag}</span>
+                    <span className="lang-name">{lang.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Logout Button */}
+          <button onClick={handleLogout} className="student-profile-logout-btn">
+            <LogOut size={18} />
+          </button>
         </div>
-      </div> */}
+      </header>
 
-      <div className="container">
+      <div className="container" style={{ paddingTop: "60px" }}>
         <div className="profile-layout">
           {/* Student Information Card */}
           <div className="profile-hero-card">
@@ -2394,7 +2464,7 @@ const StudentProfile = () => {
                               new Date(b.createdAt) - new Date(a.createdAt)
                           )
                           .map((homework) => {
-                            // Get subject name - handle titles object with {en, ar, ku}
+                            // Get subject name - handle title object with {en, ar, ku}
                             const getSubjectName = () => {
                               if (!homework.subjectId) {
                                 return t(
@@ -2403,28 +2473,40 @@ const StudentProfile = () => {
                                 );
                               }
 
-                              // If it's a populated object with titles
+                              // If it's a populated object with title (multilingual object)
                               if (
                                 typeof homework.subjectId === "object" &&
-                                homework.subjectId.titles
+                                homework.subjectId.title
                               ) {
-                                return getLocalizedText(
-                                  homework.subjectId.titles,
-                                  t(
-                                    "studentProfile.unknownSubject",
-                                    "Unknown Subject"
-                                  )
-                                );
+                                // Check if title is an object with {en, ar, ku} structure
+                                if (
+                                  typeof homework.subjectId.title ===
+                                    "object" &&
+                                  (homework.subjectId.title.en ||
+                                    homework.subjectId.title.ar ||
+                                    homework.subjectId.title.ku)
+                                ) {
+                                  return getLocalizedText(
+                                    homework.subjectId.title,
+                                    t(
+                                      "studentProfile.unknownSubject",
+                                      "Unknown Subject"
+                                    )
+                                  );
+                                }
+                                // If title is a string, return it directly
+                                if (
+                                  typeof homework.subjectId.title === "string"
+                                ) {
+                                  return homework.subjectId.title;
+                                }
                               }
 
-                              // Fallback to title if titles doesn't exist
-                              if (homework.subjectId.title) {
-                                return getLocalizedText(
-                                  homework.subjectId.title,
-                                  t(
-                                    "studentProfile.unknownSubject",
-                                    "Unknown Subject"
-                                  )
+                              // If subjectId is just an ID string, return unknown
+                              if (typeof homework.subjectId === "string") {
+                                return t(
+                                  "studentProfile.unknownSubject",
+                                  "Unknown Subject"
                                 );
                               }
 
@@ -3010,6 +3092,248 @@ const StudentProfile = () => {
       </div>
 
       <style jsx>{`
+        /* Hide old Header navigation bar on StudentProfile page */
+        :global(.student-top-bar) {
+          display: none !important;
+        }
+
+        /* Also hide it within student-layout */
+        :global(.student-layout .student-top-bar) {
+          display: none !important;
+        }
+
+        /* Student Profile Navigation Bar - Matching AdminDashboard mobile-top-navbar */
+        .student-profile-navbar {
+          background: white;
+          border-bottom: 1px solid #e2e8f0;
+          padding: 12px 16px;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
+          z-index: 1000;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          box-sizing: border-box;
+        }
+
+        .student-profile-logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          text-decoration: none;
+          color: #1e293b;
+          font-weight: 700;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .student-profile-logo-img {
+          width: 36px;
+          height: 36px;
+          object-fit: contain;
+          border-radius: 6px;
+          flex-shrink: 0;
+        }
+
+        .student-profile-school-name {
+          font-size: 0.9rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .student-profile-nav-actions {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-shrink: 0;
+        }
+
+        .student-profile-language-switcher {
+          position: relative;
+        }
+
+        .student-profile-language-badge {
+          font-size: 1.3rem;
+          line-height: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          background: #f3f4f6;
+          border-radius: 50%;
+          border: 2px solid #e5e7eb;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          padding: 0;
+        }
+
+        .student-profile-language-badge:hover {
+          background: #e5e7eb;
+          border-color: #d1d5db;
+          transform: scale(1.05);
+        }
+
+        .student-profile-language-dropdown {
+          position: absolute;
+          top: 44px;
+          right: 0;
+          background: white;
+          border: 1px solid #d1d5db;
+          border-radius: 10px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+          z-index: 1001;
+          min-width: 160px;
+          overflow: hidden;
+          animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* RTL Support for Language Dropdown */
+        [dir="rtl"] .student-profile-language-dropdown {
+          right: auto;
+          left: 0;
+        }
+
+        [dir="rtl"] .student-profile-language-item {
+          text-align: right;
+          flex-direction: row-reverse;
+        }
+
+        [dir="rtl"] .student-profile-language-item .lang-flag {
+          order: 2;
+          flex-shrink: 0;
+        }
+
+        [dir="rtl"] .student-profile-language-item .lang-name {
+          order: 1;
+          flex: 1;
+        }
+
+        .student-profile-language-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 10px 12px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: left;
+          font-size: 13px;
+          color: #4b5563;
+        }
+
+        .student-profile-language-item:hover {
+          background-color: #f3f4f6;
+          color: #1f2937;
+        }
+
+        .student-profile-language-item.active {
+          background-color: #dbeafe;
+          color: #0284c7;
+          font-weight: 600;
+        }
+
+        .student-profile-language-item .lang-flag {
+          font-size: 1.1rem;
+        }
+
+        .student-profile-language-item .lang-name {
+          flex: 1;
+        }
+
+        .student-profile-logout-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+          color: #dc2626;
+          border: 1px solid #fca5a5;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          padding: 0;
+          flex-shrink: 0;
+        }
+
+        .student-profile-logout-btn:hover {
+          background: linear-gradient(135deg, #fecaca 0%, #f87171 100%);
+          color: #b91c1c;
+          border-color: #f87171;
+          transform: scale(1.05);
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+        }
+
+        @media (max-width: 480px) {
+          .student-profile-navbar {
+            padding: 10px 12px;
+          }
+
+          .student-profile-logo-img {
+            width: 32px;
+            height: 32px;
+          }
+
+          .student-profile-school-name {
+            font-size: 0.8rem;
+          }
+
+          .student-profile-language-badge {
+            width: 32px;
+            height: 32px;
+            font-size: 1.2rem;
+          }
+
+          .student-profile-logout-btn {
+            width: 32px;
+            height: 32px;
+          }
+
+          .student-profile-logout-btn svg {
+            width: 16px;
+            height: 16px;
+          }
+
+          .student-profile-language-dropdown {
+            top: 40px;
+            min-width: 140px;
+          }
+
+          .student-profile-language-item {
+            padding: 8px 10px;
+            font-size: 12px;
+          }
+        }
+
+        /* Ensure student-main-content doesn't have extra padding on StudentProfile */
+        :global(.student-main-content) {
+          padding-top: 0 !important;
+        }
+
+        :global(.student-main-inner) {
+          padding-top: 0 !important;
+        }
+
         .profile-layout {
           display: grid;
           gap: 28px;

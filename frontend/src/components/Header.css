@@ -1070,6 +1070,34 @@
   }
 }
 
+/* Hide student-top-bar on StudentProfile page (it has its own navbar) */
+.student-layout .student-top-bar {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+}
+
+@media (max-width: 768px) {
+  /* Hide student-top-bar on mobile for StudentProfile page */
+  .student-layout .student-top-bar {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    top: -9999px !important;
+    left: -9999px !important;
+  }
+}
+
 @media (max-width: 480px) {
   .mobile-top-navbar {
     padding: 10px 12px;

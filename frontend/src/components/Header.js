@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   BookOpen,
   Users,
@@ -19,6 +19,7 @@ import "./Header.css";
 const Header = ({ children }) => {
   const { user, logout } = useAuth();
   const { t, currentLanguage, languages, changeLanguage } = useTranslation();
+  const location = useLocation();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const profileRef = useRef(null);
@@ -30,6 +31,7 @@ const Header = ({ children }) => {
   const isTeacher = userRole === "Teacher";
   const isStudent = userRole === "Student";
   const isAdmin = userRole === "Admin";
+  const isStudentProfilePage = location.pathname === "/student/profile";
 
   const handleLogout = () => {
     logout();
@@ -118,94 +120,96 @@ const Header = ({ children }) => {
             : {}
         }
       >
-        <header className="student-top-bar">
-          <Link to="/student/profile" className="student-logo">
-            <img
-              src="/logo.jpg"
-              alt="School Logo"
-              className="student-logo-img"
-            />
-            <span>{t("app.schoolName", "CLEVER PRIVATE HIGH SCHOOL")}</span>
-          </Link>
-          <div className="student-top-actions">
-            <div className="student-language-switcher">
-              <Globe size={16} />
-              <select
-                value={currentLanguage}
-                onChange={(e) => changeLanguage(e.target.value)}
-                className="student-language-select"
-              >
-                {languages.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.flag} {lang.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="account-settings" ref={profileRef}>
-              <button className="account-trigger" onClick={toggleProfile}>
-                <div className="account-avatar">
-                  <User size={20} />
-                </div>
-                <ChevronDown
-                  size={16}
-                  className={`chevron ${isProfileOpen ? "open" : ""}`}
-                />
-              </button>
+        {!isStudentProfilePage && (
+          <header className="student-top-bar">
+            <Link to="/student/profile" className="student-logo">
+              <img
+                src="/logo.jpg"
+                alt="School Logo"
+                className="student-logo-img"
+              />
+              <span>{t("app.schoolName", "CLEVER PRIVATE HIGH SCHOOL")}</span>
+            </Link>
+            <div className="student-top-actions">
+              <div className="student-language-switcher">
+                <Globe size={16} />
+                <select
+                  value={currentLanguage}
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  className="student-language-select"
+                >
+                  {languages.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.flag} {lang.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="account-settings" ref={profileRef}>
+                <button className="account-trigger" onClick={toggleProfile}>
+                  <div className="account-avatar">
+                    <User size={20} />
+                  </div>
+                  <ChevronDown
+                    size={16}
+                    className={`chevron ${isProfileOpen ? "open" : ""}`}
+                  />
+                </button>
 
-              {isProfileOpen && (
-                <div className="account-dropdown">
-                  <div className="dropdown-header">
-                    <div className="user-details">
-                      <div className="user-avatar">
-                        <User size={24} />
-                      </div>
-                      <div className="user-info">
-                        <div className="user-name">
-                          {user?.firstName} {user?.lastName}
+                {isProfileOpen && (
+                  <div className="account-dropdown">
+                    <div className="dropdown-header">
+                      <div className="user-details">
+                        <div className="user-avatar">
+                          <User size={24} />
                         </div>
-                        <div className="user-role">{user?.role}</div>
+                        <div className="user-info">
+                          <div className="user-name">
+                            {user?.firstName} {user?.lastName}
+                          </div>
+                          <div className="user-role">{user?.role}</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="dropdown-divider"></div>
+                    <div className="dropdown-divider"></div>
 
-                  <div className="dropdown-section">
-                    <div className="section-title">
-                      {t("nav.settings", "Settings")}
-                    </div>
+                    <div className="dropdown-section">
+                      <div className="section-title">
+                        {t("nav.settings", "Settings")}
+                      </div>
 
-                    <div className="dropdown-item">
-                      <Globe size={16} />
-                      <span>{t("nav.language", "Language")}</span>
-                      <select
-                        value={currentLanguage}
-                        onChange={(e) => changeLanguage(e.target.value)}
-                        className="language-select-dropdown"
-                        onClick={(e) => e.stopPropagation()}
+                      <div className="dropdown-item">
+                        <Globe size={16} />
+                        <span>{t("nav.language", "Language")}</span>
+                        <select
+                          value={currentLanguage}
+                          onChange={(e) => changeLanguage(e.target.value)}
+                          className="language-select-dropdown"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {languages.map((lang) => (
+                            <option key={lang.code} value={lang.code}>
+                              {lang.flag} {lang.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <button
+                        className="dropdown-item logout-item"
+                        onClick={handleLogout}
                       >
-                        {languages.map((lang) => (
-                          <option key={lang.code} value={lang.code}>
-                            {lang.flag} {lang.name}
-                          </option>
-                        ))}
-                      </select>
+                        <LogOut size={16} />
+                        <span>{t("nav.logout", "Logout")}</span>
+                      </button>
                     </div>
-
-                    <button
-                      className="dropdown-item logout-item"
-                      onClick={handleLogout}
-                    >
-                      <LogOut size={16} />
-                      <span>{t("nav.logout", "Logout")}</span>
-                    </button>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         <main className="student-main-content">
           <div className="student-main-inner">{children}</div>

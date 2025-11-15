@@ -231,7 +231,7 @@ router.get("/:id/homeworks", verifyToken, getCurrentUser, async (req, res) => {
     const homeworks = await Homework.find({
       assignedStudents: studentObjectId,
     })
-      .populate("subjectId", "titles")
+      .populate("subjectId", "title")
       .sort({ date: -1, createdAt: -1 });
 
     sendResponse(res, 200, true, "Homeworks retrieved successfully", {
