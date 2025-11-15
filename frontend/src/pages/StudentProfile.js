@@ -2008,12 +2008,13 @@ const StudentProfile = () => {
                             gap: "12px",
                           }}
                         >
-                          <div style={{ flex: "0 0 auto", minWidth: "100px" }}>
+                          <div style={{ flex: "0 0 auto", minWidth: "100px", textAlign: "center" }}>
                             <div
                               style={{
                                 fontWeight: "700",
                                 fontSize: "12px",
                                 color: "#ffffff",
+                                textAlign: "center",
                               }}
                             >
                               {t("studentProfile.subject", "Subject")}
@@ -2098,13 +2099,14 @@ const StudentProfile = () => {
                             >
                               {/* Subject Name */}
                               <div
-                                style={{ flex: "0 0 auto", minWidth: "100px" }}
+                                style={{ flex: "0 0 auto", minWidth: "100px", textAlign: "center" }}
                               >
                                 <div
                                   style={{
                                     fontWeight: "600",
                                     fontSize: "13px",
                                     color: "#1f2937",
+                                    textAlign: "center",
                                   }}
                                 >
                                   {subjectName}
@@ -2382,6 +2384,7 @@ const StudentProfile = () => {
                       </button>
 
                       <div
+                        className="homework-date-display"
                         style={{
                           minWidth: "120px",
                           textAlign: "center",
@@ -2453,8 +2456,8 @@ const StudentProfile = () => {
                     <table className="homeworks-table">
                       <thead>
                         <tr>
-                          <th>{t("studentProfile.subject", "Subject")}</th>
-                          <th>{formatDateWithDay(selectedHomeworkDate)}</th>
+                          <th className="homework-subject-col">{t("studentProfile.subject", "Subject")}</th>
+                          <th className="homework-date-col">{formatDateWithDay(selectedHomeworkDate)}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2474,14 +2477,22 @@ const StudentProfile = () => {
                               }
 
                               // If it's a populated object with title (multilingual object)
-                              if (
-                                typeof homework.subjectId === "object" &&
-                                homework.subjectId.title
-                              ) {
+                              if (typeof homework.subjectId === "object") {
+                                // Check for titleMultilingual first (preferred)
+                                if (homework.subjectId.titleMultilingual) {
+                                  return getLocalizedText(
+                                    homework.subjectId.titleMultilingual,
+                                    t(
+                                      "studentProfile.unknownSubject",
+                                      "Unknown Subject"
+                                    )
+                                  );
+                                }
+                                
                                 // Check if title is an object with {en, ar, ku} structure
                                 if (
-                                  typeof homework.subjectId.title ===
-                                    "object" &&
+                                  homework.subjectId.title &&
+                                  typeof homework.subjectId.title === "object" &&
                                   (homework.subjectId.title.en ||
                                     homework.subjectId.title.ar ||
                                     homework.subjectId.title.ku)
@@ -2494,16 +2505,50 @@ const StudentProfile = () => {
                                     )
                                   );
                                 }
-                                // If title is a string, return it directly
+                                
+                                // If title is a string, try to find the subject in subjects array for multilingual support
                                 if (
+                                  homework.subjectId.title &&
                                   typeof homework.subjectId.title === "string"
                                 ) {
+                                  // Try to find the subject in the subjects array to get multilingual version
+                                  const subjectId = normalizeId(
+                                    homework.subjectId._id || homework.subjectId
+                                  );
+                                  const foundSubject = subjects.find((s) =>
+                                    normalizeId(s?._id || s) === subjectId
+                                  );
+                                  
+                                  if (foundSubject) {
+                                    return getLocalizedText(
+                                      foundSubject.titleMultilingual || foundSubject.title,
+                                      foundSubject.title || homework.subjectId.title
+                                    );
+                                  }
+                                  
+                                  // Fallback to the string title if subject not found
                                   return homework.subjectId.title;
                                 }
                               }
 
-                              // If subjectId is just an ID string, return unknown
+                              // If subjectId is just an ID string, look it up in subjects array
                               if (typeof homework.subjectId === "string") {
+                                const subjectId = normalizeId(homework.subjectId);
+                                const foundSubject = subjects.find((s) =>
+                                  normalizeId(s?._id || s) === subjectId
+                                );
+                                
+                                if (foundSubject) {
+                                  return getLocalizedText(
+                                    foundSubject.titleMultilingual || foundSubject.title,
+                                    foundSubject.title ||
+                                      t(
+                                        "studentProfile.unknownSubject",
+                                        "Unknown Subject"
+                                      )
+                                  );
+                                }
+                                
                                 return t(
                                   "studentProfile.unknownSubject",
                                   "Unknown Subject"
@@ -2519,7 +2564,7 @@ const StudentProfile = () => {
                             return (
                               <tr key={homework._id}>
                                 <td
-                                  className="mobile-grid-cell"
+                                  className="mobile-grid-cell homework-subject-col"
                                   data-label={t(
                                     "studentProfile.subject",
                                     "Subject"
@@ -2528,7 +2573,7 @@ const StudentProfile = () => {
                                   {getSubjectName()}
                                 </td>
                                 <td
-                                  className="mobile-grid-cell"
+                                  className="mobile-grid-cell homework-date-col"
                                   data-label={formatDateWithDay(
                                     selectedHomeworkDate
                                   )}
@@ -4394,7 +4439,7 @@ const StudentProfile = () => {
         .ratings-table th {
           background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
           padding: 16px;
-          text-align: center;
+          text-align: center !important;
           font-weight: 700;
           color: #1e293b;
           border-bottom: 2px solid #e2e8f0;
@@ -4412,6 +4457,16 @@ const StudentProfile = () => {
           border-bottom: 1px solid #f1f5f9;
           color: #475569;
           font-weight: 500;
+          text-align: center !important;
+        }
+
+        .ratings-table td .rating-badge {
+          display: inline-block;
+          margin: 0 auto;
+        }
+
+        .ratings-table td .no-rating {
+          display: inline-block;
           text-align: center;
         }
 
@@ -4456,6 +4511,16 @@ const StudentProfile = () => {
           z-index: 10;
         }
 
+        .homeworks-table th.homework-subject-col {
+          width: 30%;
+          min-width: 120px;
+        }
+
+        .homeworks-table th.homework-date-col {
+          width: 70%;
+          min-width: 200px;
+        }
+
         .homeworks-table td {
           padding: 16px;
           border-bottom: 1px solid #f1f5f9;
@@ -4465,7 +4530,19 @@ const StudentProfile = () => {
           word-wrap: break-word;
           overflow-wrap: break-word;
           white-space: normal;
-          max-width: 0;
+        }
+
+        .homeworks-table td.homework-subject-col {
+          width: 30%;
+          min-width: 120px;
+          max-width: 30%;
+          word-break: break-word;
+          hyphens: auto;
+        }
+
+        .homeworks-table td.homework-date-col {
+          width: 70%;
+          min-width: 200px;
         }
 
         .homeworks-table tr {
@@ -4567,25 +4644,28 @@ const StudentProfile = () => {
             width: auto;
             justify-content: flex-start;
             margin-top: 0;
-            padding: 3px 6px;
-            gap: 4px;
+            padding: 4px 6px;
+            gap: 6px;
             flex-shrink: 0;
           }
 
-          .homework-date-filter > div {
+          .homework-date-filter > div,
+          .homework-date-filter .homework-date-display {
             minwidth: auto !important;
-            min-width: 75px !important;
+            min-width: 90px !important;
             flex: 0 0 auto;
-            max-width: 100px;
-            font-size: 9px !important;
+            max-width: 110px;
+            font-size: 10px !important;
             padding: 0 2px;
+            line-height: 1.2;
           }
 
           .homework-date-filter button {
-            padding: 2px 5px !important;
-            font-size: 9px !important;
-            min-width: 24px !important;
-            height: 22px;
+            padding: 3px 6px !important;
+            font-size: 10px !important;
+            min-width: 26px !important;
+            height: 24px;
+            line-height: 1;
           }
 
           .training-quizzes-list {
@@ -4739,6 +4819,25 @@ const StudentProfile = () => {
         @media (max-width: 600px) {
           .profile-layout {
             gap: 20px;
+          }
+
+          .homework-date-filter {
+            padding: 3px 5px;
+            gap: 4px;
+          }
+
+          .homework-date-filter > div,
+          .homework-date-filter .homework-date-display {
+            min-width: 80px !important;
+            max-width: 100px;
+            font-size: 9px !important;
+          }
+
+          .homework-date-filter button {
+            padding: 2px 5px !important;
+            min-width: 24px !important;
+            height: 22px;
+            font-size: 9px !important;
           }
 
           .ratings-table-container {
