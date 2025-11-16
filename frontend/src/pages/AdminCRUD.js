@@ -92,6 +92,18 @@ const AdminCRUD = () => {
     itemName: "",
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [exerciseFilters, setExerciseFilters] = useState({
+    seasonId: "",
+    subjectId: "",
+    studentName: "",
+    type: "",
+    exerciseId: "",
+  });
+  const [studentFilters, setStudentFilters] = useState({
+    studentName: "",
+    classId: "",
+    branchId: "",
+  });
 
   // Get unique classes, branches, and subjects from ratings
   const getUniqueClasses = () => {
@@ -227,10 +239,10 @@ const AdminCRUD = () => {
         seasonsRes,
         exerciseGradesRes,
       ] = await Promise.all([
-          studentsAPI.getAll(),
-          teachersAPI.getAll(),
-          subjectsAPI.getAll(),
-          classesAPI.getAll(),
+        studentsAPI.getAll(),
+        teachersAPI.getAll(),
+        subjectsAPI.getAll(),
+        classesAPI.getAll(),
         studentsAPI.getAllRatings(),
         seasonsAPI.getAll(),
         gradingAPI.getAll().catch(() => ({ data: { data: [] } })), // Fetch exercise grades on initial load
@@ -321,20 +333,20 @@ const AdminCRUD = () => {
       setLoading(true);
       const [ratingsRes, studentsRes, subjectsRes, seasonsRes] =
         await Promise.all([
-        studentsAPI.getAllRatings(),
+          studentsAPI.getAllRatings(),
           studentsAPI.getAll(),
-        subjectsAPI.getAll(),
-        seasonsAPI.getAll(),
-      ]);
+          subjectsAPI.getAll(),
+          seasonsAPI.getAll(),
+        ]);
 
       try {
         const ratingsData = ratingsRes.data?.data?.ratings || [];
         const subjectsData = extractData(subjectsRes);
         const seasonsData = extractData(seasonsRes);
-        
+
         // Store seasons for later use
         setSeasons(seasonsData);
-        
+
         // Backend already provides studentName, just add subject and season localization
         const enrichedRatings = ratingsData.map((rating) => {
           const subject = subjectsData.find(
@@ -347,7 +359,7 @@ const AdminCRUD = () => {
             subject?.title ||
             subject?.name ||
             rating.subjectId;
-          
+
           // Find season name by ID or use the stored value
           const season = seasonsData.find(
             (s) =>
@@ -368,7 +380,7 @@ const AdminCRUD = () => {
             (typeof rating.student === "object"
               ? rating.student?.branchID
               : null);
-          
+
           return {
             ...rating,
             subjectName: subjectName,
@@ -378,7 +390,7 @@ const AdminCRUD = () => {
             // studentName already comes from backend
           };
         });
-        
+
         setRatings(enrichedRatings);
         setError(null);
       } catch (enrichError) {
@@ -400,13 +412,152 @@ const AdminCRUD = () => {
       const gradesData = response.data?.data || [];
       setExerciseGrades(Array.isArray(gradesData) ? gradesData : []);
       setError(null);
-      } catch (error) {
+    } catch (error) {
       console.error("Error fetching exercise grades:", error);
       setError(t("admin.msg.failedLoadData", "Failed to load data"));
       setExerciseGrades([]);
-      } finally {
+    } finally {
       setLoading(false);
     }
+  };
+
+  // Helpers for Exercise Grades filtering options
+  const getUniqueExerciseSeasons = () => {
+    const seen = new Map();
+    exerciseGrades.forEach((g) => {
+      const id =
+        (typeof g.season === "object" && (g.season?._id || g.season?.id)) ||
+        g.season;
+      if (!id) return;
+      const key = id.toString();
+      if (!seen.has(key)) {
+        const name =
+          (typeof g.season === "object" &&
+            (g.season?.nameMultilingual || g.season?.name)) ||
+          null;
+        seen.set(key, {
+          _id: key,
+          displayName: getLocalizedText(name, g.season?.name || key) || key,
+        });
+      }
+    });
+    return Array.from(seen.values());
+  };
+
+  const getUniqueExerciseSubjects = () => {
+    const seen = new Map();
+    exerciseGrades.forEach((g) => {
+      const subject = g.subject;
+      const id =
+        (typeof subject === "object" && subject?._id) || (subject && subject);
+      if (!id) return;
+      const key = id.toString();
+      if (!seen.has(key)) {
+        const title =
+          (typeof subject === "object" &&
+            (subject.titles || subject.titleMultilingual || subject.title)) ||
+          null;
+        seen.set(key, {
+          _id: key,
+          displayName:
+            getLocalizedText(title, subject?.title || subject?.name || key) ||
+            key,
+        });
+      }
+    });
+    return Array.from(seen.values());
+  };
+
+  const getUniqueExerciseStudents = () => {
+    const seen = new Map();
+    exerciseGrades.forEach((g) => {
+      const fullName = g.student?.fullName || g.student?.username;
+      if (!fullName) return;
+      const key = fullName.toString().toLowerCase();
+      if (!seen.has(key)) {
+        seen.set(key, { name: fullName });
+      }
+    });
+    return Array.from(seen.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+  };
+
+  const getUniqueExercises = () => {
+    const seen = new Map();
+    exerciseGrades.forEach((g) => {
+      const ex = g.exercise;
+      const id =
+        (typeof ex === "object" && ex?._id) ||
+        (ex && typeof ex !== "string" ? null : ex);
+      const key = (id || (typeof ex === "object" ? ex?.name : ex))?.toString();
+      if (!key) return;
+      if (!seen.has(key)) {
+        const label =
+          (typeof ex === "object" && (ex.nameMultilingual || ex.name)) || key;
+        seen.set(key, {
+          _id: id || key,
+          displayName: getLocalizedText(label, key),
+        });
+      }
+    });
+    return Array.from(seen.values()).sort((a, b) =>
+      a.displayName.localeCompare(b.displayName)
+    );
+  };
+
+  const getFilteredExerciseGrades = () => {
+    return exerciseGrades.filter((g) => {
+      // Season filter
+      if (exerciseFilters.seasonId) {
+        const seasonId =
+          (typeof g.season === "object" && (g.season?._id || g.season?.id)) ||
+          g.season;
+        if ((seasonId || "").toString() !== exerciseFilters.seasonId) {
+          return false;
+        }
+      }
+      // Subject filter
+      if (exerciseFilters.subjectId) {
+        const subjectId =
+          (typeof g.subject === "object" && g.subject?._id) || g.subject;
+        if ((subjectId || "").toString() !== exerciseFilters.subjectId) {
+          return false;
+        }
+      }
+      // Student filter (by name contains)
+      if (
+        exerciseFilters.studentName &&
+        !(g.student?.fullName || g.student?.username || "")
+          .toString()
+          .toLowerCase()
+          .includes(exerciseFilters.studentName.toLowerCase())
+      ) {
+        return false;
+      }
+      // Type filter
+      if (exerciseFilters.type) {
+        if ((g.gradingType || "").toString() !== exerciseFilters.type) {
+          return false;
+        }
+      }
+      // Exercise filter
+      if (exerciseFilters.exerciseId) {
+        const ex = g.exercise;
+        const exId =
+          (typeof ex === "object" && ex?._id) ||
+          (typeof ex === "string" ? ex : "");
+        const exName =
+          (typeof ex === "object" && (ex.nameMultilingual || ex.name)) || "";
+        const matchId = (exId || "").toString() === exerciseFilters.exerciseId;
+        const matchName = getLocalizedText(exName, exName)
+          ?.toString()
+          .toLowerCase()
+          .includes(exerciseFilters.exerciseId.toLowerCase());
+        if (!matchId && !matchName) return false;
+      }
+      return true;
+    });
   };
 
   // Get paginated ratings with filters
@@ -529,14 +680,14 @@ const AdminCRUD = () => {
         subjectId: ratingFormData.subjectId,
         rating: ratingFormData.rating,
       });
-      
+
       // Update local state
       setRatings(
         ratings.map((r) =>
           r._id === editingRating._id ? { ...r, ...ratingFormData } : r
         )
       );
-      
+
       alert("Rating updated successfully!");
       setShowModal(false);
       setEditingRating(null);
@@ -573,7 +724,7 @@ const AdminCRUD = () => {
   const handleEdit = (item) => {
     setEditingItem(item);
     console.log("Editing item:", item);
-    
+
     // Set image preview if it exists (backend returns 'photo' field)
     if (item.photo) {
       setImagePreview(item.photo);
@@ -692,7 +843,7 @@ const AdminCRUD = () => {
     const { itemId, itemType, itemName } = deleteConfirmation;
     setIsDeleting(true);
 
-      try {
+    try {
       if (itemType === "student") {
         await studentsAPI.delete(itemId);
         setStudents(students.filter((s) => s._id !== itemId));
@@ -741,8 +892,8 @@ const AdminCRUD = () => {
         itemName: "",
       });
 
-        // Refresh data to ensure consistency
-        setRefreshing(true);
+      // Refresh data to ensure consistency
+      setRefreshing(true);
       if (deletedItemType === "exerciseGrade") {
         await fetchExerciseGrades();
       } else {
@@ -751,9 +902,9 @@ const AdminCRUD = () => {
       if (deletedItemType === "rating") {
         await fetchRatings();
       }
-        setRefreshing(false);
-      } catch (error) {
-        console.error("Error deleting item:", error);
+      setRefreshing(false);
+    } catch (error) {
+      console.error("Error deleting item:", error);
       showError(t("admin.msg.failedDelete", "Failed to delete item"));
       setDeleteConfirmation({
         isOpen: false,
@@ -791,7 +942,7 @@ const AdminCRUD = () => {
         if (activeTab === "students") {
           // Prepare student data for API update
           let studentFormData;
-          
+
           if (formData.image instanceof File) {
             // Has new image - use FormData
             studentFormData = new FormData();
@@ -816,16 +967,16 @@ const AdminCRUD = () => {
           } else {
             // No new image - use regular object
             studentFormData = {
-            fullName: formData.fullName,
-            email: formData.email,
-            phone: formData.phone || undefined,
-            username: formData.username,
-            parentsNumber: formData.parentsNumber || undefined,
-            class: formData.classes[0] || undefined,
-            branchID: formData.branches[0] || undefined,
+              fullName: formData.fullName,
+              email: formData.email,
+              phone: formData.phone || undefined,
+              username: formData.username,
+              parentsNumber: formData.parentsNumber || undefined,
+              class: formData.classes[0] || undefined,
+              branchID: formData.branches[0] || undefined,
               gender: formData.gender || editingItem.gender || "Male",
               studentNumber: editingItem.studentNumber,
-          };
+            };
             if (formData.password) studentFormData.password = formData.password;
           }
 
@@ -848,7 +999,7 @@ const AdminCRUD = () => {
         } else {
           // Prepare teacher data for API (all fields that Teacher model now supports)
           let teacherFormData;
-          
+
           if (formData.image instanceof File) {
             // Has new image - use FormData
             teacherFormData = new FormData();
@@ -885,19 +1036,19 @@ const AdminCRUD = () => {
           } else {
             // No new image - use regular object
             teacherFormData = {
-            name: formData.name,
-            email: formData.email,
+              name: formData.name,
+              email: formData.email,
               phone: formData.phone || undefined,
-            gender: formData.gender || undefined,
-            subjects: formData.subjects || [],
-            classes: formData.classes || [],
-            branches: formData.branches || [],
+              gender: formData.gender || undefined,
+              subjects: formData.subjects || [],
+              classes: formData.classes || [],
+              branches: formData.branches || [],
               username: formData.username || undefined,
-            experience: parseInt(formData.experience) || 0,
-          };
+              experience: parseInt(formData.experience) || 0,
+            };
 
-          // Only include password if it's provided (not empty)
-          if (formData.password && formData.password.trim() !== "") {
+            // Only include password if it's provided (not empty)
+            if (formData.password && formData.password.trim() !== "") {
               teacherFormData.password = formData.password;
             }
           }
@@ -946,7 +1097,7 @@ const AdminCRUD = () => {
 
           // Prepare student data for API
           let studentFormData;
-          
+
           if (formData.image instanceof File) {
             // Has image - use FormData
             studentFormData = new FormData();
@@ -967,17 +1118,17 @@ const AdminCRUD = () => {
           } else {
             // No image - use regular object
             studentFormData = {
-            fullName: formData.fullName,
-            email: formData.email,
-            phone: formData.phone || undefined,
-            username: formData.username,
-            parentsNumber: formData.parentsNumber || undefined,
+              fullName: formData.fullName,
+              email: formData.email,
+              phone: formData.phone || undefined,
+              username: formData.username,
+              parentsNumber: formData.parentsNumber || undefined,
               class: formData.classes[0] || undefined,
               branchID: formData.branches[0] || undefined,
               gender: formData.gender || "Male",
               studentNumber: `STU${Date.now()}`,
-            password: formData.password,
-          };
+              password: formData.password,
+            };
           }
 
           console.log("Creating student with data:", studentFormData);
@@ -999,7 +1150,7 @@ const AdminCRUD = () => {
 
           // Prepare teacher data for API (all fields that Teacher model now supports)
           let teacherFormData;
-          
+
           if (formData.image instanceof File) {
             // Has image - use FormData
             teacherFormData = new FormData();
@@ -1033,17 +1184,17 @@ const AdminCRUD = () => {
           } else {
             // No image - use regular object
             teacherFormData = {
-            name: formData.name,
-            email: formData.email,
+              name: formData.name,
+              email: formData.email,
               phone: formData.phone || undefined,
-            gender: formData.gender || undefined,
-            subjects: formData.subjects || [],
-            classes: formData.classes || [],
-            branches: formData.branches || [],
-            username: formData.username,
-            password: formData.password,
-            experience: parseInt(formData.experience) || 0,
-          };
+              gender: formData.gender || undefined,
+              subjects: formData.subjects || [],
+              classes: formData.classes || [],
+              branches: formData.branches || [],
+              username: formData.username,
+              password: formData.password,
+              experience: parseInt(formData.experience) || 0,
+            };
           }
 
           console.log("Creating teacher with data:", teacherFormData);
@@ -1082,11 +1233,44 @@ const AdminCRUD = () => {
     }
   };
 
-  const filteredStudents = students.filter(
-    (student) =>
-      student.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = students.filter((student) => {
+    // global search
+    const searchOk =
+      (student.fullName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (student.email || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+    // name filter
+    const nameFilterOk = studentFilters.studentName
+      ? (student.fullName || "")
+          .toLowerCase()
+          .includes(studentFilters.studentName.toLowerCase()) ||
+        (student.username || "")
+          .toLowerCase()
+          .includes(studentFilters.studentName.toLowerCase())
+      : true;
+
+    // class filter
+    const classIdOfStudent =
+      (typeof student.class === "object" && student.class?._id) ||
+      student.class ||
+      "";
+    const classFilterOk = studentFilters.classId
+      ? (classIdOfStudent || "").toString() === studentFilters.classId
+      : true;
+
+    // branch filter
+    const branchIdOfStudent =
+      (typeof student.branchID === "object" && student.branchID?._id) ||
+      student.branchID ||
+      "";
+    const branchFilterOk = studentFilters.branchId
+      ? (branchIdOfStudent || "").toString() === studentFilters.branchId
+      : true;
+
+    return searchOk && nameFilterOk && classFilterOk && branchFilterOk;
+  });
 
   const filteredTeachers = teachers.filter(
     (teacher) =>
@@ -1157,6 +1341,11 @@ const AdminCRUD = () => {
       .filter((c) => formData.classes.includes(c._id))
       .flatMap((c) => c.branches || []);
   };
+  const getFilterBranchesForClass = (selectedClassId) => {
+    if (!selectedClassId) return [];
+    const cls = classes.find((c) => c._id?.toString() === selectedClassId);
+    return cls?.branches || [];
+  };
 
   // Get available subjects based on selected classes
   const getAvailableSubjects = () => {
@@ -1219,12 +1408,15 @@ const AdminCRUD = () => {
           </span>
         </button>
         <button
-          className={`tab-button ${activeTab === "exerciseGrades" ? "active" : ""}`}
+          className={`tab-button ${
+            activeTab === "exerciseGrades" ? "active" : ""
+          }`}
           onClick={() => setActiveTab("exerciseGrades")}
         >
           <ClipboardList size={20} />
           <span>
-            {t("admin.crud.tabExerciseGrades", "Exercise Grades")} ({exerciseGrades.length})
+            {t("admin.crud.tabExerciseGrades", "Exercise Grades")} (
+            {exerciseGrades.length})
           </span>
         </button>
       </div>
@@ -1248,56 +1440,334 @@ const AdminCRUD = () => {
             </div>
           )}
           {activeTab !== "ratings" && activeTab !== "exerciseGrades" && (
-          <button className="create-button" onClick={handleCreate}>
-            <Plus size={20} />
-            <span>{t("admin.crud.addNew", "Add New")}</span>
-          </button>
+            <button className="create-button" onClick={handleCreate}>
+              <Plus size={20} />
+              <span>{t("admin.crud.addNew", "Add New")}</span>
+            </button>
           )}
         </div>
       </div>
 
-      <div
-        className={`admin-crud-content ${
-          activeTab === "ratings" || activeTab === "exerciseGrades"
-            ? "ratings-container"
-            : ""
-        }`}
-      >
+      <div className="admin-crud-content">
         {activeTab === "exerciseGrades" ? (
           <>
-            <div className="data-table">
+            {/* Exercise Grades Filters */}
+            <div
+              style={{
+                padding: "16px",
+                backgroundColor: "#f9fafb",
+                borderBottom: "1px solid #e5e7eb",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
+                gap: "12px",
+                marginBottom: "0",
+              }}
+            >
+              <div>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {t("admin.form.season", "Season")}
+                </label>
+                <select
+                  value={exerciseFilters.seasonId}
+                  onChange={(e) =>
+                    setExerciseFilters({
+                      ...exerciseFilters,
+                      seasonId: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">{t("admin.filter.all", "-- All --")}</option>
+                  {getUniqueExerciseSeasons().map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {t("admin.form.subject", "Subject")}
+                </label>
+                <select
+                  value={exerciseFilters.subjectId}
+                  onChange={(e) =>
+                    setExerciseFilters({
+                      ...exerciseFilters,
+                      subjectId: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">{t("admin.filter.all", "-- All --")}</option>
+                  {getUniqueExerciseSubjects().map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {t("admin.form.student", "Student")}
+                </label>
+                <select
+                  value={exerciseFilters.studentName}
+                  onChange={(e) =>
+                    setExerciseFilters({
+                      ...exerciseFilters,
+                      studentName: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">{t("admin.filter.all", "-- All --")}</option>
+                  {getUniqueExerciseStudents().map((s) => (
+                    <option key={s.name} value={s.name}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {t("admin.form.type", "Type")}
+                </label>
+                <select
+                  value={exerciseFilters.type}
+                  onChange={(e) =>
+                    setExerciseFilters({
+                      ...exerciseFilters,
+                      type: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">{t("admin.filter.all", "-- All --")}</option>
+                  <option value="exercise">
+                    {t("studentProfile.activityType.exercise", "Exercise")}
+                  </option>
+                  <option value="monthly_exam">
+                    {t(
+                      "studentProfile.activityType.monthlyExam",
+                      "Monthly Exam"
+                    )}
+                  </option>
+                  <option value="attendance">
+                    {t("studentProfile.activityType.attendance", "Attendance")}
+                  </option>
+                  <option value="behaviour">
+                    {t("studentProfile.activityType.behaviour", "Behaviour")}
+                  </option>
+                  <option value="season_exam">
+                    {t("studentProfile.activityType.seasonExam", "Season Exam")}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {t("admin.form.exercise", "Exercise")}
+                </label>
+                <select
+                  value={exerciseFilters.exerciseId}
+                  onChange={(e) =>
+                    setExerciseFilters({
+                      ...exerciseFilters,
+                      exerciseId: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">{t("admin.filter.all", "-- All --")}</option>
+                  {getUniqueExercises().map((ex) => (
+                    <option key={ex._id} value={ex._id}>
+                      {ex.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="data-table student-table">
               <div className="table-header">
-                <div className="table-cell">
+                <div
+                  className="table-cell"
+                  style={{
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {t("admin.form.studentName", "Student")}
                 </div>
-                <div className="table-cell">
+                <div
+                  className="table-cell"
+                  style={{
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {t("admin.form.subject", "Subject")}
                 </div>
-                <div className="table-cell">
+                <div
+                  className="table-cell"
+                  style={{
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {t("admin.form.season", "Season")}
                 </div>
-                <div className="table-cell">
+                <div
+                  className="table-cell"
+                  style={{
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {t("admin.form.type", "Type")}
                 </div>
-                <div className="table-cell">
+                <div
+                  className="table-cell"
+                  style={{
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {t("admin.form.exercise", "Exercise")}
                 </div>
-                <div className="table-cell">
+                <div
+                  className="table-cell"
+                  style={{
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {t("admin.form.grade", "Grade")}
                 </div>
-                <div className="table-cell">
+                <div
+                  className="table-cell"
+                  style={{
+                    textAlign: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: "100px",
+                    flex: "0 0 100px",
+                  }}
+                >
                   {t("admin.form.date", "Date")}
                 </div>
-                <div className="table-cell">
+                <div
+                  className="table-cell"
+                  style={{
+                    textAlign: "center",
+                    maxWidth: "110px",
+                    flex: "0 0 110px",
+                  }}
+                >
                   {t("admin.crud.actions", "Actions")}
                 </div>
               </div>
-              {exerciseGrades.length === 0 ? (
-                <div className="empty-state" style={{ padding: "40px", textAlign: "center" }}>
-                  <p>{t("admin.msg.noExerciseGrades", "No exercise grades found")}</p>
+              {getFilteredExerciseGrades().length === 0 ? (
+                <div
+                  className="empty-state"
+                  style={{ padding: "40px", textAlign: "center" }}
+                >
+                  <p>
+                    {t(
+                      "admin.msg.noExerciseGrades",
+                      "No exercise grades found"
+                    )}
+                  </p>
                 </div>
               ) : (
-                exerciseGrades
+                getFilteredExerciseGrades()
                   .filter((grade) => {
                     if (!searchTerm) return true;
                     const searchLower = searchTerm.toLowerCase();
@@ -1330,7 +1800,10 @@ const AdminCRUD = () => {
                     const getGradingTypeLabel = (type) => {
                       switch (type) {
                         case "exercise":
-                          return t("studentProfile.activityType.exercise", "Exercise");
+                          return t(
+                            "studentProfile.activityType.exercise",
+                            "Exercise"
+                          );
                         case "monthly_exam":
                           return t(
                             "studentProfile.activityType.monthlyExam",
@@ -1358,27 +1831,68 @@ const AdminCRUD = () => {
 
                     return (
                       <div key={grade._id} className="table-row">
-                        <div className="table-cell">
+                        <div
+                          className="table-cell"
+                          style={{
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           {grade.student?.fullName ||
                             grade.student?.username ||
                             t("common.na", "N/A")}
                         </div>
-                        <div className="table-cell">
+                        <div
+                          className="table-cell"
+                          style={{
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           {getLocalizedText(
                             grade.subject?.titles || grade.subject?.title,
                             t("common.na", "N/A")
                           )}
                         </div>
-                        <div className="table-cell">
+                        <div
+                          className="table-cell"
+                          style={{
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           {getLocalizedText(
-                            grade.season?.nameMultilingual || grade.season?.name,
+                            grade.season?.nameMultilingual ||
+                              grade.season?.name,
                             t("common.na", "N/A")
                           )}
                         </div>
-                        <div className="table-cell">
+                        <div
+                          className="table-cell"
+                          style={{
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           {getGradingTypeLabel(grade.gradingType)}
                         </div>
-                        <div className="table-cell">
+                        <div
+                          className="table-cell"
+                          style={{
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           {grade.exercise
                             ? getLocalizedText(
                                 grade.exercise?.nameMultilingual ||
@@ -1387,15 +1901,43 @@ const AdminCRUD = () => {
                               )
                             : t("common.na", "N/A")}
                         </div>
-                        <div className="table-cell">
+                        <div
+                          className="table-cell"
+                          style={{
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           {grade.exerciseDegree
                             ? `${grade.grade || 0}/${grade.exerciseDegree}`
                             : grade.grade || 0}
                         </div>
-                        <div className="table-cell">
+                        <div
+                          className="table-cell"
+                          style={{
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: "100px",
+                            flex: "0 0 100px",
+                          }}
+                        >
                           {formatDate(grade.gradedAt || grade.createdAt)}
                         </div>
-                        <div className="table-cell">
+                        <div
+                          className="table-cell"
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: "8px",
+                            maxWidth: "110px",
+                            flex: "0 0 110px",
+                          }}
+                        >
                           <button
                             className="action-button delete"
                             onClick={() => handleDeleteExerciseGrade(grade._id)}
@@ -1681,17 +2223,17 @@ const AdminCRUD = () => {
               </div>
             </div>
 
-          <div className="data-table ratings-table">
-            <div className="table-header">
+            <div className="data-table student-table">
+              <div className="table-header">
                 <div className="table-cell">
                   {t("form.studentName", "Student Name")}
                 </div>
-              <div className="table-cell">{t("form.subject", "Subject")}</div>
-              <div className="table-cell">{t("form.season", "Season")}</div>
-              <div className="table-cell">{t("form.date", "Date")}</div>
+                <div className="table-cell">{t("form.subject", "Subject")}</div>
+                <div className="table-cell">{t("form.season", "Season")}</div>
+                <div className="table-cell">{t("form.date", "Date")}</div>
                 <div className="table-cell">
                   {t("students.bulkRate", "Rating")}
-            </div>
+                </div>
                 <div className="table-cell">
                   {t("admin.table.actions", "Actions")}
                 </div>
@@ -1706,11 +2248,11 @@ const AdminCRUD = () => {
                       gridColumn: "1/-1",
                     }}
                   >
-                <p>{t("admin.msg.noData", "No ratings found")}</p>
-              </div>
-            ) : (
+                    <p>{t("admin.msg.noData", "No ratings found")}</p>
+                  </div>
+                ) : (
                   paginatedData.items.map((rating) => (
-                <div key={rating._id} className="table-row">
+                    <div key={rating._id} className="table-row">
                       <div className="table-cell">
                         {rating.studentName || "Unknown"}
                       </div>
@@ -1720,37 +2262,37 @@ const AdminCRUD = () => {
                       <div className="table-cell">
                         {rating.seasonName || rating.season || "N/A"}
                       </div>
-                  <div className="table-cell">
-                    {rating.date
-                      ? new Date(rating.date).toLocaleDateString()
-                      : "N/A"}
-                  </div>
-                  <div className="table-cell">
-                    <span
-                      style={{
+                      <div className="table-cell">
+                        {rating.date
+                          ? new Date(rating.date).toLocaleDateString()
+                          : "N/A"}
+                      </div>
+                      <div className="table-cell">
+                        <span
+                          style={{
                             padding: "8px 16px",
                             borderRadius: "20px",
                             backgroundColor:
                               rating.rating === "Excellent" ||
                               rating.rating === 5
-                          ? "#10b981"
+                                ? "#10b981"
                                 : rating.rating === "Good" ||
                                   rating.rating === 4
-                          ? "#3b82f6"
+                                ? "#3b82f6"
                                 : rating.rating === "Fair" ||
                                   rating.rating === 3
-                          ? "#f59e0b"
+                                ? "#f59e0b"
                                 : rating.rating === "Poor" ||
                                   rating.rating === 2
-                          ? "#ef4444"
-                          : "#6b7280",
-                        color: "white",
+                                ? "#ef4444"
+                                : "#6b7280",
+                            color: "white",
                             fontWeight: "600",
                             fontSize: "13px",
                             display: "inline-block",
                             boxShadow: "0 2px 4px rgba(0, 0, 0, 0.15)",
-                      }}
-                    >
+                          }}
+                        >
                           {rating.rating === "Excellent" || rating.rating === 5
                             ? t("form.rating.excellent", "Excellent")
                             : rating.rating === "Good" || rating.rating === 4
@@ -1760,27 +2302,27 @@ const AdminCRUD = () => {
                             : rating.rating === "Poor" || rating.rating === 2
                             ? t("form.rating.poor", "Poor")
                             : t("form.rating.na", "N/A")}
-                    </span>
-                  </div>
-                  <div className="table-cell">
-                    <button
-                      className="action-button edit"
-                      onClick={() => handleEditRating(rating)}
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      className="action-button delete"
-                      onClick={() => handleDeleteRating(rating._id)}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))
+                        </span>
+                      </div>
+                      <div className="table-cell">
+                        <button
+                          className="action-button edit"
+                          onClick={() => handleEditRating(rating)}
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          className="action-button delete"
+                          onClick={() => handleDeleteRating(rating._id)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
                 );
               })()}
-          </div>
+            </div>
 
             {/* Pagination Controls */}
             {(() => {
@@ -1907,57 +2449,217 @@ const AdminCRUD = () => {
             })()}
           </>
         ) : activeTab === "students" ? (
-          <div className="data-table student-table">
-            <div className="table-header">
-              <div className="table-cell">{t("admin.form.name", "Name")}</div>
-              <div className="table-cell">
-                {t("admin.form.gender", "Gender")}
+          <>
+            {/* Students Filters - Name, Class, Branch */}
+            <div
+              style={{
+                padding: "16px",
+                backgroundColor: "#f9fafb",
+                borderBottom: "1px solid #e5e7eb",
+                display: "grid",
+                gridTemplateColumns: "1.2fr 1fr 1fr 0.6fr",
+                gap: "12px",
+                marginBottom: "0",
+              }}
+            >
+              {/* Student Name Filter */}
+              <div>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {t("form.studentName", "Student Name")}
+                </label>
+                <input
+                  type="text"
+                  placeholder={t("form.search", "Search...")}
+                  value={studentFilters.studentName}
+                  onChange={(e) =>
+                    setStudentFilters({
+                      ...studentFilters,
+                      studentName: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                />
               </div>
-              <div className="table-cell">
-                {t("admin.form.username", "Username")}
+
+              {/* Class Filter */}
+              <div>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {t("admin.form.class", "Class")}
+                </label>
+                <select
+                  value={studentFilters.classId}
+                  onChange={(e) =>
+                    setStudentFilters({
+                      ...studentFilters,
+                      classId: e.target.value,
+                      branchId: "",
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">{t("admin.filter.all", "-- All --")}</option>
+                  {classes.map((cls) => (
+                    <option key={cls._id} value={cls._id}>
+                      {getLocalizedText(cls.nameMultilingual || cls.name) ||
+                        cls.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="table-cell">{t("admin.form.email", "Email")}</div>
-              <div className="table-cell">{t("admin.form.phone", "Phone")}</div>
-              <div className="table-cell">
-                {t("admin.form.parentsNumber", "Parents Number")}
+
+              {/* Branch Filter (depends on class) */}
+              <div>
+                <label
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    display: "block",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {t("admin.form.branch", "Branch")}
+                </label>
+                <select
+                  value={studentFilters.branchId}
+                  onChange={(e) =>
+                    setStudentFilters({
+                      ...studentFilters,
+                      branchId: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">{t("admin.filter.all", "-- All --")}</option>
+                  {getFilterBranchesForClass(studentFilters.classId).map(
+                    (branch) => (
+                      <option key={branch._id} value={branch._id}>
+                        {getLocalizedText(
+                          branch.nameMultilingual || branch.name
+                        ) || branch.name}
+                      </option>
+                    )
+                  )}
+                </select>
               </div>
-              <div className="table-cell">{t("admin.crud.edit", "Edit")}</div>
+
+              {/* Clear Button */}
+              <div style={{ display: "flex", alignItems: "flex-end" }}>
+                <button
+                  onClick={() =>
+                    setStudentFilters({
+                      studentName: "",
+                      classId: "",
+                      branchId: "",
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    backgroundColor: "#ef4444",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "13px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  {t("admin.btn.clear", "Clear")}
+                </button>
+              </div>
             </div>
-            {filteredStudents.map((student) => (
-              <div key={student._id} className="table-row">
+
+            <div className="data-table student-table">
+              <div className="table-header">
+                <div className="table-cell">{t("admin.form.name", "Name")}</div>
                 <div className="table-cell">
-                  {student.fullName || t("common.na", "N/A")}
+                  {t("admin.form.gender", "Gender")}
                 </div>
                 <div className="table-cell">
-                  {student.gender || t("common.na", "N/A")}
+                  {t("admin.form.username", "Username")}
                 </div>
                 <div className="table-cell">
-                  {student.username || t("common.na", "N/A")}
-                </div>
-                <div className="table-cell">{student.email}</div>
-                <div className="table-cell">
-                  {student.phone || t("common.na", "N/A")}
+                  {t("admin.form.email", "Email")}
                 </div>
                 <div className="table-cell">
-                  {student.parentsNumber || t("common.na", "N/A")}
+                  {t("admin.form.phone", "Phone")}
                 </div>
                 <div className="table-cell">
-                  <button
-                    className="action-button edit"
-                    onClick={() => handleEdit(student)}
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    className="action-button delete"
-                    onClick={() => handleDelete(student._id, "student")}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {t("admin.form.parentsNumber", "Parents Number")}
                 </div>
+                <div className="table-cell">{t("admin.crud.edit", "Edit")}</div>
               </div>
-            ))}
-          </div>
+              {filteredStudents.map((student) => (
+                <div key={student._id} className="table-row">
+                  <div className="table-cell">
+                    {student.fullName || t("common.na", "N/A")}
+                  </div>
+                  <div className="table-cell">
+                    {student.gender || t("common.na", "N/A")}
+                  </div>
+                  <div className="table-cell">
+                    {student.username || t("common.na", "N/A")}
+                  </div>
+                  <div className="table-cell">{student.email}</div>
+                  <div className="table-cell">
+                    {student.phone || t("common.na", "N/A")}
+                  </div>
+                  <div className="table-cell">
+                    {student.parentsNumber || t("common.na", "N/A")}
+                  </div>
+                  <div className="table-cell">
+                    <button
+                      className="action-button edit"
+                      onClick={() => handleEdit(student)}
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      className="action-button delete"
+                      onClick={() => handleDelete(student._id, "student")}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="data-table teacher-table">
             <div className="table-header">
@@ -2224,17 +2926,17 @@ const AdminCRUD = () => {
                       }
                     />
                   </div>
-                    <div className="form-group">
+                  <div className="form-group">
                     <label>
                       {t("admin.form.password", "Password")}{" "}
                       {!editingItem && t("admin.form.required", "*")}
                     </label>
-                      <input
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
                       placeholder={
                         editingItem
                           ? t(
@@ -2244,9 +2946,9 @@ const AdminCRUD = () => {
                           : ""
                       }
                       required={!editingItem}
-                        minLength={6}
-                      />
-                    </div>
+                      minLength={6}
+                    />
+                  </div>
                   <div className="form-group">
                     <label>{t("admin.form.classLabel", "Class")}</label>
                     <select

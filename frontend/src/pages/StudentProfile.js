@@ -1197,59 +1197,61 @@ const StudentProfile = () => {
 
   return (
     <div>
-      {/* Navigation Bar - Matching AdminDashboard mobile-top-navbar design */}
-      <header className="student-profile-navbar">
-        <Link to="/student/profile" className="student-profile-logo">
-          <img
-            src="/logo.jpg"
-            alt="School Logo"
-            className="student-profile-logo-img"
-          />
-          <span className="student-profile-school-name">
-            {t("app.schoolName", "CLEVER PRIVATE HIGH SCHOOL")}
-          </span>
-        </Link>
-        <div className="student-profile-nav-actions">
-          {/* Language Switcher */}
-          <div
-            className="student-profile-language-switcher"
-            ref={languageDropdownRef}
-          >
-            <button
-              className="student-profile-language-badge"
-              onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-              title="Change Language"
+      {/* Navigation Bar - show only on mobile to avoid mobile-style bar on desktop */}
+      {isMobile && (
+        <header className="student-profile-navbar">
+          <Link to="/student/profile" className="student-profile-logo">
+            <img
+              src="/logo.jpg"
+              alt="School Logo"
+              className="student-profile-logo-img"
+            />
+            <span className="student-profile-school-name">
+              {t("app.schoolName", "CLEVER PRIVATE HIGH SCHOOL")}
+            </span>
+          </Link>
+          <div className="student-profile-nav-actions">
+            {/* Language Switcher */}
+            <div
+              className="student-profile-language-switcher"
+              ref={languageDropdownRef}
             >
-              {languages.find((l) => l.code === currentLanguage)?.flag}
+              <button
+                className="student-profile-language-badge"
+                onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+                title="Change Language"
+              >
+                {languages.find((l) => l.code === currentLanguage)?.flag}
+              </button>
+              {isLanguageDropdownOpen && (
+                <div className="student-profile-language-dropdown">
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      className={`student-profile-language-item ${
+                        lang.code === currentLanguage ? "active" : ""
+                      }`}
+                      onClick={() => {
+                        changeLanguage(lang.code);
+                        setIsLanguageDropdownOpen(false);
+                      }}
+                    >
+                      <span className="lang-flag">{lang.flag}</span>
+                      <span className="lang-name">{lang.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Logout Button */}
+            <button onClick={handleLogout} className="student-profile-logout-btn">
+              <LogOut size={18} />
             </button>
-            {isLanguageDropdownOpen && (
-              <div className="student-profile-language-dropdown">
-                {languages.map((lang) => (
-                  <button
-                    key={lang.code}
-                    className={`student-profile-language-item ${
-                      lang.code === currentLanguage ? "active" : ""
-                    }`}
-                    onClick={() => {
-                      changeLanguage(lang.code);
-                      setIsLanguageDropdownOpen(false);
-                    }}
-                  >
-                    <span className="lang-flag">{lang.flag}</span>
-                    <span className="lang-name">{lang.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
-          {/* Logout Button */}
-          <button onClick={handleLogout} className="student-profile-logout-btn">
-            <LogOut size={18} />
-          </button>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <div className="container" style={{ paddingTop: "60px" }}>
+      <div className="container" style={{ paddingTop: isMobile ? "60px" : "0px" }}>
         <div className="profile-layout">
           {/* Student Information Card */}
           <div className="profile-hero-card">
@@ -3137,14 +3139,14 @@ const StudentProfile = () => {
       </div>
 
       <style jsx>{`
-        /* Hide old Header navigation bar on StudentProfile page */
-        :global(.student-top-bar) {
-          display: none !important;
-        }
-
-        /* Also hide it within student-layout */
-        :global(.student-layout .student-top-bar) {
-          display: none !important;
+        /* Hide old Header navigation bar on StudentProfile page - only on mobile */
+        @media (max-width: 768px) {
+          :global(.student-top-bar) {
+            display: none !important;
+          }
+          :global(.student-layout .student-top-bar) {
+            display: none !important;
+          }
         }
 
         /* Student Profile Navigation Bar - Matching AdminDashboard mobile-top-navbar */
