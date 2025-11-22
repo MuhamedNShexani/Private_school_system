@@ -1128,7 +1128,6 @@ const Students = () => {
 
     try {
       setHomeworkLoading(true);
-      
 
       const response = await homeworksAPI.create({
         classId: selectedClass,
@@ -1808,7 +1807,8 @@ const Students = () => {
   if (loading) {
     return (
       <div className="loading">
-        <div>{t("students.loading", "Loading students...")}</div>
+        <div className="spinner"></div>
+        <div>{t("general.loading", "Loading ... ")}</div>
       </div>
     );
   }
@@ -2009,7 +2009,8 @@ const Students = () => {
               <div className="homeworks-management-body">
                 {homeworksLoading ? (
                   <div style={{ textAlign: "center", padding: "20px" }}>
-                    {t("common.loading", "Loading...")}
+                    <div className="spinner"></div>
+                    {t("general.loading", "Loading ... ")}
                   </div>
                 ) : homeworksList.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "20px" }}>
@@ -2250,6 +2251,7 @@ const Students = () => {
                         </option>
                       ))}
                     </select>
+                    <div className="spinner"></div>
                     <button
                       type="button"
                       className="student-cards-load-btn"
@@ -2259,7 +2261,7 @@ const Students = () => {
                       }
                     >
                       {studentCardsLoading
-                        ? t("studentCards.loadingAction", "Loading...")
+                        ? t("general.loading", "Loading ... ")
                         : t("studentCards.loadAction", "Show Student Cards")}
                     </button>
                   </div>
@@ -2886,7 +2888,7 @@ const Students = () => {
                   <div className="bulk-grading-form-grid">
                     <div className="form-group">
                       <label>
-                        {t("students.bulkGrading.labels.subject", "Subject")} *
+                        {t("studentCards.tableSubject", "Subject")} *
                       </label>
                       <select
                         value={bulkGradingData.subjectId}
@@ -2904,7 +2906,7 @@ const Students = () => {
                       >
                         <option value="">
                           {t(
-                            "students.bulkGrading.options.selectSubject",
+                            "studentsGrades.subjectSelectPlaceholder",
                             "Select Subject"
                           )}
                         </option>
@@ -2923,9 +2925,7 @@ const Students = () => {
                     </div>
 
                     <div className="form-group">
-                      <label>
-                        {t("students.bulkGrading.labels.season", "Season")} *
-                      </label>
+                      <label>{t("form.season", "Season")} *</label>
                       <select
                         value={bulkGradingData.seasonId}
                         onChange={(e) =>
@@ -2941,10 +2941,7 @@ const Students = () => {
                         disabled={loadingDependencies}
                       >
                         <option value="">
-                          {t(
-                            "students.bulkGrading.options.selectSeason",
-                            "Select Season"
-                          )}
+                          {t("general.selectseason", "Select Season")}
                         </option>
                         {seasons.map((season) => (
                           <option key={season._id} value={season._id}>
@@ -2986,28 +2983,16 @@ const Students = () => {
                           {t("students.bulkGrading.types.exercise", "Exercise")}
                         </option>
                         <option value="monthly_exam">
-                          {t(
-                            "students.bulkGrading.types.monthlyExam",
-                            "Monthly Exam"
-                          )}
+                          {t("studentProfile.monthlyExam", "Monthly Exam")}
                         </option>
                         <option value="attendance">
-                          {t(
-                            "students.bulkGrading.types.attendance",
-                            "Attendance"
-                          )}
+                          {t("studentProfile.attendance", "Attendance")}
                         </option>
                         <option value="behaviour">
-                          {t(
-                            "students.bulkGrading.types.behaviour",
-                            "Behaviour"
-                          )}
+                          {t("studentProfile.behaviour", "Behaviour")}
                         </option>
                         <option value="season_exam">
-                          {t(
-                            "students.bulkGrading.types.seasonExam",
-                            "Season Exam"
-                          )}
+                          {t("studentProfile.seasonExam", "Season Exam")}
                         </option>
                       </select>
                     </div>
@@ -3173,7 +3158,7 @@ const Students = () => {
                                   )
                                 )} (${exercise.degree || 0} ${t(
                                   "students.bulkGrading.degreePoints",
-                                  "points"
+                                  " "
                                 )})`}
                               </option>
                             ))}
@@ -3253,7 +3238,7 @@ const Students = () => {
                             <th
                               style={{
                                 padding: "12px",
-                                textAlign: "left",
+                                textAlign: "center",
                                 fontWeight: 600,
                                 fontSize: "0.875rem",
                                 color: "#374151",
@@ -3264,7 +3249,7 @@ const Students = () => {
                             <th
                               style={{
                                 padding: "12px",
-                                textAlign: "left",
+                                textAlign: "center",
                                 fontWeight: 600,
                                 fontSize: "0.875rem",
                                 color: "#374151",
@@ -3320,7 +3305,7 @@ const Students = () => {
                             <th
                               style={{
                                 padding: "12px",
-                                textAlign: "left",
+                                textAlign: "center",
                                 fontWeight: 600,
                                 fontSize: "0.875rem",
                                 color: "#374151",
@@ -3361,7 +3346,10 @@ const Students = () => {
                             return (
                               <tr
                                 key={studentId}
-                                style={{ borderBottom: "1px solid #e5e7eb" }}
+                                style={{
+                                  borderBottom: "1px solid #e5e7eb",
+                                  textAlign: "center",
+                                }}
                               >
                                 <td
                                   style={{ padding: "12px", fontWeight: 500 }}
@@ -3545,7 +3533,7 @@ const Students = () => {
                         : t("students.bulkGrading.actions.saving", "Saving...")}
                     </span>
                   ) : (
-                    t("students.bulkGrading.actions.save", "Save Grades")
+                    t("btn.save", "Save Grades")
                   )}
                 </button>
               </div>
@@ -4536,7 +4524,7 @@ const Students = () => {
 
         .bulk-grading-table-container th {
           padding: 16px;
-          text-align: left;
+          text-align: center;
           font-weight: 700;
           font-size: 0.9rem;
           color: #374151;

@@ -43,8 +43,12 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -577,6 +581,7 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e8f0;
   padding: 30px;
+
   overflow: hidden;
 }
 
@@ -589,6 +594,8 @@
 
 .table-container {
   overflow-x: auto;
+  justify-content: center;
+  text-align: center;
 }
 
 .students-payment-table table {
@@ -602,7 +609,7 @@
 
 .students-payment-table th {
   padding: 16px;
-  text-align: left;
+  text-align: center;
   font-weight: 600;
   color: #374151;
   font-size: 0.9rem;
@@ -639,57 +646,57 @@
   .payments-container {
     padding: 16px;
   }
-  
+
   .header-content h1 {
     font-size: 1.5rem;
   }
-  
+
   .payment-stats {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .payments-controls {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
   }
-  
+
   .bulk-actions {
     justify-content: center;
   }
-  
+
   .table-header,
   .table-row {
     grid-template-columns: 1fr;
     gap: 8px;
-    text-align: left;
+    text-align: center;
   }
-  
+
   .table-header > div {
     font-size: 0.8rem;
     margin-bottom: 4px;
   }
-  
+
   .table-row > div {
     padding: 4px 0;
   }
-  
+
   .col-name {
     order: 1;
   }
-  
+
   .col-id {
     order: 2;
   }
-  
+
   .col-class {
     order: 3;
   }
-  
+
   .col-status {
     order: 4;
   }
-  
+
   .col-actions {
     order: 5;
   }

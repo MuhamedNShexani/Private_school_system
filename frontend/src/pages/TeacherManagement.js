@@ -137,7 +137,7 @@ const TeacherManagement = () => {
       <div className="management-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>Loading teachers...</p>
+          <p>{t("general.loading", "Loading ... ")}</p>
         </div>
       </div>
     );

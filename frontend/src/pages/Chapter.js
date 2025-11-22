@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { chaptersAPI, subjectsAPI, seasonsAPI } from "../services/api";
 import { ArrowLeft, FileText, Clock, Target, BookOpen } from "lucide-react";
+import { useTranslation } from "../contexts/TranslationContext";
 
 const Chapter = () => {
   const { chapterId } = useParams();
@@ -9,6 +10,7 @@ const Chapter = () => {
   const [season, setSeason] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -44,7 +46,8 @@ const Chapter = () => {
   if (loading) {
     return (
       <div className="loading">
-        <div>Loading chapter...</div>
+        <div className="spinner"></div>
+        <div>{t("general.loading", "Loading ... ")}</div>
       </div>
     );
   }

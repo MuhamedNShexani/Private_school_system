@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTranslation } from "../contexts/TranslationContext";
 import {
@@ -47,7 +47,7 @@ import "./AdminDashboard.css";
 
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const [stats, setStats] = useState({
     totalStudents: 0,
     totalTeachers: 0,
@@ -94,6 +94,48 @@ const AdminDashboard = () => {
   const [passRateByGradeData, setPassRateByGradeData] = useState([]);
   const [passRateByGradeLoading, setPassRateByGradeLoading] = useState(false);
   const [selectedGradeSeason, setSelectedGradeSeason] = useState("");
+  const getLocalizedText = useCallback(
+    (value, fallback = "") => {
+      if (!value) return fallback;
+      if (typeof value === "string") return value;
+
+      if (typeof value === "object") {
+        const directMatch =
+          value[currentLanguage] || value.en || value.ar || value.ku;
+        if (directMatch) return directMatch;
+
+        if (value.name) {
+          return getLocalizedText(value.name, fallback);
+        }
+        if (value.title) {
+          return getLocalizedText(value.title, fallback);
+        }
+        if (value.label) {
+          return getLocalizedText(value.label, fallback);
+        }
+      }
+
+      return fallback;
+    },
+    [currentLanguage]
+  );
+
+  const getEntityName = useCallback(
+    (entity, fallback = "") => {
+      if (!entity) return fallback;
+      if (typeof entity === "string") return entity;
+
+      const bestMatch =
+        entity.nameMultilingual ||
+        entity.titleMultilingual ||
+        entity.title ||
+        entity.name ||
+        entity.label;
+
+      return getLocalizedText(bestMatch, fallback);
+    },
+    [getLocalizedText]
+  );
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
@@ -461,7 +503,7 @@ const AdminDashboard = () => {
       <div className="dashboard-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>Loading dashboard...</p>
+          <p>{t("general.loading", "Loading ... ")}</p>
         </div>
       </div>
     );
@@ -483,32 +525,51 @@ const AdminDashboard = () => {
 
   const statCards = [
     {
-      title: "Total Students",
+      title: t("admin.dashboard.totalStudent", "Total Students"),
       value: stats.totalStudents,
       icon: <Users size={24} />,
       color: "blue",
-      description: ` (${analytics.genderBreakdown.male} Male, ${analytics.genderBreakdown.female} Female)`,
+      description: ` (${analytics.genderBreakdown.male} ${t(
+        "students.gender.male",
+        "Male"
+      )}, ${analytics.genderBreakdown.female}  ${t(
+        "students.gender.female",
+        "Female"
+      )})`,
     },
     {
-      title: "Total Teachers",
+      title: t("admin.dashboard.totalteachers", "Total Teachers"),
       value: stats.totalTeachers,
       icon: <GraduationCap size={24} />,
       color: "green",
-      description: ` (${analytics.teacherGenderBreakdown.male} Male, ${analytics.teacherGenderBreakdown.female} Female)`,
+      description: ` (${analytics.teacherGenderBreakdown.male} ${t(
+        "students.gender.male",
+        "Male"
+      )}, ${analytics.teacherGenderBreakdown.female}  ${t(
+        "students.gender.female",
+        "Female"
+      )})`,
     },
     {
-      title: "Both Payments Paid",
+      title: t("admin.dashboard.BothPaymentsPaid", "Both Payments Paid"),
       value: analytics.paymentBreakdown.bothPaymentsPaid,
       icon: <DollarSign size={24} />,
       color: "purple",
-      description: ` (First: ${analytics.paymentBreakdown.firstPaymentPaid}, Second: ${analytics.paymentBreakdown.secondPaymentPaid})`,
+      description: ` ( ${t("admin.dashboard.first", "First")}: ${
+        analytics.paymentBreakdown.firstPaymentPaid
+      }, ${t("admin.dashboard.second", "Second")}: ${
+        analytics.paymentBreakdown.secondPaymentPaid
+      })`,
     },
     {
-      title: "Classes",
+      title: t("admin.dashboard.classes", "Classes"),
       value: stats.totalClasses,
       icon: <BarChart3 size={24} />,
       color: "orange",
-      description: ` (${stats.totalBranches} branches)`,
+      description: ` (${stats.totalBranches} ${t(
+        "admin.dashboard.branches",
+        "Branches"
+      )})`,
     },
   ];
 
@@ -517,7 +578,10 @@ const AdminDashboard = () => {
       <div className="dashboard-header">
         <h1>{t("admin.dashboard.title", "Admin Dashboard")}</h1>
         <p>
-          Welcome back, {user?.firstName}! Here's an overview of your platform.
+          {t(
+            "admin.dashboard.welcome",
+            "Welcome back , Here's an overview of your platform."
+          )}
         </p>
       </div>
 
@@ -535,7 +599,7 @@ const AdminDashboard = () => {
       </div>
 
       <div className="analytics-section">
-        <h2>Analytics & Reports</h2>
+        <h2>{t("admin.dashboard.analyticsraports", "Analytics & Reports")}</h2>
 
         <div className="analytics-grid">
           {/* Gender Breakdown */}
@@ -550,8 +614,14 @@ const AdminDashboard = () => {
               <PieChart>
                 <Pie
                   data={[
-                    { name: "Male", value: analytics.genderBreakdown.male },
-                    { name: "Female", value: analytics.genderBreakdown.female },
+                    {
+                      name: t("students.gender.male", "Male"),
+                      value: analytics.genderBreakdown.male,
+                    },
+                    {
+                      name: t("students.gender.female", "Female"),
+                      value: analytics.genderBreakdown.female,
+                    },
                   ]}
                   cx="50%"
                   cy="50%"
@@ -580,7 +650,9 @@ const AdminDashboard = () => {
 
           {/* Class Evaluation Rate */}
           <div className="chart-card">
-            <h3>Class Evaluation Rate</h3>
+            <h3>
+              {t("admin.dashboard.classevalutionrate", "Class Evaluation Rate")}
+            </h3>
             <div
               className="filter-controls"
               style={{
@@ -600,7 +672,7 @@ const AdminDashboard = () => {
                     fontSize: "14px",
                   }}
                 >
-                  Class:
+                  {t("admin.form.class", "Class")}:
                 </label>
                 {classes.length > 0 ? (
                   <select
@@ -618,10 +690,15 @@ const AdminDashboard = () => {
                       backgroundColor: "white",
                     }}
                   >
-                    <option value="">Select Class</option>
+                    <option value="">
+                      {t("admin.form.selectClass", "Select Class")}
+                    </option>
                     {classes.map((cls) => (
                       <option key={cls._id} value={cls._id}>
-                        {cls.name?.en || cls.name || "Unknown Class"}
+                        {getEntityName(
+                          cls,
+                          t("students.unnamedClass", "Unnamed Class")
+                        )}{" "}
                       </option>
                     ))}
                   </select>
@@ -637,7 +714,7 @@ const AdminDashboard = () => {
                       textAlign: "center",
                     }}
                   >
-                    No classes available
+                    {t("admin.msg.noData", "No classes available")}
                   </div>
                 )}
               </div>
@@ -650,7 +727,7 @@ const AdminDashboard = () => {
                     fontSize: "14px",
                   }}
                 >
-                  Date:
+                  {t("admin.date", "Date")}:
                 </label>
                 {availableDates.length > 0 ? (
                   <div
@@ -867,7 +944,7 @@ const AdminDashboard = () => {
                           width: "30%",
                         }}
                       >
-                        Subject
+                        {t("admin.form.subjects", "Subject")}
                       </th>
                       <th
                         style={{
@@ -887,7 +964,7 @@ const AdminDashboard = () => {
                           }}
                         >
                           <ArrowUp size={16} />
-                          Improved
+                          {t("admin.dashboard.improved", "Improved")}
                         </div>
                       </th>
                       <th
@@ -908,7 +985,7 @@ const AdminDashboard = () => {
                           }}
                         >
                           <Minus size={16} />
-                          No Change
+                          {t("admin.dashboard.nochange", "No Change")}
                         </div>
                       </th>
                       <th
@@ -929,7 +1006,7 @@ const AdminDashboard = () => {
                           }}
                         >
                           <ArrowDown size={16} />
-                          Declined
+                          {t("admin.dashboard.declined", "Declined")}
                         </div>
                       </th>
                     </tr>
@@ -1018,7 +1095,10 @@ const AdminDashboard = () => {
 
           {/* Pass Rate by Grade */}
           <div className="chart-card pass-rate-grade-report">
-            <h3>Pass Rate by Grade</h3>
+            <h3>
+              {" "}
+              {t("admin.dashboard.passratebygrade", "Pass Rate by Grade")}
+            </h3>
             <div
               className="filter-controls"
               style={{
@@ -1039,7 +1119,7 @@ const AdminDashboard = () => {
                     color: "#374151",
                   }}
                 >
-                  Season
+                  {t("form.season", "Season")}
                 </label>
                 <select
                   value={selectedGradeSeason}
@@ -1053,7 +1133,9 @@ const AdminDashboard = () => {
                     backgroundColor: "white",
                   }}
                 >
-                  <option value="">Select Season</option>
+                  <option value="">
+                    {t("general.selectseason", "Select Season")}
+                  </option>
                   {seasons.map((season) => {
                     // API returns name as string (language-specific) and nameMultilingual as object
                     const seasonName =
@@ -1133,7 +1215,9 @@ const AdminDashboard = () => {
 
           {/* Pass Rate by Subject */}
           <div className="chart-card pass-rate-subject-report">
-            <h3>Pass Rate by Subject</h3>
+            <h3>
+              {t("admin.dashboard.passratebysubject", "Pass Rate by Subject")}
+            </h3>
             <div
               className="filter-controls"
               style={{
@@ -1154,7 +1238,7 @@ const AdminDashboard = () => {
                     color: "#374151",
                   }}
                 >
-                  Class
+                  {t("admin.form.class", "Class")}
                 </label>
                 {classes.length > 0 ? (
                   <div
@@ -1241,7 +1325,7 @@ const AdminDashboard = () => {
                         ?.name?.en ||
                         classes.find((c) => c._id === selectedPassRateClass)
                           ?.name ||
-                        "Select Class"}
+                        t("admin.form.selectClass", "Select Class")}
                     </div>
                     <button
                       type="button"
@@ -1334,7 +1418,7 @@ const AdminDashboard = () => {
                     color: "#374151",
                   }}
                 >
-                  Season
+                  {t("form.season", "Season")}
                 </label>
                 <select
                   value={selectedSeason}
@@ -1348,7 +1432,9 @@ const AdminDashboard = () => {
                     backgroundColor: "white",
                   }}
                 >
-                  <option value="">Select Season</option>
+                  <option value="">
+                    {t("general.selectseason", "Select Season")}
+                  </option>
                   {seasons.map((season) => {
                     // API returns name as string (language-specific) and nameMultilingual as object
                     const seasonName =
@@ -1661,7 +1747,12 @@ const AdminDashboard = () => {
         <div className="analytics-grid">
           {/* Top Performing Students Report */}
           <div className="chart-card">
-            <h2 style={{ marginBottom: "20px" }}>Top Performing Students</h2>
+            <h2 style={{ marginBottom: "20px" }}>
+              {t(
+                "admin.dashboard.topperformingstudent",
+                "Top Performing Students"
+              )}
+            </h2>
             {topStudentsLoading ? (
               <div
                 style={{
@@ -1706,7 +1797,7 @@ const AdminDashboard = () => {
                           fontSize: "14px",
                         }}
                       >
-                        Rank
+                        {t("admin.dash.rank", "Rank")}
                       </th>
                       <th
                         style={{
@@ -1716,7 +1807,7 @@ const AdminDashboard = () => {
                           fontSize: "14px",
                         }}
                       >
-                        Student Name
+                        {t("admin.student", "Student Name")}
                       </th>
                       <th
                         style={{
@@ -1726,7 +1817,8 @@ const AdminDashboard = () => {
                           fontSize: "14px",
                         }}
                       >
-                        Class (Branch)
+                        {t("admin.form.class", "Class")}({""}
+                        {t("admin.form.branch", "Branch")})
                       </th>
                       <th
                         style={{
@@ -1736,7 +1828,7 @@ const AdminDashboard = () => {
                           fontSize: "14px",
                         }}
                       >
-                        Average Score
+                        {t("admin.dash.averagescore", "Average Score")}
                       </th>
                     </tr>
                   </thead>
@@ -1827,7 +1919,12 @@ const AdminDashboard = () => {
 
           {/* Worst Performing Students Report */}
           <div className="chart-card">
-            <h2 style={{ marginBottom: "20px" }}>Worst Performing Students</h2>
+            <h2 style={{ marginBottom: "20px" }}>
+              {t(
+                "admin.dashboard.worstperformingstudents",
+                "Worst Performing Students"
+              )}
+            </h2>
             {worstStudentsLoading ? (
               <div
                 style={{
@@ -1872,7 +1969,7 @@ const AdminDashboard = () => {
                           fontSize: "14px",
                         }}
                       >
-                        Rank
+                        {t("admin.dash.rank", "Rank")}
                       </th>
                       <th
                         style={{
@@ -1882,7 +1979,7 @@ const AdminDashboard = () => {
                           fontSize: "14px",
                         }}
                       >
-                        Student Name
+                        {t("admin.student", "Student Name")}
                       </th>
                       <th
                         style={{
@@ -1892,7 +1989,8 @@ const AdminDashboard = () => {
                           fontSize: "14px",
                         }}
                       >
-                        Class (Branch)
+                        {t("admin.form.class", "Class")}({""}
+                        {t("admin.form.branch", "Branch")})
                       </th>
                       <th
                         style={{
@@ -1902,7 +2000,7 @@ const AdminDashboard = () => {
                           fontSize: "14px",
                         }}
                       >
-                        Average Score
+                        {t("admin.dash.averagescore", "Average Score")}
                       </th>
                     </tr>
                   </thead>

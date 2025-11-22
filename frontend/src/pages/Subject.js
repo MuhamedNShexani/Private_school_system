@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "../contexts/TranslationContext";
+
 import { subjectsAPI, chaptersAPI, seasonsAPI } from "../services/api";
 import {
   ArrowLeft,
@@ -14,6 +16,8 @@ import {
 const Subject = () => {
   const { subjectId } = useParams();
   const [subject, setSubject] = useState(null);
+  const { t } = useTranslation();
+
   const [chapter, setChapter] = useState(null);
   const [season, setSeason] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -104,7 +108,8 @@ const Subject = () => {
   if (loading) {
     return (
       <div className="loading">
-        <div>Loading subject...</div>
+        <div className="spinner"></div>
+        <div>{t("general.loading", "Loading ... ")}</div>
       </div>
     );
   }

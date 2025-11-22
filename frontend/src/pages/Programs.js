@@ -1459,7 +1459,8 @@ const Programs = () => {
   if (loading) {
     return (
       <div className="loading">
-        <div>{t("msg.loading_programs", "Loading programs...")}</div>
+        <div className="spinner"></div>
+        <div>{t("general.loading", "Loading ... ")}</div>
       </div>
     );
   }

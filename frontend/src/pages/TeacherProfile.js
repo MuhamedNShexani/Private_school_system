@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTranslation } from "../contexts/TranslationContext";
+
 import { coursesAPI, evaluationsAPI } from "../services/api";
 import {
   User,
@@ -14,6 +16,8 @@ import "./TeacherProfile.css";
 const TeacherProfile = () => {
   const { user, isTeacher, isAdmin } = useAuth();
   const [courses, setCourses] = useState([]);
+  const { t } = useTranslation();
+
   const [evaluations, setEvaluations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -102,7 +106,7 @@ const TeacherProfile = () => {
       <div className="profile-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>Loading your profile...</p>
+          <p>{t("general.loading", "Loading ... ")}</p>
         </div>
       </div>
     );

@@ -689,9 +689,8 @@ const ChapterQuizzes = () => {
   if (loading) {
     return (
       <div className="container">
-        <div className="loading">
-          {t("msg.loading_programs", "Loading programs...")}
-        </div>
+        <div className="spinner"></div>
+        <div className="loading">{t("general.loading", "Loading ... ")}</div>
       </div>
     );
   }

@@ -1366,7 +1366,7 @@ const AdminCRUD = () => {
       <div className="admin-crud-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>{t("admin.crud.loading", "Loading...")}</p>
+          <p>{t("general.loading", "Loading ... ")}</p>
         </div>
       </div>
     );

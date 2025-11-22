@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { studentsAPI, gradesAPI, classesAPI } from "../services/api";
 import { Plus, Edit, Trash2, Users, Search } from "lucide-react";
+import { useTranslation } from "../contexts/TranslationContext";
+
 import "./StudentManagement.css";
 
 const StudentManagement = () => {
@@ -14,6 +16,8 @@ const StudentManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const { t } = useTranslation();
+
   const [formData, setFormData] = useState({
     name: "",
     gender: "Male",
@@ -140,7 +144,7 @@ const StudentManagement = () => {
       <div className="management-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>Loading students...</p>
+          <p>{t("general.loading", "Loading ... ")}</p>
         </div>
       </div>
     );

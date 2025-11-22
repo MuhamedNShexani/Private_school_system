@@ -111,7 +111,7 @@ const PaymentsManagement = () => {
       <div className="payments-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>Loading payment data...</p>
+          <p>{t("general.loading", "Loading ... ")}</p>
         </div>
       </div>
     );
@@ -163,14 +163,18 @@ const PaymentsManagement = () => {
       )}
 
       <div className="payment-summary-section">
-        <h2>Payment Summary</h2>
+        <h2>{t("payment.paymentsummary", "Payment Summary")}</h2>
         <div className="summary-stats">
           <div className="stat-card">
-            <div className="stat-label">Total Students</div>
+            <div className="stat-label">
+              {t("payment.totalstudent", "Total Students")}
+            </div>
             <div className="stat-value">{safeStudents.length}</div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">First Payment Paid</div>
+            <div className="stat-label">
+              {t("payment.firstpaymentpaid", "First Payment Paid")}
+            </div>
             <div className="stat-value">
               {Array.isArray(safeStudents)
                 ? safeStudents.filter((s) => s.firstPayment).length
@@ -178,7 +182,9 @@ const PaymentsManagement = () => {
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Second Payment Paid</div>
+            <div className="stat-label">
+              {t("payment.secondpaymentpaid", "Second Payment Paid")}
+            </div>
             <div className="stat-value">
               {Array.isArray(safeStudents)
                 ? safeStudents.filter((s) => s.secondPayment).length
@@ -186,7 +192,9 @@ const PaymentsManagement = () => {
             </div>
           </div>
           <div className="stat-card">
-            <div className="stat-label">Both Payments Paid</div>
+            <div className="stat-label">
+              {t("payment.bothpaymentspaid", "Both Payments Paid")}
+            </div>
             <div className="stat-value">
               {Array.isArray(safeStudents)
                 ? safeStudents.filter((s) => s.firstPayment && s.secondPayment)
@@ -198,7 +206,7 @@ const PaymentsManagement = () => {
       </div>
 
       <div className="students-payment-table">
-        <h2>Students Payment Status</h2>
+        <h2>{t("payment.studentpaymentstatus", "Students Payment Status")}</h2>
         <div className="table-container">
           <table>
             <thead>

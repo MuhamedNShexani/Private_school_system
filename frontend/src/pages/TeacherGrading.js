@@ -321,7 +321,7 @@ const TeacherGrading = () => {
       <div className="grading-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>Loading grading data...</p>
+          <p>{t("general.loading", "Loading ... ")}</p>
         </div>
       </div>
     );

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { seasonsAPI, chaptersAPI, subjectsAPI } from "../services/api";
 import { ArrowLeft, BookOpen, FileText, Clock, Users } from "lucide-react";
+import { useTranslation } from "../contexts/TranslationContext";
 
 const Season = () => {
   const { seasonId } = useParams();
@@ -10,6 +11,7 @@ const Season = () => {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -38,7 +40,8 @@ const Season = () => {
   if (loading) {
     return (
       <div className="loading">
-        <div>Loading season...</div>
+        <div className="spinner"></div>
+        <div>{t("general.loading", "Loading ... ")}</div>
       </div>
     );
   }

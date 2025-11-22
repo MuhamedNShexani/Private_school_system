@@ -252,7 +252,7 @@ const UpdatePayment = () => {
       <div className="payments-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>Loading data...</p>
+          <p>{t("general.loading", "Loading ... ")}</p>
         </div>
       </div>
     );
@@ -285,7 +285,7 @@ const UpdatePayment = () => {
           }}
         >
           <ArrowLeft size={20} />
-          Back to Payments
+          {t("payment.updatepayment.back", "Back to Payments")}
         </button>
       </div>
 
@@ -299,7 +299,7 @@ const UpdatePayment = () => {
           }}
         >
           <DollarSign size={32} />
-          Update Payment Status
+          {t("payment.updatedpaymentstatus", "Update Payment Status")}
         </h1>
 
         <form onSubmit={handleSubmit} className="payment-form">

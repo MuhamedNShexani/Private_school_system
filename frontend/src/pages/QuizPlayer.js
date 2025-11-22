@@ -68,19 +68,19 @@ const QuizPlayer = () => {
   const getLocalizedText = useMemo(
     () =>
       (value, fallback = "") => {
-      if (!value) return fallback;
-      if (typeof value === "string") return value;
-      if (typeof value === "object") {
-        return (
-          value[currentLanguage] ||
-          value.en ||
-          value.ar ||
-          value.ku ||
-          fallback
-        );
-      }
-      return fallback;
-    },
+        if (!value) return fallback;
+        if (typeof value === "string") return value;
+        if (typeof value === "object") {
+          return (
+            value[currentLanguage] ||
+            value.en ||
+            value.ar ||
+            value.ku ||
+            fallback
+          );
+        }
+        return fallback;
+      },
     [currentLanguage]
   );
 
@@ -497,7 +497,7 @@ const QuizPlayer = () => {
         {loading ? (
           <div className="loading-state">
             <Loader2 className="spinner" size={32} />
-            <span>{t("quizPlayer.loading", "Loading quiz...")}</span>
+            <span>{t("general.loading", "Loading ... ")}</span>
           </div>
         ) : error ? (
           <div className="error-state">
@@ -547,7 +547,11 @@ const QuizPlayer = () => {
                 </div>
               </div>
               {submitted && result && (
-                <div className={`score-card ${result.correct / result.total > 0.5 ? 'celebration' : ''}`}>
+                <div
+                  className={`score-card ${
+                    result.correct / result.total > 0.5 ? "celebration" : ""
+                  }`}
+                >
                   {result.correct / result.total > 0.5 && (
                     <div className="confetti">
                       {[...Array(20)].map((_, i) => (
@@ -618,8 +622,17 @@ const QuizPlayer = () => {
                     type="button"
                     className="submit-btn"
                     onClick={handleSubmit}
-                    disabled={submitted || currentQuestionIndex < totalQuestions - 1}
-                    title={currentQuestionIndex < totalQuestions - 1 ? t("quizPlayer.completeAllQuestions", "Please answer all questions first") : ""}
+                    disabled={
+                      submitted || currentQuestionIndex < totalQuestions - 1
+                    }
+                    title={
+                      currentQuestionIndex < totalQuestions - 1
+                        ? t(
+                            "quizPlayer.completeAllQuestions",
+                            "Please answer all questions first"
+                          )
+                        : ""
+                    }
                   >
                     {t("quizPlayer.submit", "Submit Quiz")}
                   </button>
@@ -1027,7 +1040,8 @@ const QuizPlayer = () => {
         }
 
         @keyframes bounce {
-          0%, 100% {
+          0%,
+          100% {
             transform: scale(1);
           }
           50% {
@@ -1037,8 +1051,14 @@ const QuizPlayer = () => {
 
         .score-card.celebration {
           animation: bounce 0.6s ease-in-out;
-          background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
-          box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 0 60px rgba(255, 215, 0, 0.4);
+          background: linear-gradient(
+            135deg,
+            #ffd700 0%,
+            #ffed4e 50%,
+            #ffd700 100%
+          );
+          box-shadow: 0 0 30px rgba(255, 215, 0, 0.8),
+            0 0 60px rgba(255, 215, 0, 0.4);
         }
 
         .confetti {
@@ -1055,32 +1075,118 @@ const QuizPlayer = () => {
           position: absolute;
           width: 10px;
           height: 10px;
-          background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #f9ca24);
+          background: linear-gradient(
+            45deg,
+            #ff6b6b,
+            #4ecdc4,
+            #45b7d1,
+            #f9ca24
+          );
           top: -10px;
           border-radius: 50%;
           animation: confetti-fall 3s ease-in forwards;
         }
 
-        .confetti-piece:nth-child(1) { left: 10%; animation-duration: 2.5s; animation-delay: 0s; }
-        .confetti-piece:nth-child(2) { left: 20%; animation-duration: 2.8s; animation-delay: 0.1s; }
-        .confetti-piece:nth-child(3) { left: 30%; animation-duration: 3s; animation-delay: 0.2s; }
-        .confetti-piece:nth-child(4) { left: 40%; animation-duration: 2.6s; animation-delay: 0.05s; }
-        .confetti-piece:nth-child(5) { left: 50%; animation-duration: 2.9s; animation-delay: 0.15s; }
-        .confetti-piece:nth-child(6) { left: 60%; animation-duration: 2.7s; animation-delay: 0.1s; }
-        .confetti-piece:nth-child(7) { left: 70%; animation-duration: 3.1s; animation-delay: 0s; }
-        .confetti-piece:nth-child(8) { left: 80%; animation-duration: 2.4s; animation-delay: 0.2s; }
-        .confetti-piece:nth-child(9) { left: 90%; animation-duration: 2.8s; animation-delay: 0.08s; }
-        .confetti-piece:nth-child(10) { left: 15%; animation-duration: 3s; animation-delay: 0.12s; }
-        .confetti-piece:nth-child(11) { left: 25%; animation-duration: 2.5s; animation-delay: 0.18s; }
-        .confetti-piece:nth-child(12) { left: 35%; animation-duration: 2.9s; animation-delay: 0.06s; }
-        .confetti-piece:nth-child(13) { left: 45%; animation-duration: 2.6s; animation-delay: 0.14s; }
-        .confetti-piece:nth-child(14) { left: 55%; animation-duration: 3.1s; animation-delay: 0.04s; }
-        .confetti-piece:nth-child(15) { left: 65%; animation-duration: 2.7s; animation-delay: 0.16s; }
-        .confetti-piece:nth-child(16) { left: 75%; animation-duration: 2.8s; animation-delay: 0.1s; }
-        .confetti-piece:nth-child(17) { left: 85%; animation-duration: 2.5s; animation-delay: 0.12s; }
-        .confetti-piece:nth-child(18) { left: 5%; animation-duration: 2.9s; animation-delay: 0.08s; }
-        .confetti-piece:nth-child(19) { left: 95%; animation-duration: 3s; animation-delay: 0.2s; }
-        .confetti-piece:nth-child(20) { left: 50%; animation-duration: 2.6s; animation-delay: 0s; }
+        .confetti-piece:nth-child(1) {
+          left: 10%;
+          animation-duration: 2.5s;
+          animation-delay: 0s;
+        }
+        .confetti-piece:nth-child(2) {
+          left: 20%;
+          animation-duration: 2.8s;
+          animation-delay: 0.1s;
+        }
+        .confetti-piece:nth-child(3) {
+          left: 30%;
+          animation-duration: 3s;
+          animation-delay: 0.2s;
+        }
+        .confetti-piece:nth-child(4) {
+          left: 40%;
+          animation-duration: 2.6s;
+          animation-delay: 0.05s;
+        }
+        .confetti-piece:nth-child(5) {
+          left: 50%;
+          animation-duration: 2.9s;
+          animation-delay: 0.15s;
+        }
+        .confetti-piece:nth-child(6) {
+          left: 60%;
+          animation-duration: 2.7s;
+          animation-delay: 0.1s;
+        }
+        .confetti-piece:nth-child(7) {
+          left: 70%;
+          animation-duration: 3.1s;
+          animation-delay: 0s;
+        }
+        .confetti-piece:nth-child(8) {
+          left: 80%;
+          animation-duration: 2.4s;
+          animation-delay: 0.2s;
+        }
+        .confetti-piece:nth-child(9) {
+          left: 90%;
+          animation-duration: 2.8s;
+          animation-delay: 0.08s;
+        }
+        .confetti-piece:nth-child(10) {
+          left: 15%;
+          animation-duration: 3s;
+          animation-delay: 0.12s;
+        }
+        .confetti-piece:nth-child(11) {
+          left: 25%;
+          animation-duration: 2.5s;
+          animation-delay: 0.18s;
+        }
+        .confetti-piece:nth-child(12) {
+          left: 35%;
+          animation-duration: 2.9s;
+          animation-delay: 0.06s;
+        }
+        .confetti-piece:nth-child(13) {
+          left: 45%;
+          animation-duration: 2.6s;
+          animation-delay: 0.14s;
+        }
+        .confetti-piece:nth-child(14) {
+          left: 55%;
+          animation-duration: 3.1s;
+          animation-delay: 0.04s;
+        }
+        .confetti-piece:nth-child(15) {
+          left: 65%;
+          animation-duration: 2.7s;
+          animation-delay: 0.16s;
+        }
+        .confetti-piece:nth-child(16) {
+          left: 75%;
+          animation-duration: 2.8s;
+          animation-delay: 0.1s;
+        }
+        .confetti-piece:nth-child(17) {
+          left: 85%;
+          animation-duration: 2.5s;
+          animation-delay: 0.12s;
+        }
+        .confetti-piece:nth-child(18) {
+          left: 5%;
+          animation-duration: 2.9s;
+          animation-delay: 0.08s;
+        }
+        .confetti-piece:nth-child(19) {
+          left: 95%;
+          animation-duration: 3s;
+          animation-delay: 0.2s;
+        }
+        .confetti-piece:nth-child(20) {
+          left: 50%;
+          animation-duration: 2.6s;
+          animation-delay: 0s;
+        }
 
         .celebration-message {
           margin-top: 16px;

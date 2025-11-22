@@ -213,7 +213,8 @@ const StudentQuizzes = () => {
     return (
       <div className="student-quizzes-container">
         <div className="loading">
-          <p>{t("studentQuizzes.loadingMessage", "Loading...")}</p>
+          <div className="spinner"></div>
+          <p>{t("general.loading", "Loading ... ")}</p>
         </div>
       </div>
     );
