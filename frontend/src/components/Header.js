@@ -23,7 +23,8 @@ const Header = ({ children }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const profileRef = useRef(null);
-  const languageDropdownRef = useRef(null);
+  const mobileLanguageRef = useRef(null);
+  const sidebarLanguageRef = useRef(null);
   const sidebarRef = useRef(null);
 
   const isRTL = currentLanguage === "ku" || currentLanguage === "ar";
@@ -49,8 +50,8 @@ const Header = ({ children }) => {
         setIsProfileOpen(false);
       }
       if (
-        languageDropdownRef.current &&
-        !languageDropdownRef.current.contains(event.target)
+        sidebarLanguageRef.current &&
+        !sidebarLanguageRef.current.contains(event.target)
       ) {
         setIsLanguageDropdownOpen(false);
       }
@@ -58,10 +59,12 @@ const Header = ({ children }) => {
 
     if (isProfileOpen || isLanguageDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [isProfileOpen, isLanguageDropdownOpen]);
 
@@ -240,10 +243,13 @@ const Header = ({ children }) => {
         </Link>
         <div className="mobile-nav-actions">
           {/* Language Switcher */}
-          <div className="mobile-language-switcher" ref={languageDropdownRef}>
+          <div className="mobile-language-switcher" ref={mobileLanguageRef}>
             <button
               className="mobile-language-badge"
               onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+              onTouchEnd={() => {
+                setIsLanguageDropdownOpen(!isLanguageDropdownOpen);
+              }}
               title="Change Language"
             >
               {languages.find((l) => l.code === currentLanguage)?.flag}
@@ -458,7 +464,7 @@ const Header = ({ children }) => {
               </div>
 
               {/* Language Selector in Profile */}
-              <div className="profile-language" ref={languageDropdownRef}>
+              <div className="profile-language" ref={sidebarLanguageRef}>
                 <button
                   className="language-badge"
                   onClick={() =>

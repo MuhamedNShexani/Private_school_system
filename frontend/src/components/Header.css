@@ -452,6 +452,8 @@
   border-radius: 50%;
   border: 2px solid #e5e7eb;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   transition: all 0.2s ease;
 }
 
@@ -817,7 +819,7 @@
   top: 0;
   left: 0;
   right: 0;
-    width: 100%;
+  width: 100%;
   z-index: 1000;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   align-items: center;
@@ -843,7 +845,7 @@
   object-fit: contain;
   border-radius: 6px;
   flex-shrink: 0;
-  }
+}
 
 .mobile-school-name {
   font-size: 0.9rem;
@@ -861,7 +863,7 @@
 
 .mobile-language-switcher {
   position: relative;
-  }
+}
 
 .mobile-language-badge {
   font-size: 1.3rem;
@@ -883,7 +885,7 @@
   background: #e5e7eb;
   border-color: #d1d5db;
   transform: scale(1.05);
-  }
+}
 
 .mobile-language-dropdown {
   position: absolute;
@@ -913,7 +915,7 @@
 [dir="rtl"] .mobile-language-item .lang-flag {
   order: 2;
   flex-shrink: 0;
-  }
+}
 
 [dir="rtl"] .mobile-language-item .lang-name {
   order: 1;

@@ -1035,11 +1035,14 @@ const StudentProfile = () => {
     };
 
     if (isLanguageDropdownOpen) {
+      // Support both mouse and touch events for better mobile compatibility
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [isLanguageDropdownOpen]);
 
@@ -1218,20 +1221,41 @@ const StudentProfile = () => {
             >
               <button
                 className="student-profile-language-badge"
-                onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsLanguageDropdownOpen(!isLanguageDropdownOpen);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsLanguageDropdownOpen(!isLanguageDropdownOpen);
+                }}
                 title="Change Language"
               >
                 {languages.find((l) => l.code === currentLanguage)?.flag}
               </button>
               {isLanguageDropdownOpen && (
-                <div className="student-profile-language-dropdown">
+                <div
+                  className="student-profile-language-dropdown"
+                  onClick={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                >
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
                       className={`student-profile-language-item ${
                         lang.code === currentLanguage ? "active" : ""
                       }`}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        changeLanguage(lang.code);
+                        setIsLanguageDropdownOpen(false);
+                      }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         changeLanguage(lang.code);
                         setIsLanguageDropdownOpen(false);
                       }}
@@ -1244,18 +1268,24 @@ const StudentProfile = () => {
               )}
             </div>
             {/* Logout Button */}
-            <button onClick={handleLogout} className="student-profile-logout-btn">
+            <button
+              onClick={handleLogout}
+              className="student-profile-logout-btn"
+            >
               <LogOut size={18} />
             </button>
           </div>
         </header>
       )}
 
-      <div className="container" style={{ paddingTop: isMobile ? "60px" : "0px" }}>
+      <div
+        className="container"
+        style={{ marginTop: "0px", paddingTop: "0px" }}
+      >
         <div className="profile-layout">
           {/* Student Information Card */}
           <div className="profile-hero-card">
-            <div className="profile-hero-banner">
+            <div className={"profile-hero-banner "}>
               <div className="student-avatar">
                 {student.photo ? (
                   <>
@@ -2010,7 +2040,13 @@ const StudentProfile = () => {
                             gap: "12px",
                           }}
                         >
-                          <div style={{ flex: "0 0 auto", minWidth: "100px", textAlign: "center" }}>
+                          <div
+                            style={{
+                              flex: "0 0 auto",
+                              minWidth: "100px",
+                              textAlign: "center",
+                            }}
+                          >
                             <div
                               style={{
                                 fontWeight: "700",
@@ -2101,7 +2137,11 @@ const StudentProfile = () => {
                             >
                               {/* Subject Name */}
                               <div
-                                style={{ flex: "0 0 auto", minWidth: "100px", textAlign: "center" }}
+                                style={{
+                                  flex: "0 0 auto",
+                                  minWidth: "100px",
+                                  textAlign: "center",
+                                }}
                               >
                                 <div
                                   style={{
@@ -2458,8 +2498,12 @@ const StudentProfile = () => {
                     <table className="homeworks-table">
                       <thead>
                         <tr>
-                          <th className="homework-subject-col">{t("studentProfile.subject", "Subject")}</th>
-                          <th className="homework-date-col">{formatDateWithDay(selectedHomeworkDate)}</th>
+                          <th className="homework-subject-col">
+                            {t("studentProfile.subject", "Subject")}
+                          </th>
+                          <th className="homework-date-col">
+                            {formatDateWithDay(selectedHomeworkDate)}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2490,11 +2534,12 @@ const StudentProfile = () => {
                                     )
                                   );
                                 }
-                                
+
                                 // Check if title is an object with {en, ar, ku} structure
                                 if (
                                   homework.subjectId.title &&
-                                  typeof homework.subjectId.title === "object" &&
+                                  typeof homework.subjectId.title ===
+                                    "object" &&
                                   (homework.subjectId.title.en ||
                                     homework.subjectId.title.ar ||
                                     homework.subjectId.title.ku)
@@ -2507,7 +2552,7 @@ const StudentProfile = () => {
                                     )
                                   );
                                 }
-                                
+
                                 // If title is a string, try to find the subject in subjects array for multilingual support
                                 if (
                                   homework.subjectId.title &&
@@ -2517,17 +2562,20 @@ const StudentProfile = () => {
                                   const subjectId = normalizeId(
                                     homework.subjectId._id || homework.subjectId
                                   );
-                                  const foundSubject = subjects.find((s) =>
-                                    normalizeId(s?._id || s) === subjectId
+                                  const foundSubject = subjects.find(
+                                    (s) =>
+                                      normalizeId(s?._id || s) === subjectId
                                   );
-                                  
+
                                   if (foundSubject) {
                                     return getLocalizedText(
-                                      foundSubject.titleMultilingual || foundSubject.title,
-                                      foundSubject.title || homework.subjectId.title
+                                      foundSubject.titleMultilingual ||
+                                        foundSubject.title,
+                                      foundSubject.title ||
+                                        homework.subjectId.title
                                     );
                                   }
-                                  
+
                                   // Fallback to the string title if subject not found
                                   return homework.subjectId.title;
                                 }
@@ -2535,14 +2583,17 @@ const StudentProfile = () => {
 
                               // If subjectId is just an ID string, look it up in subjects array
                               if (typeof homework.subjectId === "string") {
-                                const subjectId = normalizeId(homework.subjectId);
-                                const foundSubject = subjects.find((s) =>
-                                  normalizeId(s?._id || s) === subjectId
+                                const subjectId = normalizeId(
+                                  homework.subjectId
                                 );
-                                
+                                const foundSubject = subjects.find(
+                                  (s) => normalizeId(s?._id || s) === subjectId
+                                );
+
                                 if (foundSubject) {
                                   return getLocalizedText(
-                                    foundSubject.titleMultilingual || foundSubject.title,
+                                    foundSubject.titleMultilingual ||
+                                      foundSubject.title,
                                     foundSubject.title ||
                                       t(
                                         "studentProfile.unknownSubject",
@@ -2550,7 +2601,7 @@ const StudentProfile = () => {
                                       )
                                   );
                                 }
-                                
+
                                 return t(
                                   "studentProfile.unknownSubject",
                                   "Unknown Subject"
@@ -3153,7 +3204,7 @@ const StudentProfile = () => {
         .student-profile-navbar {
           background: white;
           border-bottom: 1px solid #e2e8f0;
-          padding: 12px 16px;
+          padding: 12px 10px;
           position: fixed;
           top: 0;
           left: 0;
@@ -3164,7 +3215,7 @@ const StudentProfile = () => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
+          gap: 10px;
           box-sizing: border-box;
         }
 
@@ -3219,6 +3270,8 @@ const StudentProfile = () => {
           cursor: pointer;
           transition: all 0.2s ease;
           padding: 0;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
         }
 
         .student-profile-language-badge:hover {
@@ -3239,6 +3292,7 @@ const StudentProfile = () => {
           min-width: 160px;
           overflow: hidden;
           animation: slideDown 0.2s ease-out;
+          -webkit-tap-highlight-color: transparent;
         }
 
         @keyframes slideDown {
@@ -3286,6 +3340,10 @@ const StudentProfile = () => {
           text-align: left;
           font-size: 13px;
           color: #4b5563;
+          -webkit-tap-highlight-color: rgba(59, 130, 246, 0.2);
+          touch-action: manipulation;
+          user-select: none;
+          -webkit-user-select: none;
         }
 
         .student-profile-language-item:hover {
@@ -3349,6 +3407,8 @@ const StudentProfile = () => {
             width: 32px;
             height: 32px;
             font-size: 1.2rem;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
           }
 
           .student-profile-logout-btn {
@@ -3363,12 +3423,20 @@ const StudentProfile = () => {
 
           .student-profile-language-dropdown {
             top: 40px;
+            right: 0;
             min-width: 140px;
+            max-width: calc(100vw - 24px);
+            z-index: 1002;
+            -webkit-tap-highlight-color: transparent;
           }
 
           .student-profile-language-item {
             padding: 8px 10px;
             font-size: 12px;
+            -webkit-tap-highlight-color: rgba(59, 130, 246, 0.2);
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
           }
         }
 
@@ -3436,6 +3504,12 @@ const StudentProfile = () => {
           animation: slideUp 0.6s ease-out;
         }
 
+        /* RTL Support for profile-hero-card */
+        [dir="rtl"] .profile-hero-card {
+          direction: rtl;
+          text-align: right;
+        }
+
         @keyframes slideUp {
           from {
             opacity: 0;
@@ -3465,6 +3539,8 @@ const StudentProfile = () => {
           box-shadow: 0 20px 60px rgba(102, 126, 234, 0.2);
         }
 
+        /* RTL Banner - High specificity rule */
+
         .profile-hero-content {
           flex: 1;
           display: flex;
@@ -3489,6 +3565,8 @@ const StudentProfile = () => {
             );
           pointer-events: none;
         }
+
+        /* RTL Support for gradient positions */
 
         .profile-hero-banner::after {
           content: "";
@@ -3578,26 +3656,6 @@ const StudentProfile = () => {
         /* RTL Support for Desktop Layout */
         [dir="rtl"] .profile-hero-info h2 {
           text-align: right;
-        }
-
-        [dir="rtl"] .profile-hero-banner {
-          flex-direction: row-reverse;
-        }
-
-        [dir="rtl"] .profile-hero-content {
-          align-items: flex-end;
-        }
-
-        [dir="rtl"] .profile-hero-info {
-          align-items: flex-end;
-        }
-
-        [dir="rtl"] .profile-hero-meta {
-          justify-content: flex-end;
-        }
-
-        [dir="rtl"] .profile-hero-status {
-          justify-content: flex-end;
         }
 
         .profile-hero-meta {
@@ -4773,30 +4831,6 @@ const StudentProfile = () => {
           }
 
           /* RTL Support for Medium Mobile Layout */
-          [dir="rtl"] .profile-hero-info h2 {
-            text-align: right;
-          }
-
-          [dir="rtl"] .profile-hero-banner {
-            flex-direction: row-reverse;
-            text-align: right;
-          }
-
-          [dir="rtl"] .profile-hero-content {
-            align-items: flex-end;
-          }
-
-          [dir="rtl"] .profile-hero-info {
-            align-items: flex-end;
-          }
-
-          [dir="rtl"] .profile-hero-meta {
-            justify-content: flex-end;
-          }
-
-          [dir="rtl"] .profile-hero-status {
-            justify-content: flex-end;
-          }
 
           .profile-hero-meta {
             justify-content: flex-start;
@@ -4919,27 +4953,6 @@ const StudentProfile = () => {
           /* RTL Support for Mobile Layout */
           [dir="rtl"] .profile-hero-info h2 {
             text-align: right;
-          }
-
-          [dir="rtl"] .profile-hero-banner {
-            flex-direction: row-reverse;
-            text-align: right;
-          }
-
-          [dir="rtl"] .profile-hero-content {
-            align-items: flex-end;
-          }
-
-          [dir="rtl"] .profile-hero-info {
-            align-items: flex-end;
-          }
-
-          [dir="rtl"] .profile-hero-meta {
-            justify-content: flex-end;
-          }
-
-          [dir="rtl"] .profile-hero-status {
-            justify-content: flex-end;
           }
 
           .profile-hero-meta {
