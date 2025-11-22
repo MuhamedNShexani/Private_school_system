@@ -2251,7 +2251,6 @@ const Students = () => {
                         </option>
                       ))}
                     </select>
-                    <div className="spinner"></div>
                     <button
                       type="button"
                       className="student-cards-load-btn"
