@@ -287,7 +287,7 @@ const Header = ({ children }) => {
         <div className="sidebar-header">
           <Link to="/" className="logo">
             <img
-              src="/logo.jpg"
+              src="/logo1.png"
               alt="School Logo"
               className="sidebar-logo-img"
             />

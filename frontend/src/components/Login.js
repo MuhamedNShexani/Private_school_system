@@ -46,8 +46,8 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-language-selector">
-          <select 
-            value={currentLanguage} 
+          <select
+            value={currentLanguage}
             onChange={(e) => changeLanguage(e.target.value)}
             className="language-select"
           >
@@ -82,7 +82,9 @@ const Login = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">{t("login.passwordLabel", "Password")}</label>
+            <label htmlFor="password">
+              {t("login.passwordLabel", "Password")}
+            </label>
             <input
               type="password"
               id="password"
@@ -90,25 +92,33 @@ const Login = () => {
               value={formData.password}
               onChange={handleChange}
               required
-              placeholder={t("login.passwordPlaceholder", "Enter your password")}
+              placeholder={t(
+                "login.passwordPlaceholder",
+                "Enter your password"
+              )}
             />
           </div>
 
           <button type="submit" disabled={loading} className="login-button">
-            {loading ? t("login.loggingIn", "Logging in...") : t("login.submitButton", "Login")}
+            {loading
+              ? t("login.loggingIn", "Logging in...")
+              : t("login.submitButton", "Login")}
           </button>
         </form>
 
         <div className="demo-credentials">
           <h4>{t("login.demoCredentials", "Demo Credentials:")}</h4>
           <p>
-            <strong>{t("login.demoAdmin", "Admin")}:</strong> admin@platform.com / admin123
+            <strong>{t("login.demoAdmin", "Admin")}:</strong> admin@platform.com
+            / admin123
           </p>
           <p>
-            <strong>{t("login.demoTeacher", "Teacher")}:</strong> teacher@platform.com / teacher123
+            <strong>{t("login.demoTeacher", "Teacher")}:</strong>{" "}
+            teacher@platform.com / teacher123
           </p>
           <p>
-            <strong>{t("login.demoStudent", "Student")}:</strong> student@platform.com / student123
+            <strong>{t("login.demoStudent", "Student")}:</strong>{" "}
+            student@platform.com / student123
           </p>
         </div>
       </div>

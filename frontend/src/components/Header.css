@@ -195,8 +195,8 @@
 }
 
 .sidebar-logo-img {
-  width: 48px;
-  height: 48px;
+  width: 100px;
+  height: 80px;
   object-fit: contain;
   border-radius: 6px;
 }
