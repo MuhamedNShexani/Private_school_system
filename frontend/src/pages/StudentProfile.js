@@ -3499,6 +3499,8 @@ const StudentProfile = () => {
         }
 
         .profile-hero-card {
+                padding-top:50px;
+
           border-radius: 32px;
           position: relative;
           overflow: hidden;
@@ -3570,6 +3572,7 @@ const StudentProfile = () => {
         /* RTL Support for gradient positions */
 
         .profile-hero-banner::after {
+        p
           content: "";
           position: absolute;
           inset: 0;

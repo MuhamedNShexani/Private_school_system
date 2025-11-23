@@ -259,8 +259,8 @@ const TranslationManagement = () => {
                 <th>{t("admin.translations.arabic", "Arabic")}</th>
                 <th>{t("admin.translations.kurdish", "Kurdish")}</th>
                 <th>{t("admin.translations.category", "Category")}</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{t("admin.translations.status", "Status")}</th>
+                <th>{t("admin.translations.actions", "Actions")}</th>
               </tr>
             </thead>
             <tbody>
