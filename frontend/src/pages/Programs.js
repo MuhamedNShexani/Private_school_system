@@ -582,7 +582,7 @@ const Programs = () => {
           content: "",
           class: selectedClass?._id || "",
           order: 1,
-          difficulty: t("difficulty.medium", "Medium"),
+          difficulty: "Medium",
           estimatedTime: 30,
           exercises: [],
           isActive: true,
@@ -1135,7 +1135,6 @@ const Programs = () => {
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              required
               rows="3"
             />
           </div>
@@ -1146,7 +1145,6 @@ const Programs = () => {
               onChange={(e) =>
                 setFormData({ ...formData, content: e.target.value })
               }
-              required
               rows="5"
             />
           </div>
@@ -1241,7 +1239,6 @@ const Programs = () => {
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              required
               rows="3"
             />
           </div>
@@ -1281,7 +1278,6 @@ const Programs = () => {
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              required
               rows="3"
             />
           </div>
@@ -1391,7 +1387,6 @@ const Programs = () => {
               onChange={(e) =>
                 setFormData({ ...formData, content: e.target.value })
               }
-              required
               rows="5"
               placeholder={t(
                 "form.content_placeholder",
